@@ -1,0 +1,17 @@
+$light-bg-image: "@/assets/background/theme-light.jpg";
+$dark-bg-image: "@/assets/background/theme-dark.jpg";
+
+.niuyin {
+  background-image: url($dark-bg-image);
+  background-position: center;
+  background-repeat: no-repeat;
+  background-size: cover;
+}
+
+.el-footer {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  height: 60px;
+  right: 20px;
+}

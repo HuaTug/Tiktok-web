@@ -1,0 +1,127 @@
+<template>
+  <!--  视频播放-->
+  <VideoPlayerCarousel
+      v-if="showVideoPlayer"
+      :loading="loading"
+      :video-list="videoList"
+      @reloadVideoFeed="reloadVideoFeedEmit"/>
+  <!--  <div v-loading="loading"-->
+  <!--       class="wh100"-->
+  <!--       :element-loading-svg="svg"-->
+  <!--       element-loading-svg-view-box="-10, -10, 50, 50">-->
+  <!--    <VideoPlayerSwiper v-if="showVideoPlayer"-->
+  <!--                       :loading="loading"-->
+  <!--                       :video-list="videoList"-->
+  <!--                       @reloadVideoFeed="reloadVideoFeedEmit"/>-->
+  <!--  </div>-->
+</template>
+
+<script>
+import VideoPlayerCarousel from "@/components/video/VideoPlayerCarousel.vue";
+import {videoFeed} from "@/api/video"
+import {recommendVideoFeed} from "@/api/recommend"
+import VideoPlayerSwiper from "@/components/video/VideoPlayerSwiper.vue";
+
+export default {
+  name: 'Video',
+  components: {VideoPlayerSwiper, VideoPlayerCarousel},
+  data() {
+    return {
+      loading: true,
+      autoPlay: true, // 自动播放视频
+      showVideoPlayer: true,
+      publishTime: null,
+      videoUrl: null,
+      videoList: [],
+      // add
+      svg: `<path class="path" d=" M 30 15 L 28 17 M 25.61 25.61 A 15 15, 0, 0, 1, 15 30 A 15 15, 0, 1, 1, 27.99 7.5 L 15 15" style="stroke-width: 4px; fill: rgba(10, 10, 10, 0)"/>`,
+    }
+  },
+  created() {
+    // this.getVideoFeed()
+    // this.getRecommendVideoFeed()
+  },
+  mounted() {
+    this.getRecommendVideoFeed()
+  },
+  methods: {
+    getVideoFeed() {
+      this.loading = true
+      videoFeed(this.publishTime).then(res => {
+        // Refactored-TikTok backend uses code 0 for success
+        if ((res.code === 0 || res.code === 200) && res.data != null) {
+          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+          this.videoList = this.videoList.concat(data)
+          // this.videoList = [...this.videoList, ...res.data];
+          this.loading = false
+          if (this.videoList.length > 0) {
+            this.publishTime = this.videoList[this.videoList.length - 1].createTime
+          }
+          this.showVideoPlayer = true
+        } else {
+          this.$message.error(res.message || res.msg || '获取视频失败')
+        }
+      }).catch(err => {
+        console.log('Video feed fetch failed:', err)
+        this.loading = false
+      })
+    },
+    getRecommendVideoFeed() {
+      this.loading = true
+      recommendVideoFeed().then(res => {
+        // Refactored-TikTok backend uses code 0 for success
+        if ((res.code === 0 || res.code === 200) && res.data != null) {
+          var that = this;
+          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+          that.videoList = that.videoList.concat(data)
+          // this.videoList = [...this.videoList, ...res.data];
+          this.loading = false
+          // this.publishTime = this.videoList[this.videoList.length - 1].createTime
+          this.showVideoPlayer = true
+        } else {
+          this.$message.error(res.message || res.msg || '获取推荐视频失败')
+        }
+      }).catch(err => {
+        console.log('Recommend video feed fetch failed:', err)
+        this.loading = false
+      })
+    },
+    autoPlayVideo(val) {
+      this.autoPlay = val;
+    },
+    reloadVideoFeedEmit(val) {
+      // this.showVideoPlayer = val;
+      // this.showVideoPlayer = false
+      this.loading = val
+      // this.$nextTick(() => {
+      // this.showVideoPlayer = true;
+      // this.getVideoFeed();
+      recommendVideoFeed().then(res => {
+        // Refactored-TikTok backend uses code 0 for success
+        if ((res.code === 0 || res.code === 200) && res.data != null) {
+          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+          this.videoList = data
+          // Object.assign(this.videoList, res.data)
+          // this.videoList = [...this.videoList, ...res.data];
+          this.loading = false
+          // this.publishTime = this.videoList[this.videoList.length - 1].createTime
+          this.showVideoPlayer = true
+        } else {
+          this.$message.error(res.message || res.msg || '获取视频失败')
+        }
+      }).catch(err => {
+        console.log('Reload video feed failed:', err)
+        this.loading = false
+      })
+      // });
+    }
+  }
+}
+
+</script>
+
+<style lang='less' scoped>
+.niuyin-video-player {
+  margin-bottom: 1rem;
+}
+</style>
