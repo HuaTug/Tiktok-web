@@ -12,7 +12,8 @@ const instance = axios.create({
 instance.interceptors.request.use(config => {
     const token = getToken()
     if (token) {
-        config.headers.Authorization = 'Bearer ' + token
+        // Refactored-TikTok 后端期望 Access-Token header
+        config.headers['Access-Token'] = token
     }
     return config;
 }, error => {
@@ -22,7 +23,7 @@ let loginDialog = true
 // 添加响应拦截器
 instance.interceptors.response.use(res => {
     // 未设置状态码则默认成功状态
-    // Refactored-TikTok 后端成功码是 0，也兼容原来的 200
+    // Refactored-TikTok 后端成功码是 10000，也兼容 0 和 200
     const code = res.data.code;
     // 获取错误信息
     const msg = errorCode[code] || res.data.message || res.data.msg || errorCode['default']
@@ -47,15 +48,15 @@ instance.interceptors.response.use(res => {
     } else if (code === 500) {
         ElMessage.error(msg)
         return Promise.reject(new Error(msg))
-    } else if (code !== 0 && code !== 200) {
-        // 后端错误码不是 0 或 200 时提示错误
+    } else if (code !== 0 && code !== 200 && code !== 10000) {
+        // 后端错误码不是 0、200 或 10000 时提示错误
         ElMessage.error(msg)
         return Promise.reject('error')
     } else {
         // 成功时统一将 code 转换为 200 以兼容前端判断逻辑
-        // 同时保留原始 code 用于需要精确判断的场景
+        // Refactored-TikTok 后端返回 10000 表示成功
         const result = { ...res.data }
-        if (result.code === 0) {
+        if (result.code === 0 || result.code === 10000) {
             result.code = 200  // 统一转换为 200，兼容前端现有判断
         }
         return result

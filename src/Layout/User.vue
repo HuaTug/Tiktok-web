@@ -9,12 +9,12 @@
       <!--      用户信息区域-->
       <div class="user-container" :style="{ backgroundImage: `url(${memberInfo.backImage})` }">
         <div v-viewer class="avatar-area">
-          <el-avatar v-if="user.avatar" class="user-avatar pr" :src="user.avatar"/>
+          <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar"/>
           <el-avatar v-else class="user-avatar pr" :icon="UserFilled"/>
           <div class="image-dot dn-phone"></div>
         </div>
         <div class="user-info">
-          <div class="username"><h1>{{ user.nickName }}</h1></div>
+          <div class="username"><h1>{{ user.user_name || user.nickName || '用户' }}</h1></div>
           <div class="follow-fans-like">
             <div class="user-info-follow flex-center">
               <div class="mr-5r cg fs8">关注</div>
@@ -30,11 +30,11 @@
             </div>
           </div>
           <div class="user-profile mtb5 dn-phone">
-            <span class="userid">芝士ID：{{ user.userId }}</span>
+            <span class="userid">苝士ID：{{ user.user_id || user.userId }}</span>
             <span class="gender-age">
-              <svg v-if="user.sex==='1'" class="icon1rem" aria-hidden="true">
+              <svg v-if="user.sex===1 || user.sex==='1'" class="icon1rem" aria-hidden="true">
               <use xlink:href="#icon-man"></use></svg>
-              <svg v-else-if="user.sex==='0'" class="icon1rem" aria-hidden="true">
+              <svg v-else-if="user.sex===0 || user.sex==='0'" class="icon1rem" aria-hidden="true">
               <use xlink:href="#icon-woman"></use></svg>
               <svg v-else class="icon1rem" aria-hidden="true">
               <use xlink:href="#icon-sex-primary"></use></svg>
@@ -356,12 +356,14 @@ export default {
   methods: {
     getUserInfo() {
       getInfo().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.user = res.data
-          this.memberInfo = res.data.memberInfo || {}
-          this.userForm = {...this.user}
-          this.memberInfoForm = res.data.memberInfo || {}
+        // Refactored-TikTok backend returns code 200 after conversion
+        if (res.code === 200) {
+          // Refactored-TikTok 后端返回的用户信息在 data.User 中
+          const userData = res.data?.User || res.data?.user || res.data
+          this.user = userData
+          this.memberInfo = userData.memberInfo || {}
+          this.userForm = {...userData}
+          this.memberInfoForm = userData.memberInfo || {}
           if (this.memberInfoForm.likeShowStatus === '1') {
             // 喜欢被禁用
             this.userVideoTabShow.forEach((item, index) => {
@@ -378,8 +380,8 @@ export default {
               }
             })
           }
-          userInfoX().setUserInfo(this.user)
-          this.getUserFollowFansLike(res.data.userId || res.data.user_id)
+          userInfoX().setUserInfo(userData)
+          this.getUserFollowFansLike(userData.userId || userData.user_id)
         }
       }).catch(err => {
         console.log('Get user info failed:', err)
@@ -388,19 +390,20 @@ export default {
     getUserFollowFansLike(userId) {
       // 查询关注、粉丝
       followAndFans(userId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.followNum = res.data?.followedNums || res.data?.follow_count || 0
-          this.fansNum = res.data?.fanNums || res.data?.follower_count || 0
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200 && res.data) {
+          // 后端返回: data.follow_count, data.user_list.length
+          this.followNum = res.data?.follow_count || res.data?.total || res.data?.user_list?.length || 0
+          this.fansNum = res.data?.follower_count || 0
         }
-      }).catch(err => console.log('Follow/Fans fetch failed'))
+      }).catch(err => console.log('Follow/Fans fetch failed:', err))
       // 查询获赞
       userLikeNums(userId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.likeAllNum = res.data || 0
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200) {
+          this.likeAllNum = res.data?.total || res.data?.like_count || 0
         }
-      }).catch(err => console.log('Like nums fetch failed'))
+      }).catch(err => console.log('Like nums fetch failed:', err))
     },
     handleClick(tab, event) {
       // console.log(tab.props.name);

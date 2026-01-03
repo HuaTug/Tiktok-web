@@ -213,13 +213,34 @@ export default {
   mounted() {
   },
   methods: {
+    // Transform backend snake_case fields to frontend camelCase
+    transformComment(comment) {
+      return {
+        commentId: comment.comment_id || comment.commentId,
+        userId: comment.user_id || comment.userId,
+        videoId: comment.video_id || comment.videoId,
+        parentId: comment.parent_id || comment.parentId,
+        likeCount: comment.like_count || comment.likeCount || 0,
+        childCount: comment.child_count || comment.childCount || 0,
+        content: comment.content,
+        createTime: comment.created_at || comment.createTime,
+        updateTime: comment.updated_at || comment.updateTime,
+        replyToCommentId: comment.reply_to_comment_id || comment.replyToCommentId,
+        // User info - may need to be fetched separately or provided by backend
+        avatar: comment.avatar || comment.user_avatar || '/default-avatar.png',
+        nickName: comment.nick_name || comment.nickName || comment.username || '用户' + (comment.user_id || comment.userId || ''),
+        children: comment.children ? comment.children.map(child => this.transformComment(child)) : []
+      }
+    },
     getCommentList() {
       this.commentQueryParams.videoId = this.videoId
       videoCommentPageList(this.commentQueryParams).then(res => {
         this.drawer = true
-        // Refactored-TikTok backend uses code 0 for success and data field
-        this.videoCommentTree = res.rows || res.data?.list || [];
-        this.commentTotal = res.total || res.data?.total || 0;
+        // Refactored-TikTok backend uses code 10000 for success and data.items field
+        const rawItems = res.rows || res.data?.items || res.data?.list || [];
+        // Transform snake_case to camelCase
+        this.videoCommentTree = rawItems.map(item => this.transformComment(item));
+        this.commentTotal = res.total || res.data?.total || this.videoCommentTree.length || 0;
       }).catch(err => {
         console.log('Comment list fetch failed:', err)
         this.videoCommentTree = []

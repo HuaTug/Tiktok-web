@@ -81,6 +81,33 @@ export async function resumeUpload(data) {
     })
 }
 
+// 发布视频 - 简化版本（兼容旧接口）
+// 此函数封装了分块上传流程，适用于小文件
+export async function publishVideo(data) {
+    // 1. 开始上传
+    const startRes = await publishVideoStart({
+        title: data.title || data.videoTitle,
+        description: data.description || data.videoDesc,
+        file_name: data.fileName || 'video.mp4',
+        file_size: data.fileSize || 0,
+    })
+    
+    if (startRes.code !== 200 && startRes.code !== 0) {
+        return startRes
+    }
+    
+    const uploadId = startRes.data?.upload_id
+    
+    // 2. 完成上传（如果有视频URL则直接完成）
+    return await publishVideoComplete({
+        upload_id: uploadId,
+        video_url: data.videoUrl,
+        cover_url: data.coverUrl || data.videoCover,
+        title: data.title || data.videoTitle,
+        description: data.description || data.videoDesc,
+    })
+}
+
 // 视频分类列表 (暂时使用视频列表代替)
 export async function videoCategory() {
     return await request({

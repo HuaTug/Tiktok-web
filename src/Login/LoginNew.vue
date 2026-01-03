@@ -164,15 +164,15 @@ export default {
         if (valid) {
           if(this.loginType==="up"){
             new Promise((resolve, reject) => {
-              userLogin(this.loginForm.username, this.loginForm.password).then(res => {
-                // Refactored-TikTok backend uses code 0 for success
-                if (res.code === 0) {
+              userLogin({ name: this.loginForm.username, password: this.loginForm.password }).then(res => {
+                // request.js 已将成功码统一转换为 200
+                if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
                   setToken(res.data.token)
-                  this.$message.success(res.message || '登录成功')
+                  this.$message.success(res.data.base.msg || '登录成功')
                   this.$router.push('/')
                   resolve()
                 } else {
-                  this.$message.error(res.message || '登录失败')
+                  this.$message.error(res.data?.base?.msg || res.message || '登录失败')
                 }
               }).catch(error => {
                 this.$message.error('登录失败，请检查网络连接')
@@ -182,14 +182,14 @@ export default {
           }else if(this.loginType==="sms"){
             new Promise((resolve, reject) => {
               userSmsLogin(this.loginForm.telephone, this.loginForm.smsCode).then(res => {
-                // Refactored-TikTok backend uses code 0 for success
-                if (res.code === 0) {
+                // request.js 已将成功码统一转换为 200
+                if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
                   setToken(res.data.token)
-                  this.$message.success(res.message || '登录成功')
+                  this.$message.success(res.data.base.msg || '登录成功')
                   this.$router.push('/')
                   resolve()
                 } else {
-                  this.$message.error(res.message || '登录失败')
+                  this.$message.error(res.data?.base?.msg || res.message || '登录失败')
                 }
               }).catch(error => {
                 this.$message.error('登录失败，请检查网络连接')

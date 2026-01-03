@@ -96,7 +96,7 @@
                 popper-style="padding: 20px;">
       <template #reference>
         <router-link class="user-container" :to="'/user'">
-          <el-avatar v-if="user.avatar" class="hv-scale" :src="user.avatar"/>
+          <el-avatar v-if="user.avatar_url || user.avatar" class="hv-scale" :src="user.avatar_url || user.avatar"/>
           <el-avatar v-else :icon="UserFilled"/>
         </router-link>
       </template>
@@ -105,7 +105,7 @@
           <div class="userinfo-header flex-between">
             <p class="one-line fw600 cp">
               <router-link class="cg flex-center" to="/user/videoPost">
-                <span>{{ user.nickName }}</span>
+                <span>{{ user.user_name || user.nickName || '用户' }}</span>
                 <el-icon>
                   <ArrowRightBold/>
                 </el-icon>
@@ -252,26 +252,32 @@ export default {
     handlePopoverShow() {
       // 封装用户作品量、喜欢量、收藏量
       myVideoCount().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200) {
+          // 后端返回 data.total 或 data.video_list.length
+          const count = res.data?.total || res.data?.video_list?.length || 0
           this.userPostInfo.forEach((item) => {
-            return item.id === 1 ? item.num = res.data : 0
+            if (item.id === 1) item.num = count
           })
         }
       }).catch(err => console.log('Video count fetch failed'))
       myLikeCount().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200) {
+          // 后端返回 data.total 或 data.like_list.length
+          const count = res.data?.total || res.data?.like_list?.length || (Array.isArray(res.data) ? res.data.length : 0)
           this.userPostInfo.forEach((item) => {
-            return item.id === 2 ? item.num = res.data : 0
+            if (item.id === 2) item.num = count
           })
         }
       }).catch(err => console.log('Like count fetch failed'))
       myFavoriteCount().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200) {
+          // 后端返回 data.total_count 或 data.favorite_list.length
+          const count = res.data?.total_count || res.data?.favorite_list?.length || 0
           this.userPostInfo.forEach((item) => {
-            return item.id === 3 ? item.num = res.data : 0
+            if (item.id === 3) item.num = count
           })
         }
       }).catch(err => console.log('Favorite count fetch failed'))

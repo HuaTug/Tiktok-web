@@ -155,12 +155,12 @@ export default {
     // 登录
     handleUserLogin() {
       userLogin(this.loginForm).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0) {
-          this.$message.success(res.message || '登录成功')
+        // request.js 已将成功码统一转换为 200
+        if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
+          this.$message.success(res.data.base.msg || '登录成功')
           this.$router.push('/')
         } else {
-          this.$message.error(res.message || '登录失败')
+          this.$message.error(res.data?.base?.msg || res.message || '登录失败')
         }
       }).catch(err => {
         this.$message.error('登录失败，请检查网络连接')

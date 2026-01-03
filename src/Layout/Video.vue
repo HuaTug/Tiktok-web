@@ -42,24 +42,49 @@ export default {
     // this.getRecommendVideoFeed()
   },
   mounted() {
-    this.getRecommendVideoFeed()
+    // 优先使用 videoFeed，推荐系统暂时没有数据
+    this.getVideoFeed()
   },
   methods: {
+    // 将后端 snake_case 数据转换为前端需要的 camelCase 格式
+    transformVideoData(video) {
+      return {
+        videoId: video.video_id || video.videoId,
+        userId: video.user_id || video.userId,
+        videoUrl: video.video_url || video.videoUrl,
+        coverImage: video.cover_url || video.coverImage,
+        videoTitle: video.title || video.videoTitle,
+        description: video.description,
+        likeNum: video.likes_count || video.likeNum || 0,
+        commentNum: video.comment_count || video.commentNum || 0,
+        shareNum: video.share_count || video.shareNum || 0,
+        createTime: video.created_at || video.createTime,
+        userNickName: video.user_name || video.userNickName || '未知用户',
+        userAvatar: video.avatar_url || video.userAvatar || '',
+        publishType: '0', // 默认为视频类型
+        weatherLike: false,
+        weatherFollow: false,
+        tags: video.label_names ? video.label_names.split(',') : [],
+        category: video.category || ''
+      }
+    },
     getVideoFeed() {
       this.loading = true
       videoFeed(this.publishTime).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if ((res.code === 0 || res.code === 200) && res.data != null) {
-          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200 && res.data != null) {
+          // 后端返回格式: data.video_list
+          const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
+          // 转换数据格式
+          const data = rawData.map(item => this.transformVideoData(item))
           this.videoList = this.videoList.concat(data)
-          // this.videoList = [...this.videoList, ...res.data];
           this.loading = false
           if (this.videoList.length > 0) {
-            this.publishTime = this.videoList[this.videoList.length - 1].createTime
+            this.publishTime = this.videoList[this.videoList.length - 1].createTime || this.videoList[this.videoList.length - 1].create_time
           }
           this.showVideoPlayer = true
         } else {
-          this.$message.error(res.message || res.msg || '获取视频失败')
+          this.$message.error(res.data?.base?.msg || res.message || '获取视频失败')
         }
       }).catch(err => {
         console.log('Video feed fetch failed:', err)
@@ -69,17 +94,18 @@ export default {
     getRecommendVideoFeed() {
       this.loading = true
       recommendVideoFeed().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if ((res.code === 0 || res.code === 200) && res.data != null) {
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200 && res.data != null) {
           var that = this;
-          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+          // 后端返回格式: data.video_list
+          const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
+          // 转换数据格式
+          const data = rawData.map(item => this.transformVideoData(item))
           that.videoList = that.videoList.concat(data)
-          // this.videoList = [...this.videoList, ...res.data];
           this.loading = false
-          // this.publishTime = this.videoList[this.videoList.length - 1].createTime
           this.showVideoPlayer = true
         } else {
-          this.$message.error(res.message || res.msg || '获取推荐视频失败')
+          this.$message.error(res.data?.base?.msg || res.message || '获取推荐视频失败')
         }
       }).catch(err => {
         console.log('Recommend video feed fetch failed:', err)
@@ -96,18 +122,18 @@ export default {
       // this.$nextTick(() => {
       // this.showVideoPlayer = true;
       // this.getVideoFeed();
-      recommendVideoFeed().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if ((res.code === 0 || res.code === 200) && res.data != null) {
-          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
+      videoFeed(this.publishTime).then(res => {
+        // Refactored-TikTok backend uses code 200 after conversion
+        if (res.code === 200 && res.data != null) {
+          // 后端返回格式: data.video_list
+          const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
+          // 转换数据格式
+          const data = rawData.map(item => this.transformVideoData(item))
           this.videoList = data
-          // Object.assign(this.videoList, res.data)
-          // this.videoList = [...this.videoList, ...res.data];
           this.loading = false
-          // this.publishTime = this.videoList[this.videoList.length - 1].createTime
           this.showVideoPlayer = true
         } else {
-          this.$message.error(res.message || res.msg || '获取视频失败')
+          this.$message.error(res.data?.base?.msg || res.message || '获取视频失败')
         }
       }).catch(err => {
         console.log('Reload video feed failed:', err)

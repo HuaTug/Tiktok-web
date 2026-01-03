@@ -91,12 +91,36 @@ export default {
     initVideoList() {
       this.loading = true
       videoLikePage(this.videoQueryParams).then(res => {
-        if (res.code === 200) {
-          this.likeVideoList = res.rows
-          this.likeVideoTotal = res.total
+        // 后端返回格式: { code: 10000, message: "Success", data: { Items: [...] } }
+        if (res.code === 10000 || res.code === 200) {
+          // 从 data.Items 或 data.items 获取视频列表
+          const items = res.data?.Items || res.data?.items || res.rows || []
+          this.likeVideoList = this.formatVideoList(items)
+          this.likeVideoTotal = items.length
+          this.loading = false
+        } else {
           this.loading = false
         }
+      }).catch(err => {
+        console.error('Failed to load like videos:', err)
+        this.loading = false
       })
+    },
+    // 格式化视频列表，将后端数据格式转换为前端组件需要的格式
+    formatVideoList(items) {
+      if (!Array.isArray(items)) return []
+      return items.map(item => ({
+        videoId: item.video_id || item.VideoId || item.videoId,
+        videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+        videoUrl: item.video_url || item.VideoUrl || item.videoUrl,
+        coverUrl: item.cover_url || item.CoverUrl || item.coverUrl,
+        userId: item.user_id || item.UserId || item.userId,
+        userName: item.user_name || item.UserName || item.userName,
+        description: item.description || item.Description || '',
+        likeCount: item.like_count || item.LikeCount || item.likeCount || 0,
+        commentCount: item.comment_count || item.CommentCount || item.commentCount || 0,
+        ...item
+      }))
     },
     handleVideoClick(video) {
       // this.video = video
@@ -119,14 +143,16 @@ export default {
           this.loadingData = false
           this.videoQueryParams.pageNum += 1
           videoLikePage(this.videoQueryParams).then(res => {
-            if (res.code === 200) {
-              if (res.rows == null || res.rows.length === 0) {
+            // 后端返回格式: { code: 10000, message: "Success", data: { Items: [...] } }
+            if (res.code === 10000 || res.code === 200) {
+              const items = res.data?.Items || res.data?.items || res.rows || []
+              if (items == null || items.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
                 this.loadingData = false
                 return;
               }
-              this.likeVideoList = this.likeVideoList.concat(res.rows)
+              this.likeVideoList = this.likeVideoList.concat(this.formatVideoList(items))
               this.loadingIcon = false
 
             } else {

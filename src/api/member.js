@@ -21,7 +21,8 @@ export const userLogin = (loginForm) => {
         password: loginForm.password
     }).then(res => {
         // Store token if login successful
-        if (res.code === 0 && res.data && res.data.token) {
+        // Refactored-TikTok 后端返回的 token 在 data.token 中
+        if (res.code === 200 && res.data && res.data.token) {
             setToken(res.data.token)
         }
         return res

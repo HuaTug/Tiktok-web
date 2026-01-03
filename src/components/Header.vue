@@ -37,8 +37,10 @@ export default {
         if (this.user === null || this.user === undefined || this.user === "") {
           getInfo().then(res => {
             if (res.code === 200) {
-              this.user = res.data
-              userInfoX().setUserInfo(res.data)
+              // Refactored-TikTok 后端返回的用户信息在 data.User 中
+              const userData = res.data?.User || res.data?.user || res.data
+              this.user = userData
+              userInfoX().setUserInfo(userData)
             }
           })
         }
