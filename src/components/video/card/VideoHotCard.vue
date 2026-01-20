@@ -43,7 +43,7 @@
   <el-dialog
       v-model="userVideoDialogVisible"
       :modal="false"
-      custom-class="user-video-dialog"
+      class="user-video-dialog"
       fullscreen
       :destroy-on-close="true"
       align-center>
@@ -52,9 +52,9 @@
 </template>
 
 <script>
-import VideoPlayer from "@/components/video/VideoPlayer.vue";
 import ImagePlayer from "@/components/video/ImagePlayer.vue";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
+import VideoPlayer from "@/components/video/VideoPlayer.vue";
 
 export default {
   name: "VideoHotCard",

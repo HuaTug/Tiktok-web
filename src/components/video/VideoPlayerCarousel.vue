@@ -594,7 +594,7 @@
   <el-dialog
       v-model="userVideoDialogVisible"
       :modal="false"
-      custom-class="user-video-dialog"
+      class="user-video-dialog"
       fullscreen
       :destroy-on-close="true"
       align-center>
@@ -604,27 +604,27 @@
 
 <script>
 import {
-  ArrowDownBold,
-  ArrowUpBold,
-  ChatDotRound, ChromeFilled, CirclePlus, Close, MoreFilled, QuestionFilled, UserFilled
-} from '@element-plus/icons-vue'
-import {
-  createFavorite,
-  favoriteVideoToCollection,
-  likeVideo,
-  myFavoriteList,
-  onlyFavoriteVideo, userUnFavoriteVideo,
-  videoInWhoseCollection
-} from '@/api/behave.js'
-import {followUser} from '@/api/social.js'
-import VideoPlayer from "@/components/video/VideoPlayer.vue";
+    createFavorite,
+    favoriteVideoToCollection,
+    likeVideo,
+    myFavoriteList,
+    onlyFavoriteVideo, userUnFavoriteVideo,
+    videoInWhoseCollection
+} from '@/api/behave.js';
+import { followUser } from '@/api/social.js';
+import { videoUserpage } from "@/api/video.js";
 import VideoComment from "@/components/video/comment/VideoComment.vue";
 import ImagePlayer from "@/components/video/ImagePlayer.vue";
-import {userInfoX} from "@/store/userInfoX";
-import {encodeData, smartDateFormat} from "@/utils/roydon.js";
 import UserVideoDialog from "@/components/video/UserVideoDialog.vue";
-import {videoUserpage} from "@/api/video.js";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
+import VideoPlayer from "@/components/video/VideoPlayer.vue";
+import { userInfoX } from "@/store/userInfoX";
+import { encodeData, smartDateFormat } from "@/utils/roydon.js";
+import {
+    ArrowDownBold,
+    ArrowUpBold,
+    ChatDotRound, ChromeFilled, CirclePlus, Close, MoreFilled, QuestionFilled, UserFilled
+} from '@element-plus/icons-vue';
 
 export default {
   name: 'VideoPlayerCarousel',
@@ -1588,4 +1588,3 @@ $video-sidebar-width: 520px;
 }
 
 </style>
-

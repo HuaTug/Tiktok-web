@@ -86,9 +86,9 @@
 </template>
 
 <script>
-import {delNotice, noticePage} from "@/api/notice.js";
-import {InfoFilled, MoreFilled, UserFilled} from "@element-plus/icons-vue";
-import {userInfoX} from "@/store/userInfoX";
+import { delNotice, noticePage } from "@/api/notice.js";
+import { userInfoX } from "@/store/userInfoX";
+import { InfoFilled, MoreFilled, UserFilled } from "@element-plus/icons-vue";
 
 let socket;
 export default {
@@ -135,7 +135,11 @@ export default {
   emits: ['noticeRefreshEmit'],
   methods: {
     initWebSocket() {
-      // this.user = sessionStorage.getItem("user") ? JSON.parse(sessionStorage.getItem("user")) : {}
+      // Check if user is logged in before establishing WebSocket connection
+      if (!this.loginUser || !this.loginUser.userId) {
+        console.log("User not logged in, skipping WebSocket connection");
+        return;
+      }
       console.log(this.loginUser.userId);
       let _this = this;
       if (typeof (WebSocket) == "undefined") {

@@ -1,53 +1,42 @@
-import {createApp} from "vue";
-import {createPinia} from "pinia";
+import { createPinia } from "pinia";
+import { createApp } from "vue";
 
+import "@/assets/styles/element.scss";
+import "@/style.scss";
+import * as ElementPlusIconsVue from "@element-plus/icons-vue";
 import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
-import * as ElementPlusIconsVue from "@element-plus/icons-vue";
-import 'element-plus/theme-chalk/dark/css-vars.css'
-import zhCn from 'element-plus/dist/locale/zh-cn.mjs'
-import router from "./router/index.ts";
-import "@/assets/styles/element.scss"
-import "@/style.scss";
-import "./tailwind.css"
+import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
+import 'element-plus/theme-chalk/dark/css-vars.css';
 import App from "./App.vue";
+import router from "./router/index.ts";
+import "./tailwind.css";
 //pinia 自动存储话插件
 import piniaPluginPersistedstate from "pinia-plugin-persistedstate";
 // 自定义方法
 import {
+    addDateRange,
     formatAge,
     getAge,
-    smartDateFormat,
-    parseTime,
-    resetForm,
-    addDateRange,
     handleTree,
-    removeHtmlTags
+    parseTime,
+    removeHtmlTags,
+    resetForm,
+    smartDateFormat
 } from "@/utils/roydon.js";
 // 图片预览组件
-import 'viewerjs/dist/viewer.css'
-import VueViewer from 'v-viewer'
-// 高德地图
-import VueAMap, {initAMapApiLoader} from "@vuemap/vue-amap";
-import "@vuemap/vue-amap/dist/style.css";
-
-initAMapApiLoader({
-    key: '1***',
-    securityJsCode: '2***',
-    plugins: [
-        'AMap.Geocoder',
-    ]
-});
+import VueViewer from 'v-viewer';
+import 'viewerjs/dist/viewer.css';
 // vue瀑布流插件
-import {VueMasonryPlugin} from 'vue-masonry';
+import { VueMasonryPlugin } from 'vue-masonry';
 
 // v-md-editor
 import VMdEditor from '@kangc/v-md-editor';
 import '@kangc/v-md-editor/lib/style/base-editor.css';
 import githubTheme from '@kangc/v-md-editor/lib/theme/github.js';
 import '@kangc/v-md-editor/lib/theme/style/github.css';
-import vuepressTheme from '@kangc/v-md-editor/lib/theme/vuepress.js';
 import '@kangc/v-md-editor/lib/theme/style/vuepress.css';
+import vuepressTheme from '@kangc/v-md-editor/lib/theme/vuepress.js';
 import Prism from 'prismjs';
 
 import VMdPreview from '@kangc/v-md-editor/lib/preview';
@@ -94,7 +83,6 @@ app.use(VueViewer)
 VueViewer.setDefaults({
     zIndexInline: 2023
 })
-app.use(VueAMap)
 app.use(VueMasonryPlugin);
 app.use(VMdEditor);
 app.use(VMdPreview);

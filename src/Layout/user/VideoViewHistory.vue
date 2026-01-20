@@ -1,14 +1,15 @@
 <template>
-      <MapView/>
+  <div class="video-view-history">
+    <p class="cg">暂无观看历史</p>
+  </div>
 <!--  <MediaCardWaterfall :data="mediaList"></MediaCardWaterfall>-->
 </template>
 <script>
-import MapView from "@/components/map/MapView.vue"
-import MediaCardWaterfall from "@/components/media/MediaCardWaterfall.vue"
+import MediaCardWaterfall from "@/components/media/MediaCardWaterfall.vue";
 
 export default {
   name: "VideoViewHistory",
-  components: {MapView, MediaCardWaterfall},
+  components: {MediaCardWaterfall},
   data() {
     return {
     }
@@ -19,5 +20,8 @@ export default {
 }
 </script>
 <style scoped>
-
+.video-view-history {
+  padding: 20px;
+  text-align: center;
+}
 </style>

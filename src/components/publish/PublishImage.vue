@@ -222,21 +222,7 @@
               </div>
             </div>
           </div>
-          <div>
-            <h5 class="mtb5">开启定位</h5>
-            <el-switch
-                v-model="videoForm.positionFlag"
-                active-value="1"
-                inactive-value="0"
-                active-color="#13ce66"
-                inactive-color="#ff4949">
-            </el-switch>
-          </div>
-          <div v-if="videoForm.positionFlag==='1'">
-            <h5 class="mtb5">选择定位</h5>
-            <MapView @emitSelectAddress="selectAddressEmit"/>
-            <p class="cg fs7 mtb5">提示：点击定位按钮进行定位，选择定位有助于同城推送</p>
-          </div>
+
         </div>
       </div>
     </div>
@@ -247,15 +233,14 @@
 </template>
 
 <script>
-import {getToken} from "@/utils/auth.js";
-import {publishVideo, saveVideoTag} from "@/api/video.js";
-import {Delete, Plus, UploadFilled, ZoomIn} from "@element-plus/icons-vue";
-import {userInfoX} from "@/store/userInfoX";
-import MapView from "@/components/map/MapView.vue";
+import { publishVideo, saveVideoTag } from "@/api/video.js";
+import { userInfoX } from "@/store/userInfoX";
+import { getToken } from "@/utils/auth.js";
+import { Delete, Plus, UploadFilled, ZoomIn } from "@element-plus/icons-vue";
 
 export default {
   name: "PublishImage",
-  components: {MapView, Delete, ZoomIn, Plus, UploadFilled},
+  components: {Delete, ZoomIn, Plus, UploadFilled},
   data() {
     return {
       user: userInfoX().userInfo,
@@ -286,8 +271,7 @@ export default {
         categoryId: undefined,
         videoTags: [],
         imageFileList: [],
-        positionFlag: '1',
-        position: {},
+
       },
       imageLimit: 10, // 限制上传个数
       supportImageType: [
@@ -415,10 +399,7 @@ export default {
       this.videoTagIds.splice(this.videoTagIds.indexOf(item.tagId), 1)
       this.videoTags.splice(this.videoTags.indexOf(item), 1)
     },
-    // 接收子组件传递进来的定位地址数据
-    selectAddressEmit(val) {
-      this.videoForm.position = val
-    }
+
   }
 }
 </script>
