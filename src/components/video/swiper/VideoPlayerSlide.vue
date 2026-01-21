@@ -423,8 +423,16 @@ export default {
             }
           })
         } else {
-          this.$message.error(res.msg)
+          // 处理 Relation 服务错误
+          if (res.code === 10001 && res.msg.includes('Relation')) {
+            this.$message.error('关注服务暂时不可用，请稍后重试')
+          } else {
+            this.$message.error(res.msg)
+          }
         }
+      }).catch(err => {
+        console.error('❌ [ATTENTION] 关注用户失败:', err)
+        this.$message.error('关注操作失败，请稍后重试')
       })
     },
     keyDownZ(videoId, e) {

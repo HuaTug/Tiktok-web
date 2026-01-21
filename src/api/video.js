@@ -3,7 +3,7 @@ import request from '@/utils/request'
 // 视频流-feed
 export async function videoFeed(createTime) {
     return await request({
-        url: '/v2/video/feed',
+        url: '/v1/video/feed',
         method: 'get',
         params: { create_time: createTime }
     })
@@ -12,7 +12,7 @@ export async function videoFeed(createTime) {
 // 分页查询我的视频
 export async function videoMypage(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -21,7 +21,7 @@ export async function videoMypage(data) {
 // 分页查询用户视频
 export async function videoUserpage(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -30,7 +30,7 @@ export async function videoUserpage(data) {
 // 发布视频 - 开始上传
 export async function publishVideoStart(data) {
     return await request({
-        url: '/v2/publish/start',
+        url: '/v1/publish/start',
         method: 'post',
         data: data
     })
@@ -39,7 +39,7 @@ export async function publishVideoStart(data) {
 // 发布视频 - 上传中
 export async function publishVideoUploading(data) {
     return await request({
-        url: '/v2/publish/uploading',
+        url: '/v1/publish/uploading',
         method: 'post',
         data: data
     })
@@ -48,7 +48,7 @@ export async function publishVideoUploading(data) {
 // 发布视频 - 完成上传
 export async function publishVideoComplete(data) {
     return await request({
-        url: '/v2/publish/complete',
+        url: '/v1/publish/complete',
         method: 'post',
         data: data
     })
@@ -57,7 +57,7 @@ export async function publishVideoComplete(data) {
 // 发布视频 - 取消上传
 export async function publishVideoCancel(data) {
     return await request({
-        url: '/v2/publish/cancel',
+        url: '/v1/publish/cancel',
         method: 'post',
         data: data
     })
@@ -66,7 +66,7 @@ export async function publishVideoCancel(data) {
 // 获取上传进度
 export async function getUploadProgress(data) {
     return await request({
-        url: '/v2/publish/progress',
+        url: '/v1/publish/progress',
         method: 'get',
         params: data
     })
@@ -75,7 +75,7 @@ export async function getUploadProgress(data) {
 // 恢复上传
 export async function resumeUpload(data) {
     return await request({
-        url: '/v2/publish/resume',
+        url: '/v1/publish/resume',
         method: 'post',
         data: data
     })
@@ -108,18 +108,19 @@ export async function publishVideo(data) {
     })
 }
 
-// 视频分类列表 (暂时使用视频列表代替)
-export async function videoCategory() {
+// 视频分类列表
+export async function videoCategory(data) {
     return await request({
-        url: '/v2/video/list',
-        method: 'get'
+        url: '/v1/video/list',
+        method: 'get',
+        params: data
     })
 }
 
 // 视频分类分页video
 export async function videoCategoryPage(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -128,7 +129,7 @@ export async function videoCategoryPage(data) {
 // 热门视频
 export async function hotVideoPage(data) {
     return await request({
-        url: '/v2/popular/',
+        url: '/v1/popular/',
         method: 'get',
         params: data
     })
@@ -146,7 +147,7 @@ export async function userLikeNums(userId) {
 // 保存标签 (暂时不支持)
 export async function saveVideoTag(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -155,7 +156,7 @@ export async function saveVideoTag(data) {
 // 我的作品数量
 export async function myVideoCount() {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get'
     })
 }
@@ -163,7 +164,7 @@ export async function myVideoCount() {
 // 查询用户作品
 export async function memberInfoPage(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -172,7 +173,7 @@ export async function memberInfoPage(data) {
 // 视频推荐
 export async function pushVideo() {
     return await request({
-        url: '/v2/recommend/video',
+        url: '/v1/recommend/video',
         method: 'get'
     })
 }
@@ -180,7 +181,7 @@ export async function pushVideo() {
 // 分页查询我的视频合集
 export async function myVideoCompilationPage(data) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: data
     })
@@ -189,7 +190,7 @@ export async function myVideoCompilationPage(data) {
 // 根据分类推送视频
 export async function pushVideoByCategory(categoryId) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: { category_id: categoryId }
     })
@@ -198,7 +199,7 @@ export async function pushVideoByCategory(categoryId) {
 // 视频分类树
 export async function videoCategoryTree() {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get'
     })
 }
@@ -206,7 +207,7 @@ export async function videoCategoryTree() {
 // 视频分类树
 export async function videoCategoryParentList() {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get'
     })
 }
@@ -214,7 +215,7 @@ export async function videoCategoryParentList() {
 // 视频父分类子分类
 export async function videoCategoryChildrenList(id) {
     return await request({
-        url: '/v2/video/list',
+        url: '/v1/video/list',
         method: 'get',
         params: { category_id: id }
     })
@@ -223,7 +224,7 @@ export async function videoCategoryChildrenList(id) {
 // 视频vo
 export async function getVideoVOById(id) {
     return await request({
-        url: '/v2/video/feed',
+        url: '/v1/video/feed',
         method: 'get',
         params: { video_id: id }
     })
@@ -232,7 +233,7 @@ export async function getVideoVOById(id) {
 // 视频搜索
 export async function videoSearch(data) {
     return await request({
-        url: '/v2/video/search',
+        url: '/v1/video/search',
         method: 'post',
         data: data
     })
@@ -241,7 +242,7 @@ export async function videoSearch(data) {
 // 删除视频
 export async function videoDelete(videoId) {
     return await request({
-        url: '/v2/video/delete',
+        url: '/v1/video/delete',
         method: 'delete',
         params: { video_id: videoId }
     })
@@ -250,7 +251,7 @@ export async function videoDelete(videoId) {
 // 视频流代理
 export async function videoStreamProxy(videoId) {
     return await request({
-        url: '/v2/stream/video',
+        url: '/v1/stream/video',
         method: 'get',
         params: { video_id: videoId }
     })
@@ -259,7 +260,7 @@ export async function videoStreamProxy(videoId) {
 // 视频缩略图代理
 export async function videoThumbnailProxy(videoId) {
     return await request({
-        url: '/v2/stream/thumbnail',
+        url: '/v1/stream/thumbnail',
         method: 'get',
         params: { video_id: videoId }
     })
@@ -268,7 +269,7 @@ export async function videoThumbnailProxy(videoId) {
 // 视频元数据
 export async function videoMetadata(videoId) {
     return await request({
-        url: '/v2/stream/metadata',
+        url: '/v1/stream/metadata',
         method: 'get',
         params: { video_id: videoId }
     })
@@ -277,7 +278,7 @@ export async function videoMetadata(videoId) {
 // 视频访问记录
 export async function videoVisit(videoId) {
     return await request({
-        url: '/v2/visit/' + videoId,
+        url: '/v1/visit/' + videoId,
         method: 'post'
     })
 }
@@ -285,7 +286,7 @@ export async function videoVisit(videoId) {
 // 视频转码
 export async function transcodeVideo(data) {
     return await request({
-        url: '/v2/video/transcode',
+        url: '/v1/video/transcode',
         method: 'post',
         data: data
     })
@@ -294,7 +295,7 @@ export async function transcodeVideo(data) {
 // 视频分析
 export async function getVideoAnalytics(videoId) {
     return await request({
-        url: '/v2/video/analytics',
+        url: '/v1/video/analytics',
         method: 'get',
         params: { video_id: videoId }
     })
@@ -303,7 +304,7 @@ export async function getVideoAnalytics(videoId) {
 // 批量操作视频
 export async function batchOperateVideos(data) {
     return await request({
-        url: '/v2/videos/batch',
+        url: '/v1/videos/batch',
         method: 'post',
         data: data
     })
@@ -312,7 +313,7 @@ export async function batchOperateVideos(data) {
 // 视频热度管理
 export async function manageVideoHeat(data) {
     return await request({
-        url: '/v2/storage/heat/manage',
+        url: '/v1/storage/heat/manage',
         method: 'post',
         data: data
     })
@@ -321,7 +322,7 @@ export async function manageVideoHeat(data) {
 // 用户配额管理
 export async function manageUserQuota(data) {
     return await request({
-        url: '/v2/storage/quota/manage',
+        url: '/v1/storage/quota/manage',
         method: 'post',
         data: data
     })
@@ -330,7 +331,7 @@ export async function manageUserQuota(data) {
 // 分享视频
 export async function shareVideo(data) {
     return await request({
-        url: '/v2/share/video',
+        url: '/v1/share/video',
         method: 'post',
         data: data
     })

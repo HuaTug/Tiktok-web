@@ -9,7 +9,7 @@ export const userInfoX = defineStore(
             userInfo.value = newUserInfo;
         };
         const removeUserInfo = () => {
-            userInfo.value = "";
+            userInfo.value = null;
         };
         return {
             userInfo,

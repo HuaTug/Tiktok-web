@@ -134,10 +134,18 @@ export default {
           } else {
             this.followListDataNotMore = false
           }
+        } else {
+          // 处理 Relation 服务错误
+          if (res.code === 10001 && res.msg.includes('Relation')) {
+            this.$message.error('关注服务暂时不可用，请稍后重试')
+          } else {
+            this.$message.error(res.msg)
+          }
         }
         this.followListLoading = false
       }).catch(err => {
-        console.log('Follow list fetch failed:', err)
+        console.error('❌ [FOLLOW] 获取关注列表失败:', err)
+        this.$message.error('获取关注列表失败，请稍后重试')
         this.followListLoading = false
       })
     },

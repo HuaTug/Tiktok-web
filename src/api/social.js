@@ -30,7 +30,7 @@ export function followAndFans(userId) {
 // 关注用户视频流
 export function followVideoFeed(lastTime) {
     return request({
-        url: '/v2/video/feed',
+        url: '/v1/video/feed',
         method: 'get',
         params: { last_time: lastTime }
     })

@@ -62,7 +62,7 @@ export function videoLikePage(data) {
 // 分页查询我收藏的视频
 export function videoFavoritePage(data) {
     return request({
-        url: '/v2/favorite/video/list',
+        url: '/v1/favorite/video/list',
         method: 'get',
         params: data
     })
@@ -104,7 +104,7 @@ export function myLikeCount() {
 // 我的收藏数
 export function myFavoriteCount() {
     return request({
-        url: '/v2/favorite/list',
+        url: '/v1/favorite/list',
         method: 'get',
     })
 }
@@ -112,7 +112,7 @@ export function myFavoriteCount() {
 //查询用户收藏夹列表
 export function myFavoriteList() {
     return request({
-        url: '/v2/favorite/list',
+        url: '/v1/favorite/list',
         method: 'get',
     })
 }
@@ -129,7 +129,7 @@ export function personVideoLikePage(data) {
 //创建收藏夹
 export function createFavorite(data) {
     return request({
-        url: '/v2/favorite/create',
+        url: '/v1/favorite/create',
         method: 'post',
         data: data
     })
@@ -138,7 +138,7 @@ export function createFavorite(data) {
 // 用户收藏视频
 export function onlyFavoriteVideo(videoId) {
     return request({
-        url: '/v2/favorite/video/add',
+        url: '/v1/favorite/video/add',
         method: 'post',
         data: { video_id: videoId }
     })
@@ -148,7 +148,7 @@ export function onlyFavoriteVideo(videoId) {
 // 用户取消收藏视频
 export function userUnFavoriteVideo(videoId) {
     return request({
-        url: '/v2/favorite/video/delete',
+        url: '/v1/favorite/video/delete',
         method: 'delete',
         params: { video_id: videoId }
     })
@@ -158,7 +158,7 @@ export function userUnFavoriteVideo(videoId) {
 // 收藏视频到收藏夹
 export function favoriteVideoToCollection(data) {
     return request({
-        url: '/v2/favorite/video/add',
+        url: '/v1/favorite/video/add',
         method: 'post',
         data: data
     })
@@ -167,7 +167,7 @@ export function favoriteVideoToCollection(data) {
 // 查询视频在用户哪些收藏夹
 export function videoInWhoseCollection(videoId) {
     return request({
-        url: '/v2/favorite/video',
+        url: '/v1/favorite/video',
         method: 'get',
         params: { video_id: videoId }
     })
@@ -176,7 +176,7 @@ export function videoInWhoseCollection(videoId) {
 // 查询收藏夹详情集合
 export function collectionInfoList() {
     return request({
-        url: '/v2/favorite/list',
+        url: '/v1/favorite/list',
         method: 'get',
     })
 }
@@ -184,7 +184,7 @@ export function collectionInfoList() {
 // 分页收藏夹详情
 export function collectionInfoPage(data) {
     return request({
-        url: '/v2/favorite/video/list',
+        url: '/v1/favorite/video/list',
         method: 'get',
         params: data
     })
@@ -193,7 +193,7 @@ export function collectionInfoPage(data) {
 // 更新收藏夹信息
 export function updateFavorite(data) {
     return request({
-        url: '/v2/favorite/create',
+        url: '/v1/favorite/create',
         method: 'post',
         data: data
     })
@@ -202,7 +202,7 @@ export function updateFavorite(data) {
 // 删除收藏夹
 export function deleteFavorite(favoriteId) {
     return request({
-        url: '/v2/favorite/delete',
+        url: '/v1/favorite/delete',
         method: 'delete',
         params: { favorite_id: favoriteId }
     })
@@ -211,7 +211,7 @@ export function deleteFavorite(favoriteId) {
 // 同步视频观看行为埋点
 export function syncViewBehave(videoId) {
     return request({
-        url: '/v2/visit/' + videoId,
+        url: '/v1/visit/' + videoId,
         method: 'post',
     })
 }

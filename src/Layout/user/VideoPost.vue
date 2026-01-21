@@ -79,12 +79,16 @@ import { myVideoCompilationPage, videoMypage } from "@/api/video.js";
 import Loading from "@/components/Loading.vue";
 import VideoCard from "@/components/video/VideoCard.vue";
 import { Close } from "@element-plus/icons-vue";
+import {userInfoX} from "@/store/userInfoX";
 
 export default {
   name: "VideoPost",
   computed: {
     Close() {
       return Close
+    },
+    currentUser() {
+      return userInfoX().userInfo;
     }
   },
   components: {Loading, VideoCard},
@@ -95,6 +99,7 @@ export default {
       postVideoList: [],
       postVideoTotal: null,
       videoQueryParams: {
+        userId: null,
         videoTitle: "",
         pageNum: 1,
         pageSize: 10
@@ -163,6 +168,10 @@ export default {
     },
     initVideoList() {
       this.loading = true
+      // 从用户信息中获取userId
+      if (this.currentUser) {
+        this.videoQueryParams.userId = this.currentUser.userId || this.currentUser.user_id
+      }
       videoMypage(this.videoQueryParams).then(res => {
         if (res.code === 200 || res.code === 10000) {
           const items = res.data?.Items || res.data?.items || res.rows || []
@@ -232,6 +241,10 @@ export default {
         this.loadingIcon = true
         this.loadingData = false
         this.videoQueryParams.pageNum += 1
+        // 确保userId存在
+        if (this.currentUser) {
+          this.videoQueryParams.userId = this.videoQueryParams.userId || (this.currentUser.userId || this.currentUser.user_id)
+        }
         console.log("loadMore")
         videoMypage(this.videoQueryParams).then(res => {
           if (res.code === 200 || res.code === 10000) {

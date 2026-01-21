@@ -29,7 +29,14 @@ let loginDialog = true
 // 添加响应拦截器
 instance.interceptors.response.use(res => {
     console.log('📥 [RESPONSE] 收到响应:', res.config.url)
-    console.log('📥 [RESPONSE] 原始code:', res.data.code)
+    console.log('📥 [RESPONSE] 响应数据:', res.data)
+    
+    // 检查响应数据是否存在
+    if (!res.data) {
+        console.error('❌ [RESPONSE] 响应数据为空:', res.config.url)
+        ElMessage.error('服务器返回异常，请稍后重试')
+        return Promise.reject('响应数据为空')
+    }
     
     // 未设置状态码则默认成功状态
     // Refactored-TikTok 后端成功码是 10000，也兼容 0 和 200
@@ -91,12 +98,37 @@ instance.interceptors.response.use(res => {
     }
 }, function (error) {
     console.error('🌐 [RESPONSE] 网络错误:', error)
+    console.error('🌐 [RESPONSE] 错误详情:', error.response?.data)
+    
+    // 检查是否是认证错误（即使连接被关闭）
+    if (error.response?.data?.code === 10013) {
+        console.error('❌ [RESPONSE] 未认证! code:', error.response.data.code)
+        console.error('❌ [RESPONSE] 错误信息:', error.response.data.message || error.response.data.msg)
+        // 展示重新登陆逻辑
+        if (loginDialog) {
+            loginDialog = false
+            ElMessageBox.confirm('登录状态已过期，是否选择重新登录', '提示', {
+                confirmButtonText: '重新登录', cancelButtonText: '取消', type: 'warning'
+            }).then(() => {
+                location.href = '/login';
+            }).catch(() => {
+                loginDialog = true
+            });
+            return Promise.reject('请重新登录。')
+        }
+    }
     
     // 网络连接错误处理
     if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
         ElMessage.error('请求超时，请检查网络连接')
-    } else if (error.message.includes('Network Error') || error.message.includes('conn closed')) {
+    } else if (error.message.includes('Network Error') || error.message.includes('conn closed') || error.message.includes('remote or network error')) {
         ElMessage.error('网络连接失败，请稍后重试')
+    } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+        ElMessage.error('请求的资源不存在')
+    } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+        ElMessage.error('没有权限执行此操作')
+    } else {
+        ElMessage.error('网络请求失败，请稍后重试')
     }
     
     return Promise.reject(error);
