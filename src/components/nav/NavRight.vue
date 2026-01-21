@@ -96,8 +96,8 @@
                 popper-style="padding: 20px;">
       <template #reference>
         <router-link class="user-container" :to="'/user'">
-          <el-avatar v-if="user.avatar_url || user.avatar" class="hv-scale" :src="user.avatar_url || user.avatar"/>
-          <el-avatar v-else :icon="UserFilled"/>
+          <el-avatar v-if="user.avatar_url || user.avatar" class="hv-scale" :src="user.avatar_url || user.avatar" @load="console.log('✅ [NAV-AVATAR] 导航头像加载成功:', user.avatar_url || user.avatar)" @error="console.log('❌ [NAV-AVATAR] 导航头像加载失败:', user.avatar_url || user.avatar)"/>
+          <el-avatar v-else :icon="UserFilled" @click="console.log('🔍 [NAV-AVATAR] 用户信息:', user)"/>
         </router-link>
       </template>
       <template #default>
@@ -187,7 +187,10 @@ export default {
     }
   },
   props: {
-    user: Object,
+    user: {
+      type: Object,
+      default: () => ({})
+    },
   },
   data() {
     return {

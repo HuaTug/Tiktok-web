@@ -112,6 +112,8 @@
 import {ElMessage} from "element-plus";
 import {userLogin, register} from '@/api/member.js';
 import {tokenX} from "@/store/tokenX";
+import {userInfoX} from "@/store/userInfoX";
+import {setToken} from "@/utils/auth.js";
 
 export default {
   name: "LoginIndex",
@@ -155,14 +157,27 @@ export default {
     // 登录
     handleUserLogin() {
       userLogin(this.loginForm).then(res => {
-        // request.js 已将成功码统一转换为 200
-        if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
-          this.$message.success(res.data.base.msg || '登录成功')
+        console.log('Login response:', res)
+        // 检查业务逻辑层面的成功状态
+        if (res.code === 200 && res.data && res.data.token) {
+          // 保存token到三个地方：Cookies, tokenX store, 和用户信息
+          setToken(res.data.token)
+          tokenX().setToken(res.data.token)
+          
+          // 保存用户信息
+          if (res.data.user) {
+            userInfoX().setUserInfo(res.data.user)
+          }
+          
+          const successMsg = res.data?.base?.msg || res.message || '登录成功'
+          this.$message.success(successMsg)
           this.$router.push('/')
         } else {
-          this.$message.error(res.data?.base?.msg || res.message || '登录失败')
+          const errorMsg = res.data?.base?.msg || res.message || '登录失败'
+          this.$message.error(errorMsg)
         }
       }).catch(err => {
+        console.error('Login error:', err)
         this.$message.error('登录失败，请检查网络连接')
       })
     },

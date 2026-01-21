@@ -1,5 +1,4 @@
 //将登陆的接口分离
-import { setToken } from "@/utils/auth.js"
 import request from '@/utils/request'
 
 // 登录方法
@@ -20,11 +19,9 @@ export const userLogin = (loginForm) => {
         username: loginForm.name,
         password: loginForm.password
     }).then(res => {
-        // Store token if login successful
-        // Refactored-TikTok 后端返回的 token 在 data.token 中
-        if (res.code === 200 && res.data && res.data.token) {
-            setToken(res.data.token)
-        }
+        // 返回响应，让调用方处理token保存
+        // 这样可以统一在LoginNew.vue中保存到所有存储位置
+        console.log('userLogin API response:', res)
         return res
     })
 }

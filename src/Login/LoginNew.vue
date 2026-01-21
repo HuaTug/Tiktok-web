@@ -98,6 +98,7 @@
 <script>
 import {userLogin, userSmsLogin} from "@/api/member.js";
 import {tokenX} from "@/store/tokenX";
+import {userInfoX} from "@/store/userInfoX";
 import {setToken} from "@/utils/auth.js";
 
 export default {
@@ -164,17 +165,63 @@ export default {
         if (valid) {
           if(this.loginType==="up"){
             new Promise((resolve, reject) => {
+              console.log('🔐 [LOGIN] 开始登录流程...')
+              console.log('🔐 [LOGIN] 用户名:', this.loginForm.username)
+              
               userLogin({ name: this.loginForm.username, password: this.loginForm.password }).then(res => {
-                // request.js 已将成功码统一转换为 200
-                if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
+                console.log('🔐 [LOGIN] 收到登录响应:')
+                console.log('  - res.code:', res.code)
+                console.log('  - res.data:', res.data)
+                console.log('  - res.data.token:', res.data?.token)
+                console.log('  - res.data.base:', res.data?.base)
+                
+                // 检查业务逻辑层面的成功状态
+                if (res.code === 200 && res.data && res.data.token) {
+                  console.log('✅ [LOGIN] 登录成功，开始保存token...')
+                  
+                  // 保存token到三个地方：Cookies, tokenX store, 和用户信息
+                  console.log('💾 [TOKEN] 保存到 Cookies...')
                   setToken(res.data.token)
-                  this.$message.success(res.data.base.msg || '登录成功')
+                  console.log('💾 [TOKEN] Cookies中的token:', document.cookie)
+                  
+                  console.log('💾 [TOKEN] 保存到 tokenX store...')
+                  tokenX().setToken(res.data.token)
+                  console.log('💾 [TOKEN] tokenX store中的token:', tokenX().token)
+                  
+                  // 保存用户信息
+                  if (res.data.user) {
+                    console.log('👤 [USER] 保存用户信息:', res.data.user)
+                    userInfoX().setUserInfo(res.data.user)
+                    console.log('👤 [USER] userInfoX store中的用户:', userInfoX().userInfo)
+                  } else {
+                    console.warn('⚠️ [USER] 响应中没有用户信息')
+                  }
+                  
+                  console.log('🎉 [LOGIN] Token和用户信息保存完成！')
+                  console.log('🔍 [VERIFY] 验证保存结果:')
+                  console.log('  - Cookie token:', document.cookie.includes('token=') ? '✅ 存在' : '❌ 不存在')
+                  console.log('  - tokenX.token:', tokenX().token ? '✅ 存在' : '❌ 不存在')
+                  console.log('  - userInfoX.userInfo:', userInfoX().userInfo ? '✅ 存在' : '❌ 不存在')
+                  
+                  const successMsg = res.data?.base?.msg || res.message || '登录成功'
+                  this.$message.success(successMsg)
+                  
+                  console.log('📍 [ROUTER] 跳转到首页...')
                   this.$router.push('/')
                   resolve()
                 } else {
-                  this.$message.error(res.data?.base?.msg || res.message || '登录失败')
+                  // 登录失败
+                  console.error('❌ [LOGIN] 登录失败！')
+                  console.error('  - res.code:', res.code)
+                  console.error('  - res.data:', res.data)
+                  console.error('  - res.data.token 是否存在:', !!res.data?.token)
+                  
+                  const errorMsg = res.data?.base?.msg || res.message || '登录失败'
+                  this.$message.error(errorMsg)
+                  reject(new Error(errorMsg))
                 }
               }).catch(error => {
+                console.error('❌ [LOGIN] 登录请求异常:', error)
                 this.$message.error('登录失败，请检查网络连接')
                 reject(error)
               })
@@ -182,16 +229,30 @@ export default {
           }else if(this.loginType==="sms"){
             new Promise((resolve, reject) => {
               userSmsLogin(this.loginForm.telephone, this.loginForm.smsCode).then(res => {
-                // request.js 已将成功码统一转换为 200
-                if (res.code === 200 && res.data && res.data.base && res.data.base.code === 200) {
+                console.log('SMS login response:', res)
+                // 检查业务逻辑层面的成功状态
+                if (res.code === 200 && res.data && res.data.token) {
+                  // 保存token到三个地方：Cookies, tokenX store, 和用户信息
                   setToken(res.data.token)
-                  this.$message.success(res.data.base.msg || '登录成功')
+                  tokenX().setToken(res.data.token)
+                  
+                  // 保存用户信息
+                  if (res.data.user) {
+                    userInfoX().setUserInfo(res.data.user)
+                  }
+                  
+                  const successMsg = res.data?.base?.msg || res.message || '登录成功'
+                  this.$message.success(successMsg)
                   this.$router.push('/')
                   resolve()
                 } else {
-                  this.$message.error(res.data?.base?.msg || res.message || '登录失败')
+                  // 登录失败
+                  const errorMsg = res.data?.base?.msg || res.message || '登录失败'
+                  this.$message.error(errorMsg)
+                  reject(new Error(errorMsg))
                 }
               }).catch(error => {
+                console.error('SMS login error:', error)
                 this.$message.error('登录失败，请检查网络连接')
                 reject(error)
               })

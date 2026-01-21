@@ -135,7 +135,15 @@ export default {
         {id: 6, name: "生活", '--color': "red", class: "#icon-food", link: "/category/17"},
         {id: 7, name: "美食", '--color': "red", class: "#icon-food", link: "/category/18"},
       ],
-      videoCategoryParentList: localStorage.getItem("videoCategoryParentList") ? JSON.parse(localStorage.getItem("videoCategoryParentList")) : null,
+      videoCategoryParentList: (() => {
+        try {
+          const stored = localStorage.getItem("videoCategoryParentList");
+          return stored ? JSON.parse(stored) : null;
+        } catch (err) {
+          console.log('Failed to parse videoCategoryParentList from localStorage:', err);
+          return null;
+        }
+      })(),
       tabsBottomList: [
         {id: 1, name: "AI", '--color': "red", class: "#icon-deepseek", link: "/ai/chat"},
         {id: 2, name: "商务合作", '--color': "red", class: "#icon-cooperation", link: "/cooperation"},
@@ -157,6 +165,12 @@ export default {
             this.videoCategoryParentList = res.data
           }
           localStorage.setItem("videoCategoryParentList", JSON.stringify(res.data))
+        }
+      }).catch(err => {
+        console.log('Video category parent list fetch failed:', err)
+        // 如果API调用失败，使用默认的静态数据
+        if (this.videoCategoryParentList == null) {
+          this.videoCategoryParentList = []
         }
       })
     },

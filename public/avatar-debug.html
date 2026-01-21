@@ -1,0 +1,150 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>头像调试工具</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .avatar-test { margin: 10px 0; }
+        img { max-width: 100px; max-height: 100px; border: 1px solid #ccc; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>🔍 头像调试工具</h1>
+    
+    <div class="debug-section">
+        <h2>1. 测试头像URL</h2>
+        <div id="url-test"></div>
+        <input type="text" id="avatar-url" placeholder="输入头像URL测试" style="width: 500px;">
+        <button onclick="testAvatarUrl()">测试</button>
+        <div id="test-result"></div>
+    </div>
+
+    <div class="debug-section">
+        <h2>2. 当前用户信息</h2>
+        <div id="user-info"></div>
+        <button onclick="getUserInfo()">获取用户信息</button>
+    </div>
+
+    <div class="debug-section">
+        <h2>3. Token状态</h2>
+        <div id="token-info"></div>
+        <button onclick="checkToken()">检查Token</button>
+    </div>
+
+    <script>
+        // 默认头像URL
+        const defaultAvatarUrl = 'http://localhost:9002/tiktok-avatarurl/tiktok.png?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Credential=tiktok_minio_admin%2F20260121%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20260121T070102Z&X-Amz-Expires=604800&X-Amz-SignedHeaders=host&X-Amz-Signature=fb1c7c486e1074c8f317c8644479ea01e04c36fa47e8bccd0a6524ce781a8bd6';
+
+        function init() {
+            console.log('🔧 [AVATAR-DEBUG] 初始化调试工具')
+            document.getElementById('avatar-url').value = defaultAvatarUrl;
+            checkToken();
+            getUserInfo();
+        }
+
+        function testAvatarUrl() {
+            const url = document.getElementById('avatar-url').value;
+            const resultDiv = document.getElementById('test-result');
+            
+            console.log('🔍 [AVATAR-DEBUG] 测试头像URL:', url);
+            resultDiv.innerHTML = '<p>测试中...</p>';
+            
+            // 创建图片测试
+            const img = new Image();
+            img.onload = function() {
+                console.log('✅ [AVATAR-DEBUG] 头像加载成功:', url);
+                resultDiv.innerHTML = `
+                    <div class="success">✅ 头像加载成功</div>
+                    <div class="avatar-test">
+                        <img src="${url}" alt="测试头像">
+                        <p>尺寸: ${this.naturalWidth}x${this.naturalHeight}</p>
+                    </div>
+                `;
+            };
+            
+            img.onerror = function(e) {
+                console.error('❌ [AVATAR-DEBUG] 头像加载失败:', url, e);
+                resultDiv.innerHTML = `
+                    <div class="error">❌ 头像加载失败</div>
+                    <p>错误: ${e}</p>
+                    <p>URL: ${url}</p>
+                `;
+            };
+            
+            img.src = url;
+        }
+
+        function getUserInfo() {
+            console.log('👤 [AVATAR-DEBUG] 获取用户信息...');
+            
+            fetch('http://localhost:8888/v1/user/get', {
+                headers: {
+                    'Access-Token': getToken()
+                }
+            })
+            .then(res => res.json())
+            .then(data => {
+                console.log('📥 [AVATAR-DEBUG] 用户信息响应:', data);
+                const userDiv = document.getElementById('user-info');
+                
+                if (data.code === 10000) {
+                    const userData = data.data?.User || data.data?.user || data.data;
+                    userDiv.innerHTML = `
+                        <div class="success">✅ 用户信息获取成功</div>
+                        <p><strong>用户ID:</strong> ${userData?.user_id || 'N/A'}</p>
+                        <p><strong>用户名:</strong> ${userData?.user_name || 'N/A'}</p>
+                        <p><strong>头像URL:</strong> ${userData?.avatar_url || 'N/A'}</p>
+                        <p><strong>头像:</strong> ${userData?.avatar || 'N/A'}</p>
+                        <div class="avatar-test">
+                            <img src="${userData?.avatar_url || userData?.avatar || ''}" alt="用户头像">
+                        </div>
+                    `;
+                } else {
+                    userDiv.innerHTML = `<div class="error">❌ 获取失败: ${data.message}</div>`;
+                }
+            })
+            .catch(err => {
+                console.error('❌ [AVATAR-DEBUG] 获取用户信息失败:', err);
+                document.getElementById('user-info').innerHTML = `<div class="error">❌ 网络错误: ${err.message}</div>`;
+            });
+        }
+
+        function getToken() {
+            // 尝试从localStorage获取token
+            const token = localStorage.getItem('token') || localStorage.getItem('tokenX');
+            if (token) {
+                try {
+                    const parsed = JSON.parse(token);
+                    return parsed.token || parsed;
+                } catch {
+                    return token;
+                }
+            }
+            return null;
+        }
+
+        function checkToken() {
+            const token = getToken();
+            const tokenDiv = document.getElementById('token-info');
+            
+            if (token) {
+                console.log('✅ [AVATAR-DEBUG] 找到Token:', token.substring(0, 50) + '...');
+                tokenDiv.innerHTML = `
+                    <div class="success">✅ 找到Token</div>
+                    <p><strong>Token前缀:</strong> ${token.substring(0, 20)}...</p>
+                    <p><strong>Token长度:</strong> ${token.length}</p>
+                `;
+            } else {
+                console.warn('❌ [AVATAR-DEBUG] 未找到Token');
+                tokenDiv.innerHTML = '<div class="error">❌ 未找到Token</div>';
+            }
+        }
+
+        // 页面加载完成后初始化
+        window.onload = init;
+    </script>
+</body>
+</html>

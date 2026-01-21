@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cookie测试工具</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 50px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 10px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #4CAF50;
+            padding-bottom: 10px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 15px;
+            background: #f9f9f9;
+            border-left: 4px solid #4CAF50;
+        }
+        button {
+            background: #4CAF50;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            margin: 5px;
+            cursor: pointer;
+            border-radius: 5px;
+            font-size: 14px;
+        }
+        button:hover {
+            background: #45a049;
+        }
+        .result {
+            margin-top: 10px;
+            padding: 10px;
+            background: #e8f5e9;
+            border-radius: 5px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            word-break: break-all;
+        }
+        .error {
+            background: #ffebee;
+            color: #c62828;
+        }
+        .success {
+            background: #e8f5e9;
+            color: #2e7d32;
+        }
+        input {
+            width: 100%;
+            padding: 8px;
+            margin: 5px 0;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🍪 Cookie 功能测试工具</h1>
+        
+        <div class="test-section">
+            <h3>1. 测试基本Cookie设置</h3>
+            <button onclick="testBasicCookie()">测试设置Cookie</button>
+            <button onclick="testReadCookie()">测试读取Cookie</button>
+            <button onclick="testDeleteCookie()">测试删除Cookie</button>
+            <div id="basic-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>2. 测试Token保存（模拟登录）</h3>
+            <input type="text" id="token-input" placeholder="输入测试token (或使用自动生成的)">
+            <button onclick="testSaveToken()">保存Token</button>
+            <button onclick="testReadToken()">读取Token</button>
+            <div id="token-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>3. 查看所有Cookies</h3>
+            <button onclick="showAllCookies()">显示所有Cookies</button>
+            <button onclick="showLocalStorage()">显示localStorage</button>
+            <div id="all-cookies" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>4. 测试后端登录API</h3>
+            <input type="text" id="username" placeholder="用户名" value="testuser">
+            <input type="password" id="password" placeholder="密码" value="test123456">
+            <button onclick="testRealLogin()">测试真实登录</button>
+            <div id="login-result" class="result"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>5. 清除所有数据</h3>
+            <button onclick="clearAll()">清除所有Cookies和Storage</button>
+            <div id="clear-result" class="result"></div>
+        </div>
+    </div>
+
+    <script>
+        // 测试基本Cookie功能
+        function testBasicCookie() {
+            const result = document.getElementById('basic-result');
+            try {
+                // 设置Cookie
+                document.cookie = 'test_cookie=hello_world; path=/; max-age=3600';
+                result.className = 'result success';
+                result.textContent = '✅ Cookie设置成功！\n' + 
+                    '设置: test_cookie=hello_world\n' +
+                    '当前所有Cookie: ' + document.cookie;
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = '❌ Cookie设置失败: ' + e.message;
+            }
+        }
+
+        function testReadCookie() {
+            const result = document.getElementById('basic-result');
+            const cookies = document.cookie;
+            if (cookies.includes('test_cookie')) {
+                result.className = 'result success';
+                result.textContent = '✅ Cookie读取成功！\n找到: test_cookie\n所有Cookie: ' + cookies;
+            } else {
+                result.className = 'result error';
+                result.textContent = '❌ 未找到test_cookie\n当前所有Cookie: ' + cookies;
+            }
+        }
+
+        function testDeleteCookie() {
+            const result = document.getElementById('basic-result');
+            document.cookie = 'test_cookie=; expires=Thu, 01 Jan 1970 00:00:00 UTC; path=/;';
+            result.className = 'result success';
+            result.textContent = '✅ Cookie删除完成\n当前所有Cookie: ' + document.cookie;
+        }
+
+        // 测试Token保存
+        function testSaveToken() {
+            const result = document.getElementById('token-result');
+            let token = document.getElementById('token-input').value;
+            
+            if (!token) {
+                token = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.test_token_' + Date.now();
+                document.getElementById('token-input').value = token;
+            }
+
+            try {
+                // 方式1: 直接使用document.cookie
+                const expires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toUTCString();
+                document.cookie = `token=${token}; expires=${expires}; path=/; SameSite=Lax`;
+                
+                // 方式2: localStorage备份
+                localStorage.setItem('token', token);
+                
+                result.className = 'result success';
+                result.textContent = '✅ Token保存成功！\n' +
+                    'Cookie方式: ' + (document.cookie.includes('token=') ? '✅ 成功' : '❌ 失败') + '\n' +
+                    'localStorage: ' + (localStorage.getItem('token') ? '✅ 成功' : '❌ 失败') + '\n' +
+                    '\n当前document.cookie: ' + document.cookie;
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = '❌ Token保存失败: ' + e.message;
+            }
+        }
+
+        function testReadToken() {
+            const result = document.getElementById('token-result');
+            const cookieToken = document.cookie.split(';').find(c => c.trim().startsWith('token='));
+            const localToken = localStorage.getItem('token');
+            
+            result.className = 'result';
+            result.textContent = '读取结果:\n' +
+                '从Cookie读取: ' + (cookieToken ? cookieToken.split('=')[1].substring(0, 50) + '...' : '❌ 无') + '\n' +
+                '从localStorage读取: ' + (localToken ? localToken.substring(0, 50) + '...' : '❌ 无') + '\n' +
+                '\n完整Cookie: ' + document.cookie;
+        }
+
+        // 显示所有数据
+        function showAllCookies() {
+            const result = document.getElementById('all-cookies');
+            const cookies = document.cookie;
+            
+            result.className = 'result';
+            result.textContent = '所有Cookies:\n' + 
+                (cookies || '(空)') + '\n\n' +
+                'Cookies数量: ' + (cookies ? cookies.split(';').length : 0);
+        }
+
+        function showLocalStorage() {
+            const result = document.getElementById('all-cookies');
+            const items = [];
+            
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const value = localStorage.getItem(key);
+                items.push(`${key}: ${value.substring(0, 50)}${value.length > 50 ? '...' : ''}`);
+            }
+            
+            result.className = 'result';
+            result.textContent = 'localStorage内容:\n' + 
+                (items.length ? items.join('\n') : '(空)') + '\n\n' +
+                '项目数量: ' + items.length;
+        }
+
+        // 测试真实登录
+        async function testRealLogin() {
+            const result = document.getElementById('login-result');
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            result.textContent = '⏳ 正在登录...';
+            
+            try {
+                const response = await fetch('http://localhost:8888/v1/user/login', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({ username, password })
+                });
+                
+                const data = await response.json();
+                
+                if (data.data && data.data.token) {
+                    // 保存token
+                    const token = data.data.token;
+                    const expires = new Date(Date.now() + 3 * 24 * 60 * 60 * 1000).toUTCString();
+                    document.cookie = `token=${token}; expires=${expires}; path=/; SameSite=Lax`;
+                    localStorage.setItem('token', token);
+                    
+                    result.className = 'result success';
+                    result.textContent = '✅ 登录成功！\n' +
+                        'Token: ' + token.substring(0, 50) + '...\n' +
+                        'Cookie保存: ' + (document.cookie.includes('token=') ? '✅ 成功' : '❌ 失败') + '\n' +
+                        'localStorage保存: ' + (localStorage.getItem('token') ? '✅ 成功' : '❌ 失败') + '\n' +
+                        '\n用户信息: ' + JSON.stringify(data.data.user, null, 2);
+                } else {
+                    result.className = 'result error';
+                    result.textContent = '❌ 登录失败\n' + 
+                        '错误信息: ' + (data.data?.base?.msg || data.message || '未知错误') + '\n' +
+                        '\n完整响应:\n' + JSON.stringify(data, null, 2);
+                }
+            } catch (e) {
+                result.className = 'result error';
+                result.textContent = '❌ 登录请求失败: ' + e.message;
+            }
+        }
+
+        // 清除所有数据
+        function clearAll() {
+            const result = document.getElementById('clear-result');
+            
+            // 清除所有Cookies
+            document.cookie.split(";").forEach(c => {
+                document.cookie = c.replace(/^ +/, "").replace(/=.*/, "=;expires=" + new Date().toUTCString() + ";path=/");
+            });
+            
+            // 清除localStorage
+            localStorage.clear();
+            
+            // 清除sessionStorage
+            sessionStorage.clear();
+            
+            result.className = 'result success';
+            result.textContent = '✅ 所有数据已清除！\n' +
+                'Cookies: ' + (document.cookie || '(空)') + '\n' +
+                'localStorage: ' + (localStorage.length === 0 ? '✅ 已清空' : '⚠️ 还有数据') + '\n' +
+                'sessionStorage: ' + (sessionStorage.length === 0 ? '✅ 已清空' : '⚠️ 还有数据');
+        }
+    </script>
+</body>
+</html>

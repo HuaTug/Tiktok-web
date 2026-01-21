@@ -114,11 +114,14 @@ export default {
               const moreData = Array.isArray(res.data) ? res.data : (res.data?.list || [])
               this.videoList = this.videoList.concat(moreData)
             }
-          }).catch(err => console.log('Push video second fetch failed'))
+          }).catch(err => {
+            console.log('Push video second fetch failed:', err)
+          })
         }
       }).catch(err => {
         console.log('Push video fetch failed:', err)
         this.loading = false
+        this.$message?.error?.('推荐视频加载失败，请检查网络连接或稍后重试')
       })
     },
     handleScroll(e) {
@@ -148,6 +151,7 @@ export default {
           }).catch(err => {
             console.log('Load more videos failed:', err)
             this.loadingIcon = false
+            this.loadingData = true // 重置加载状态
           })
         }
       }

@@ -9,8 +9,13 @@
       <!--      用户信息区域-->
       <div class="user-container" :style="{ backgroundImage: `url(${memberInfo.backImage})` }">
         <div v-viewer class="avatar-area">
-          <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar"/>
+          <!-- 调试用户头像显示 -->
+          <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar" @load="console.log('✅ [AVATAR] 头像加载成功:', user.avatar_url || user.avatar)" @error="console.log('❌ [AVATAR] 头像加载失败:', user.avatar_url || user.avatar)"/>
           <el-avatar v-else class="user-avatar pr" :icon="UserFilled"/>
+          <!-- 调试用户信息 -->
+          <div v-if="user" style="position: absolute; top: -30px; left: 0; background: rgba(0,0,0,0.8); color: white; font-size: 10px; padding: 2px; border-radius: 3px;">
+            调试: {{ user.avatar_url ? '有avatar_url' : '无avatar_url' }} | {{ user.avatar ? '有avatar' : '无avatar' }}
+          </div>
           <div class="image-dot dn-phone"></div>
         </div>
         <div class="user-info">
@@ -355,11 +360,20 @@ export default {
   },
   methods: {
     getUserInfo() {
+      console.log('🔍 [USER-INFO] 开始获取用户信息...')
       getInfo().then(res => {
+        console.log('📥 [USER-INFO] 获取到响应:', res)
         // Refactored-TikTok backend returns code 200 after conversion
         if (res.code === 200) {
           // Refactored-TikTok 后端返回的用户信息在 data.User 中
           const userData = res.data?.User || res.data?.user || res.data
+          console.log('👤 [USER-INFO] 解析后的用户数据:', userData)
+          console.log('🖼️ [USER-INFO] 头像信息:', {
+            avatar_url: userData?.avatar_url,
+            avatar: userData?.avatar,
+            avatar_url_type: typeof userData?.avatar_url,
+            avatar_type: typeof userData?.avatar
+          })
           this.user = userData
           this.memberInfo = userData.memberInfo || {}
           this.userForm = {...userData}

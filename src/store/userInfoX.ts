@@ -4,7 +4,7 @@ import {ref} from "vue";
 export const userInfoX = defineStore(
     "userInfo",
     () => {
-        let userInfo = ref("");
+        let userInfo = ref(null);
         const setUserInfo = (newUserInfo: any) => {
             userInfo.value = newUserInfo;
         };

@@ -210,7 +210,12 @@ export default {
 
           } else {
             this.loadingIcon = false
+            console.log('Video mypage error:', res)
           }
+        }).catch(err => {
+          console.log('Video mypage fetch failed:', err)
+          this.loadingIcon = false
+          this.loadingData = true // 重置状态以允许重试
         })
         setTimeout(() => {
           // 流控
