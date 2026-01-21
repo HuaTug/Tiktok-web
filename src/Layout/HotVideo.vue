@@ -162,16 +162,16 @@
 </template>
 
 <script>
-import {getVideoVOById, hotVideoPage, userLikeNums} from "@/api/video";
-import {Close, UserFilled} from "@element-plus/icons-vue";
-import {followAndFans} from "@/api/social.js";
-import {encodeData} from "@/utils/roydon.js";
-import {userInfoX} from "@/store/userInfoX";
-import {searchHotLoad} from "@/api/search.js";
+import { searchHotLoad } from "@/api/search.js";
+import { followAndFans } from "@/api/social.js";
+import { getVideoVOById, hotVideoPage, userLikeNums } from "@/api/video";
+import Loading from "@/components/Loading.vue";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import VideoDiscoverCard from "@/components/video/card/VideoDiscoverCard.vue";
 import VideoHotCard from "@/components/video/card/VideoHotCard.vue";
-import Loading from "@/components/Loading.vue";
+import { userInfoX } from "@/store/userInfoX";
+import { encodeData } from "@/utils/roydon.js";
+import { Close, UserFilled } from "@element-plus/icons-vue";
 
 export default {
   name: "HotVideo",
@@ -258,12 +258,27 @@ export default {
           this.hotVideoTotal = res.total || res.data?.total || 0
           this.loading = false
         }
+      }).catch(error => {
+        console.error('❌ [HotVideo] 获取热门视频失败:', error)
+        this.loading = false
+        
+        // 显示友好的错误提示，但使用空数组继续渲染
+        this.hotVideoList = []
+        this.hotVideoTotal = 0
+        
+        // 如果后端panic，建议用户稍后重试
+        if (error && error.message && error.message.includes('panic')) {
+          console.warn('⚠️ [HotVideo] 后端服务异常，前端已降级处理')
+        }
       })
       searchHotLoad(this.hotSearchPageDto).then(res => {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.hotTabShow[0].dataList = res.data || []
         }
+      }).catch(error => {
+        console.error('❌ [HotVideo] 获取热搜榜失败:', error)
+        this.hotTabShow[0].dataList = []
       })
     },
     //获取热搜榜分页查询
@@ -306,6 +321,15 @@ export default {
               }, 1000);
             } else {
               this.loadingIcon = false
+            }
+          }).catch(error => {
+            console.error('❌ [HotVideo] 滚动加载更多失败:', error)
+            this.loadingIcon = false
+            this.loadingData = true // 允许下次继续尝试
+            
+            // 如果是后端panic错误，提示用户稍后重试
+            if (error && error.message && error.message.includes('panic')) {
+              console.warn('⚠️ [HotVideo] 后端服务异常，滚动加载已失败，等待用户再次尝试')
             }
           })
         }

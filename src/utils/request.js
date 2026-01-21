@@ -65,7 +65,18 @@ instance.interceptors.response.use(res => {
     } else if (code !== 0 && code !== 200 && code !== 10000) {
         // 后端错误码不是 0、200 或 10000 时提示错误
         console.error('❌ [RESPONSE] 业务错误! code:', code, 'msg:', msg)
-        ElMessage.error(msg)
+        
+        // 特殊处理后端panic错误
+        let userMsg = msg
+        if (code === 10001 && msg && msg.includes('panic: [happened in biz handler')) {
+            console.error('⚠️ [RESPONSE] 检测到后端服务异常，原始错误:', msg)
+            userMsg = '视频服务暂时不可用，请稍后重试'
+        } else if (msg && msg.includes('runtime error: invalid memory address')) {
+            console.error('⚠️ [RESPONSE] 检测到后端空指针错误，原始错误:', msg)
+            userMsg = '系统内部错误，工程师正在紧急修复中'
+        }
+        
+        ElMessage.error(userMsg)
         return Promise.reject('error')
     } else {
         // 成功时统一将 code 转换为 200 以兼容前端判断逻辑
