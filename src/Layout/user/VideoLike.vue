@@ -111,16 +111,16 @@ export default {
       return items.map(item => {
         const videoId = item.video_id || item.VideoId || item.videoId
         
-        // 转换视频URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+        // 转换视频URL - 直接使用 MinIO 地址
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
         if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `/v2/stream/video?video_id=${videoId}`
+          videoUrl = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4`
         }
         
-        // 转换封面URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+        // 转换封面URL - 直接使用 MinIO 地址
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
         if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
-          coverImage = `/v2/stream/thumbnail?video_id=${videoId}`
+          coverImage = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4_thumb.jpg`
         }
         
         return {
