@@ -48,24 +48,39 @@ export default {
   methods: {
     // 将后端 snake_case 数据转换为前端需要的 camelCase 格式
     transformVideoData(video) {
-      // 修正视频和封面URL的端口（如果指向localhost:9000，改为9002）
+      // 获取原始 URL
       let videoUrl = video.video_url || video.videoUrl
       let coverImage = video.cover_url || video.coverImage
       let videoId = video.video_id || video.videoId || video.id
       let userAvatar = video.user_avatar || video.userAvatar || video.avatar
       
-      if (videoUrl && videoUrl.includes('localhost:9000')) {
-        videoUrl = videoUrl.replace('localhost:9000', 'localhost:9002')
-        console.log('🔧 [VIDEO] 修正视频URL端口: 9000 -> 9002')
+      // Helper function to convert MinIO URL to relative path for vite proxy
+      const convertToProxyPath = (url) => {
+        if (!url) return url
+        try {
+          // Handle URLs like http://localhost:9002/video/xxx or http://localhost:9002/picture/xxx
+          // Convert to relative path like /video/xxx or /picture/xxx for vite proxy
+          const urlObj = new URL(url)
+          if (urlObj.hostname === 'localhost' && (urlObj.port === '9002' || urlObj.port === '9000' || urlObj.port === '9091')) {
+            // Return relative path for proxy
+            console.log('🔄 [VIDEO] 转换URL为代理路径:', url, '->', urlObj.pathname)
+            return urlObj.pathname
+          }
+        } catch (e) {
+          // If URL parsing fails, try simple string replacement
+          const match = url.match(/http:\/\/localhost:\d+(.+)/)
+          if (match) {
+            console.log('🔄 [VIDEO] 转换URL为代理路径(fallback):', url, '->', match[1])
+            return match[1]
+          }
+        }
+        return url
       }
-      if (coverImage && coverImage.includes('localhost:9000')) {
-        coverImage = coverImage.replace('localhost:9000', 'localhost:9002')
-        console.log('🔧 [VIDEO] 修正封面URL端口: 9000 -> 9002')
-      }
-      if (userAvatar && userAvatar.includes('localhost:9000')) {
-        userAvatar = userAvatar.replace('localhost:9000', 'localhost:9002')
-        console.log('🔧 [VIDEO] 修正头像URL端口: 9000 -> 9002')
-      }
+      
+      // Convert URLs to proxy paths
+      videoUrl = convertToProxyPath(videoUrl)
+      coverImage = convertToProxyPath(coverImage)
+      userAvatar = convertToProxyPath(userAvatar)
       
       console.log('📦 [VIDEO] 转换视频数据:', {
         videoId,
