@@ -17,9 +17,9 @@
 </template>
 
 <script>
+import { recommendVideoFeed } from "@/api/recommend";
+import { videoFeed } from "@/api/video";
 import VideoPlayerCarousel from "@/components/video/VideoPlayerCarousel.vue";
-import {videoFeed} from "@/api/video"
-import {recommendVideoFeed} from "@/api/recommend"
 import VideoPlayerSwiper from "@/components/video/VideoPlayerSwiper.vue";
 
 export default {
@@ -48,11 +48,31 @@ export default {
   methods: {
     // 将后端 snake_case 数据转换为前端需要的 camelCase 格式
     transformVideoData(video) {
+      const videoId = video.video_id || video.videoId
+      
+      // 转换视频URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+      let videoUrl = video.video_url || video.videoUrl
+      if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+        videoUrl = `/v2/stream/video?video_id=${videoId}`
+      }
+      
+      // 转换封面URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+      let coverImage = video.cover_url || video.coverImage
+      if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
+        coverImage = `/v2/stream/thumbnail?video_id=${videoId}`
+      }
+      
+      // 转换头像URL：如果包含localhost:9002或tiktok-avatarurl，使用代理接口
+      let userAvatar = video.avatar_url || video.userAvatar || ''
+      if (userAvatar && (userAvatar.includes('localhost:9002') || userAvatar.includes('tiktok-avatarurl'))) {
+        userAvatar = `/v2/stream/thumbnail?video_id=${videoId}&size=small` // 使用缩略图代理，但需要头像专用接口
+      }
+      
       return {
-        videoId: video.video_id || video.videoId,
+        videoId: videoId,
         userId: video.user_id || video.userId,
-        videoUrl: video.video_url || video.videoUrl,
-        coverImage: video.cover_url || video.coverImage,
+        videoUrl: videoUrl,
+        coverImage: coverImage,
         videoTitle: video.title || video.videoTitle,
         description: video.description,
         likeNum: video.likes_count || video.likeNum || 0,
@@ -60,7 +80,7 @@ export default {
         shareNum: video.share_count || video.shareNum || 0,
         createTime: video.created_at || video.createTime,
         userNickName: video.user_name || video.userNickName || '未知用户',
-        userAvatar: video.avatar_url || video.userAvatar || '',
+        userAvatar: userAvatar,
         publishType: '0', // 默认为视频类型
         weatherLike: false,
         weatherFollow: false,

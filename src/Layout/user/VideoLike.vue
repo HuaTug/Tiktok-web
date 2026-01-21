@@ -47,11 +47,10 @@
 </template>
 
 <script>
-import {videoLikePage} from "@/api/behave.js"
+import { videoLikePage } from "@/api/behave.js";
 import VideoCard from "@/components/video/VideoCard.vue";
 import VideoWaterfall from "@/components/video/VideoWaterfall.vue";
-import {Close} from "@element-plus/icons-vue";
-import {videoMypage} from "@/api/video.js";
+import { Close } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoLike",
@@ -109,18 +108,34 @@ export default {
     // 格式化视频列表，将后端数据格式转换为前端组件需要的格式
     formatVideoList(items) {
       if (!Array.isArray(items)) return []
-      return items.map(item => ({
-        videoId: item.video_id || item.VideoId || item.videoId,
-        videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
-        videoUrl: item.video_url || item.VideoUrl || item.videoUrl,
-        coverUrl: item.cover_url || item.CoverUrl || item.coverUrl,
-        userId: item.user_id || item.UserId || item.userId,
-        userName: item.user_name || item.UserName || item.userName,
-        description: item.description || item.Description || '',
-        likeCount: item.like_count || item.LikeCount || item.likeCount || 0,
-        commentCount: item.comment_count || item.CommentCount || item.commentCount || 0,
-        ...item
-      }))
+      return items.map(item => {
+        const videoId = item.video_id || item.VideoId || item.videoId
+        
+        // 转换视频URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+        let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
+        if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+          videoUrl = `/v2/stream/video?video_id=${videoId}`
+        }
+        
+        // 转换封面URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
+        let coverUrl = item.cover_url || item.CoverUrl || item.coverUrl
+        if (coverUrl && (coverUrl.includes('localhost:9002') || coverUrl.includes('tiktok-user-content'))) {
+          coverUrl = `/v2/stream/thumbnail?video_id=${videoId}`
+        }
+        
+        return {
+          videoId: videoId,
+          videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+          videoUrl: videoUrl,
+          coverUrl: coverUrl,
+          userId: item.user_id || item.UserId || item.userId,
+          userName: item.user_name || item.UserName || item.userName,
+          description: item.description || item.Description || '',
+          likeCount: item.like_count || item.LikeCount || item.likeCount || 0,
+          commentCount: item.comment_count || item.CommentCount || item.commentCount || 0,
+          ...item
+        }
+      })
     },
     handleVideoClick(video) {
       // this.video = video
