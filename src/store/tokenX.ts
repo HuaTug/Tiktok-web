@@ -18,6 +18,9 @@ export const tokenX = defineStore(
         };
     },
     {
-        persist: true,
+        persist: {
+            key: 'tokenX',  // 使用不同的key避免与auth.js中的'token'冲突
+            storage: localStorage,
+        }
     }
 );

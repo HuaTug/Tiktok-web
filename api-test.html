@@ -1,0 +1,391 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>TikTok API 测试工具</title>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 10px 40px rgba(0,0,0,0.15);
+            overflow: hidden;
+        }
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 30px;
+            text-align: center;
+        }
+        .header h1 { margin-bottom: 10px; }
+        .header p { opacity: 0.9; }
+        .content {
+            padding: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+        }
+        .section-title {
+            font-size: 18px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #667eea;
+        }
+        .token-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 14px;
+            transition: border-color 0.3s;
+        }
+        .token-input:focus {
+            outline: none;
+            border-color: #667eea;
+        }
+        .btn-group {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 10px;
+            margin-top: 15px;
+        }
+        .btn {
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 500;
+            transition: all 0.3s;
+            flex: 1;
+            min-width: 120px;
+        }
+        .btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        }
+        .btn-primary {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+        }
+        .btn-success { background: #28a745; color: white; }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-warning { background: #ffc107; color: #333; }
+        .result {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result pre {
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            font-size: 13px;
+            line-height: 1.6;
+        }
+        .status {
+            display: inline-block;
+            padding: 5px 10px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+            margin-right: 10px;
+        }
+        .status-success { background: #d4edda; color: #155724; }
+        .status-error { background: #f8d7da; color: #721c24; }
+        .status-pending { background: #fff3cd; color: #856404; }
+        .grid-2 {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        .api-card {
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            border: 2px solid #e0e0e0;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        .api-card:hover {
+            border-color: #667eea;
+            transform: translateY(-2px);
+        }
+        .api-card h4 {
+            color: #667eea;
+            margin-bottom: 5px;
+        }
+        .api-card p {
+            font-size: 13px;
+            color: #666;
+            margin: 5px 0;
+        }
+        .log-entry {
+            padding: 10px;
+            margin: 5px 0;
+            border-left: 3px solid #667eea;
+            background: white;
+            border-radius: 4px;
+        }
+        .log-time {
+            font-size: 11px;
+            color: #999;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🚀 TikTok API 测试工具</h1>
+            <p>测试前后端API连接状态</p>
+        </div>
+        
+        <div class="content">
+            <!-- Token设置 -->
+            <div class="section">
+                <div class="section-title">🔑 认证Token</div>
+                <input type="text" 
+                       class="token-input" 
+                       id="tokenInput" 
+                       placeholder="输入你的Access Token (可选,测试不需要认证的接口可留空)"
+                       value="">
+                <div class="btn-group">
+                    <button class="btn btn-primary" onclick="loginAndGetToken()">一键登录获取Token</button>
+                    <button class="btn btn-info" onclick="loadTokenFromStorage()">从存储加载Token</button>
+                    <button class="btn btn-warning" onclick="clearToken()">清除Token</button>
+                </div>
+            </div>
+
+            <!-- 快速测试 -->
+            <div class="section">
+                <div class="section-title">⚡ 快速测试</div>
+                <div class="btn-group">
+                    <button class="btn btn-success" onclick="testAll()">测试所有接口</button>
+                    <button class="btn btn-primary" onclick="testAuth()">测试认证接口</button>
+                    <button class="btn btn-info" onclick="testVideo()">测试视频接口</button>
+                    <button class="btn btn-warning" onclick="testInteraction()">测试互动接口</button>
+                </div>
+            </div>
+
+            <!-- API端点测试 -->
+            <div class="section">
+                <div class="section-title">📡 API端点测试</div>
+                <div class="grid-2" id="apiGrid"></div>
+            </div>
+
+            <!-- 测试结果 -->
+            <div class="section">
+                <div class="section-title">📊 测试结果</div>
+                <div class="result" id="result">
+                    <p style="color: #999;">点击上方按钮开始测试...</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        const API_BASE = 'http://localhost:8888';
+        
+        const API_ENDPOINTS = [
+            { name: '视频流', method: 'GET', url: '/v2/video/feed', auth: true },
+            { name: '热门视频', method: 'GET', url: '/v2/popular/', auth: false },
+            { name: '推荐视频', method: 'GET', url: '/v2/recommend/video', auth: true },
+            { name: '用户信息', method: 'GET', url: '/v1/user/me', auth: true },
+            { name: '评论列表', method: 'GET', url: '/v1/comment/list?video_id=1', auth: false },
+            { name: '关注列表', method: 'GET', url: '/v1/following/list', auth: true },
+            { name: '粉丝列表', method: 'GET', url: '/v1/follower/list', auth: true },
+            { name: '收藏夹列表', method: 'GET', url: '/v2/favorite/list', auth: true },
+            { name: '点赞列表', method: 'GET', url: '/v1/action/list', auth: true },
+            { name: '通知列表', method: 'GET', url: '/v1/notifications', auth: true },
+        ];
+
+        // 初始化API卡片
+        function initAPICards() {
+            const grid = document.getElementById('apiGrid');
+            grid.innerHTML = API_ENDPOINTS.map((api, index) => `
+                <div class="api-card" onclick="testSingleAPI(${index})">
+                    <h4>${api.name}</h4>
+                    <p><strong>方法:</strong> ${api.method}</p>
+                    <p><strong>路径:</strong> ${api.url}</p>
+                    <p><strong>认证:</strong> ${api.auth ? '✅ 需要' : '❌ 不需要'}</p>
+                </div>
+            `).join('');
+        }
+
+        // 日志输出
+        function log(message, type = 'info') {
+            const result = document.getElementById('result');
+            const time = new Date().toLocaleTimeString();
+            const statusClass = type === 'success' ? 'status-success' : 
+                              type === 'error' ? 'status-error' : 'status-pending';
+            
+            const entry = document.createElement('div');
+            entry.className = 'log-entry';
+            entry.innerHTML = `
+                <span class="status ${statusClass}">${type.toUpperCase()}</span>
+                <span class="log-time">${time}</span>
+                <pre>${message}</pre>
+            `;
+            
+            result.insertBefore(entry, result.firstChild);
+        }
+
+        // 获取Token
+        function getToken() {
+            return document.getElementById('tokenInput').value.trim();
+        }
+
+        // 从存储加载Token
+        function loadTokenFromStorage() {
+            const token = localStorage.getItem('token');
+            const tokenX = localStorage.getItem('tokenX');
+            
+            if (tokenX) {
+                try {
+                    const parsed = JSON.parse(tokenX);
+                    const actualToken = parsed.token || parsed;
+                    document.getElementById('tokenInput').value = actualToken;
+                    log('✅ 从 localStorage(tokenX) 加载Token成功', 'success');
+                    return;
+                } catch (e) {
+                    document.getElementById('tokenInput').value = tokenX;
+                    log('✅ 从 localStorage(tokenX) 加载Token成功', 'success');
+                    return;
+                }
+            }
+            
+            if (token) {
+                try {
+                    const parsed = JSON.parse(token);
+                    const actualToken = parsed.token || parsed;
+                    document.getElementById('tokenInput').value = actualToken;
+                    log('✅ 从 localStorage(token) 加载Token成功', 'success');
+                } catch (e) {
+                    document.getElementById('tokenInput').value = token;
+                    log('✅ 从 localStorage(token) 加载Token成功', 'success');
+                }
+            } else {
+                log('❌ 未找到存储的Token', 'error');
+            }
+        }
+
+        // 清除Token
+        function clearToken() {
+            document.getElementById('tokenInput').value = '';
+            log('🗑️ Token已清除', 'info');
+        }
+
+        // 登录获取Token
+        async function loginAndGetToken() {
+            log('🔐 正在登录...', 'pending');
+            try {
+                const response = await fetch(`${API_BASE}/v1/user/login`, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        user_name: 'testuser',
+                        password: 'test123456'
+                    })
+                });
+                
+                const data = await response.json();
+                log(`登录响应: ${JSON.stringify(data, null, 2)}`, 'info');
+                
+                if (data.data && data.data.token) {
+                    document.getElementById('tokenInput').value = data.data.token;
+                    log('✅ 登录成功,Token已自动填入', 'success');
+                } else {
+                    log('❌ 登录失败: ' + (data.message || '未知错误'), 'error');
+                }
+            } catch (error) {
+                log('❌ 登录请求失败: ' + error.message, 'error');
+            }
+        }
+
+        // 测试单个API
+        async function testSingleAPI(index) {
+            const api = API_ENDPOINTS[index];
+            log(`📡 测试: ${api.name} [${api.method} ${api.url}]`, 'pending');
+            
+            const token = getToken();
+            if (api.auth && !token) {
+                log('❌ 此接口需要认证,请先设置Token', 'error');
+                return;
+            }
+            
+            try {
+                const headers = { 'Content-Type': 'application/json' };
+                if (token) {
+                    headers['Access-Token'] = token;
+                }
+                
+                const response = await fetch(`${API_BASE}${api.url}`, {
+                    method: api.method,
+                    headers: headers
+                });
+                
+                const data = await response.json();
+                
+                if (response.ok || data.code === 0 || data.code === 10000 || data.code === 200) {
+                    log(`✅ ${api.name} 成功\n响应: ${JSON.stringify(data, null, 2)}`, 'success');
+                } else {
+                    log(`⚠️ ${api.name} 返回错误\n状态: ${response.status}\n响应: ${JSON.stringify(data, null, 2)}`, 'error');
+                }
+            } catch (error) {
+                log(`❌ ${api.name} 请求失败: ${error.message}`, 'error');
+            }
+        }
+
+        // 测试所有接口
+        async function testAll() {
+            log('🚀 开始测试所有接口...', 'pending');
+            for (let i = 0; i < API_ENDPOINTS.length; i++) {
+                await testSingleAPI(i);
+                await new Promise(resolve => setTimeout(resolve, 500));
+            }
+            log('✅ 所有接口测试完成', 'success');
+        }
+
+        // 测试认证接口
+        async function testAuth() {
+            await loginAndGetToken();
+            await testSingleAPI(3); // 用户信息
+        }
+
+        // 测试视频接口
+        async function testVideo() {
+            await testSingleAPI(0); // 视频流
+            await testSingleAPI(1); // 热门视频
+            await testSingleAPI(2); // 推荐视频
+        }
+
+        // 测试互动接口
+        async function testInteraction() {
+            await testSingleAPI(4); // 评论列表
+            await testSingleAPI(8); // 点赞列表
+        }
+
+        // 页面加载时初始化
+        window.onload = () => {
+            initAPICards();
+            loadTokenFromStorage();
+        };
+    </script>
+</body>
+</html>

@@ -48,11 +48,24 @@ export default {
   methods: {
     // 将后端 snake_case 数据转换为前端需要的 camelCase 格式
     transformVideoData(video) {
+      // 修正视频和封面URL的端口（如果指向localhost:9000，改为9002）
+      let videoUrl = video.video_url || video.videoUrl
+      let coverImage = video.cover_url || video.coverImage
+      
+      if (videoUrl && videoUrl.includes('localhost:9000')) {
+        videoUrl = videoUrl.replace('localhost:9000', 'localhost:9002')
+        console.log('🔧 [VIDEO] 修正视频URL端口: 9000 -> 9002')
+      }
+      if (coverImage && coverImage.includes('localhost:9000')) {
+        coverImage = coverImage.replace('localhost:9000', 'localhost:9002')
+        console.log('🔧 [VIDEO] 修正封面URL端口: 9000 -> 9002')
+      }
+      
       return {
         videoId: video.video_id || video.videoId,
         userId: video.user_id || video.userId,
-        videoUrl: video.video_url || video.videoUrl,
-        coverImage: video.cover_url || video.coverImage,
+        videoUrl: videoUrl,
+        coverImage: coverImage,
         videoTitle: video.title || video.videoTitle,
         description: video.description,
         likeNum: video.likes_count || video.likeNum || 0,
@@ -69,26 +82,38 @@ export default {
       }
     },
     getVideoFeed() {
+      console.log('📹 [VIDEO] 开始获取视频feed...')
+      console.log('📹 [VIDEO] publishTime:', this.publishTime)
       this.loading = true
       videoFeed(this.publishTime).then(res => {
+        console.log('📥 [VIDEO] 收到视频feed响应:', res)
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
           // 后端返回格式: data.video_list
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
+          console.log('📹 [VIDEO] 原始视频数据:', rawData.length, '个视频')
           // 转换数据格式
           const data = rawData.map(item => this.transformVideoData(item))
+          console.log('📹 [VIDEO] 转换后的视频数据:', data.length, '个视频')
           this.videoList = this.videoList.concat(data)
+          console.log('📹 [VIDEO] 当前总视频数:', this.videoList.length)
           this.loading = false
           if (this.videoList.length > 0) {
             this.publishTime = this.videoList[this.videoList.length - 1].createTime || this.videoList[this.videoList.length - 1].create_time
           }
           this.showVideoPlayer = true
+          console.log('✅ [VIDEO] 视频feed加载成功')
         } else {
+          console.error('❌ [VIDEO] 视频feed响应错误')
+          console.error('  - res.code:', res.code)
+          console.error('  - res.data:', res.data)
           this.$message.error(res.data?.base?.msg || res.message || '获取视频失败')
         }
       }).catch(err => {
-        console.log('Video feed fetch failed:', err)
+        console.error('❌ [VIDEO] 视频feed请求异常:', err)
         this.loading = false
+        // 显示更友好的错误信息
+        this.$message?.error?.('视频加载失败，请检查网络连接或稍后重试')
       })
     },
     getRecommendVideoFeed() {
@@ -110,6 +135,7 @@ export default {
       }).catch(err => {
         console.log('Recommend video feed fetch failed:', err)
         this.loading = false
+        this.$message?.error?.('推荐视频加载失败，请检查网络连接')
       })
     },
     autoPlayVideo(val) {
@@ -138,6 +164,7 @@ export default {
       }).catch(err => {
         console.log('Reload video feed failed:', err)
         this.loading = false
+        this.$message?.error?.('视频刷新失败，请稍后重试')
       })
       // });
     }

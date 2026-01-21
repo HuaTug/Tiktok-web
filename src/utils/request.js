@@ -11,28 +11,41 @@ const instance = axios.create({
 // 添加请求拦截器
 instance.interceptors.request.use(config => {
     const token = getToken()
+    console.log('🌐 [REQUEST] 发起请求:', config.url)
+    console.log('🔑 [REQUEST] 从Cookies读取token:', token ? `${token.substring(0, 30)}...` : '❌ 无token')
     if (token) {
         // Refactored-TikTok 后端期望 Access-Token header
         config.headers['Access-Token'] = token
+        console.log('✅ [REQUEST] 已添加 Access-Token header')
+    } else {
+        console.warn('⚠️ [REQUEST] 未找到token，将发送无认证请求')
     }
     return config;
 }, error => {
+    console.error('❌ [REQUEST] 请求拦截器错误:', error)
     return Promise.reject(error);
 });
 let loginDialog = true
 // 添加响应拦截器
 instance.interceptors.response.use(res => {
+    console.log('📥 [RESPONSE] 收到响应:', res.config.url)
+    console.log('📥 [RESPONSE] 原始code:', res.data.code)
+    
     // 未设置状态码则默认成功状态
     // Refactored-TikTok 后端成功码是 10000，也兼容 0 和 200
     const code = res.data.code;
     // 获取错误信息
     const msg = errorCode[code] || res.data.message || res.data.msg || errorCode['default']
+    
     // 二进制数据则直接返回
     if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
         return res.data
     }
+    
     // 未认证
-    if (code === 401) {
+    if (code === 401 || code === 10013) {
+        console.error('❌ [RESPONSE] 未认证! code:', code)
+        console.error('❌ [RESPONSE] 错误信息:', msg)
         // 展示重新登陆逻辑
         if (loginDialog) {
             loginDialog = false
@@ -46,22 +59,35 @@ instance.interceptors.response.use(res => {
             return Promise.reject('请重新登录。')
         }
     } else if (code === 500) {
+        console.error('❌ [RESPONSE] 服务器错误! code:', code, 'msg:', msg)
         ElMessage.error(msg)
         return Promise.reject(new Error(msg))
     } else if (code !== 0 && code !== 200 && code !== 10000) {
         // 后端错误码不是 0、200 或 10000 时提示错误
+        console.error('❌ [RESPONSE] 业务错误! code:', code, 'msg:', msg)
         ElMessage.error(msg)
         return Promise.reject('error')
     } else {
         // 成功时统一将 code 转换为 200 以兼容前端判断逻辑
         // Refactored-TikTok 后端返回 10000 表示成功
+        console.log('✅ [RESPONSE] 请求成功! code:', code)
         const result = { ...res.data }
         if (result.code === 0 || result.code === 10000) {
+            console.log('🔄 [RESPONSE] 将code从', result.code, '转换为 200')
             result.code = 200  // 统一转换为 200，兼容前端现有判断
         }
         return result
     }
 }, function (error) {
+    console.error('🌐 [RESPONSE] 网络错误:', error)
+    
+    // 网络连接错误处理
+    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+        ElMessage.error('请求超时，请检查网络连接')
+    } else if (error.message.includes('Network Error') || error.message.includes('conn closed')) {
+        ElMessage.error('网络连接失败，请稍后重试')
+    }
+    
     return Promise.reject(error);
 });
 
