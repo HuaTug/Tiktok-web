@@ -51,6 +51,8 @@ export default {
       // 修正视频和封面URL的端口（如果指向localhost:9000，改为9002）
       let videoUrl = video.video_url || video.videoUrl
       let coverImage = video.cover_url || video.coverImage
+      let videoId = video.video_id || video.videoId || video.id
+      let userAvatar = video.user_avatar || video.userAvatar || video.avatar
       
       if (videoUrl && videoUrl.includes('localhost:9000')) {
         videoUrl = videoUrl.replace('localhost:9000', 'localhost:9002')
@@ -60,6 +62,17 @@ export default {
         coverImage = coverImage.replace('localhost:9000', 'localhost:9002')
         console.log('🔧 [VIDEO] 修正封面URL端口: 9000 -> 9002')
       }
+      if (userAvatar && userAvatar.includes('localhost:9000')) {
+        userAvatar = userAvatar.replace('localhost:9000', 'localhost:9002')
+        console.log('🔧 [VIDEO] 修正头像URL端口: 9000 -> 9002')
+      }
+      
+      console.log('📦 [VIDEO] 转换视频数据:', {
+        videoId,
+        videoUrl,
+        coverImage,
+        title: video.title || video.videoTitle
+      })
       
       return {
         videoId: videoId,

@@ -55,6 +55,7 @@
 import ImagePlayer from "@/components/video/ImagePlayer.vue";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import VideoPlayer from "@/components/video/VideoPlayer.vue";
+import { smartDateFormat } from "@/utils/roydon.js";
 
 export default {
   name: "VideoHotCard",

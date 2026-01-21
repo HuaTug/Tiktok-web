@@ -118,21 +118,23 @@ export default {
         }
         
         // 转换封面URL：如果包含localhost:9002或tiktok-user-content，使用代理接口
-        let coverUrl = item.cover_url || item.CoverUrl || item.coverUrl
-        if (coverUrl && (coverUrl.includes('localhost:9002') || coverUrl.includes('tiktok-user-content'))) {
-          coverUrl = `/v2/stream/thumbnail?video_id=${videoId}`
+        let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
+        if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
+          coverImage = `/v2/stream/thumbnail?video_id=${videoId}`
         }
         
         return {
           videoId: videoId,
           videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
           videoUrl: videoUrl,
-          coverUrl: coverUrl,
+          coverImage: coverImage,  // VideoCard.vue expects coverImage
           userId: item.user_id || item.UserId || item.userId,
-          userName: item.user_name || item.UserName || item.userName,
+          userNickName: item.user_name || item.UserName || item.userName,  // VideoCard.vue expects userNickName
           description: item.description || item.Description || '',
-          likeCount: item.like_count || item.LikeCount || item.likeCount || 0,
-          commentCount: item.comment_count || item.CommentCount || item.commentCount || 0,
+          likeNum: item.like_count || item.LikeCount || item.likeCount || 0,  // VideoCard.vue expects likeNum
+          commentNum: item.comment_count || item.CommentCount || item.commentCount || 0,
+          createTime: item.created_at || item.CreatedAt || item.createTime,  // VideoCard.vue expects createTime
+          publishType: item.publish_type || item.PublishType || item.publishType || '0',
           ...item
         }
       })

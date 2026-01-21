@@ -25,11 +25,11 @@
 </template>
 
 <script>
-import {personVideoLikePage, videoLikePage} from "@/api/behave.js"
-import {Close} from "@element-plus/icons-vue";
+import { personVideoLikePage } from "@/api/behave.js";
 import VideoCard from "@/components/video/VideoCard.vue";
 import VideoWaterfall from "@/components/video/VideoWaterfall.vue";
-import {decodeData} from "@/utils/roydon.js";
+import { decodeData } from "@/utils/roydon.js";
+import { Close } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoLike",
@@ -57,13 +57,48 @@ export default {
     this.initVideoList()
   },
   methods: {
+    // 格式化视频列表，将后端数据格式转换为前端组件需要的格式
+    formatVideoList(items) {
+      if (!Array.isArray(items)) return []
+      return items.map(item => {
+        const videoId = item.video_id || item.VideoId || item.videoId
+        
+        // 转换视频URL
+        let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
+        if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+          videoUrl = `/v2/stream/video?video_id=${videoId}`
+        }
+        
+        // 转换封面URL
+        let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
+        if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
+          coverImage = `/v2/stream/thumbnail?video_id=${videoId}`
+        }
+        
+        return {
+          videoId: videoId,
+          videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+          videoUrl: videoUrl,
+          coverImage: coverImage,
+          userId: item.user_id || item.UserId || item.userId,
+          userNickName: item.user_name || item.UserName || item.userName,
+          description: item.description || item.Description || '',
+          likeNum: item.like_count || item.LikeCount || item.likeCount || item.likeNum || 0,
+          commentNum: item.comment_count || item.CommentCount || item.commentCount || item.commentNum || 0,
+          createTime: item.created_at || item.CreatedAt || item.createTime,
+          publishType: item.publish_type || item.PublishType || item.publishType || '0',
+          ...item
+        }
+      })
+    },
     initVideoList() {
       // console.log(this.videoQueryParams)
       personVideoLikePage(this.videoQueryParams).then(res => {
         // console.log(res)
-        if (res.code === 200) {
-          this.likeVideoList = res.rows
-          this.likeVideoTotal = res.total
+        if (res.code === 200 || res.code === 10000) {
+          const items = res.data?.Items || res.data?.items || res.rows || []
+          this.likeVideoList = this.formatVideoList(items)
+          this.likeVideoTotal = items.length || res.total || 0
         }
       })
     },
