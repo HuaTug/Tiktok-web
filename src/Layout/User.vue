@@ -12,10 +12,7 @@
           <!-- 调试用户头像显示 -->
           <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar" @load="console.log('✅ [AVATAR] 头像加载成功:', user.avatar_url || user.avatar)" @error="console.log('❌ [AVATAR] 头像加载失败:', user.avatar_url || user.avatar)"/>
           <el-avatar v-else class="user-avatar pr" :icon="UserFilled"/>
-          <!-- 调试用户信息 -->
-          <div v-if="user" style="position: absolute; top: -30px; left: 0; background: rgba(0,0,0,0.8); color: white; font-size: 10px; padding: 2px; border-radius: 3px;">
-            调试: {{ user.avatar_url ? '有avatar_url' : '无avatar_url' }} | {{ user.avatar ? '有avatar' : '无avatar' }}
-          </div>
+
           <div class="image-dot dn-phone"></div>
         </div>
         <div class="user-info">
