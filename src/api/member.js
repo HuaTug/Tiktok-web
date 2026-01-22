@@ -87,12 +87,28 @@ export function updateUserProfile(data) {
     })
 }
 
-//修改用户头像
-export function avatar(file) {
-    return request.post('/v1/user/update', {
-        data: {
-            file
+// 获取头像上传预签名URL
+export function getAvatarUploadUrl(fileExtension) {
+    return request.post('/v1/user/avatar/upload-url', {
+        file_extension: fileExtension
+    })
+}
+
+// 上传头像到OSS
+export function uploadAvatarToOss(uploadUrl, file) {
+    return fetch(uploadUrl, {
+        method: 'PUT',
+        body: file,
+        headers: {
+            'Content-Type': file.type
         }
+    })
+}
+
+// 更新用户头像
+export function updateAvatar(avatarUrl) {
+    return request.post('/v1/user/avatar/update', {
+        avatar_url: avatarUrl
     })
 }
 

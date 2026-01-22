@@ -134,11 +134,9 @@
         <div class="edit-avatar">
           <el-tooltip content="上传头像" placement="top" effect="customized">
             <el-upload class="avatar-uploader"
-                       :action="avatarUploadUrl"
-                       :headers="headers"
                        :show-file-list="false"
-                       :on-error="handleUploadAvatarError"
-                       :on-success="handleUploadAvatarSuccess">
+                       :before-upload="beforeAvatarUpload"
+                       :http-request="handleAvatarUpload">
               <img v-if="user.avatar||userForm.avatar" :src="userForm.avatar" class="avatar"/>
               <i v-else class="iconfont icon-camera avatar-uploader-icon"/>
             </el-upload>
@@ -196,15 +194,11 @@
       </template>
       <el-scrollbar>
         <div class="edit-background w100">
-          <el-tooltip content="上传背景图片" placement="top" effect="customized">
-            <el-upload class="background-uploader w100"
-                       :action="backImageUploadUrl"
-                       :headers="headers"
-                       :show-file-list="false"
-                       :on-success="handleUploadBackImageSuccess">
+          <el-tooltip content="背景图片上传功能暂未开放" placement="top" effect="customized">
+            <div class="background-preview w100" style="cursor: not-allowed;">
               <img v-if="memberInfoForm.backImage" :src="memberInfoForm.backImage" class="back-image"/>
-              <i v-else class="iconfont icon-camera avatar-uploader-icon"/>
-            </el-upload>
+              <div v-else class="back-image-placeholder">背景图片上传暂未开放</div>
+            </div>
           </el-tooltip>
         </div>
         <div class="edit-birthday">
@@ -289,15 +283,14 @@
 </template>
 
 <script>
-import {getInfo, updateMemberInfo, updateUserProfile} from "@/api/member.js";
-import {followAndFans} from "@/api/social.js";
-import {userLikeNums} from "@/api/video.js";
-import {Check, Close, QuestionFilled, School, Search, UserFilled} from "@element-plus/icons-vue";
+import { getAvatarUploadUrl, getInfo, updateAvatar, updateMemberInfo, updateUserProfile, uploadAvatarToOss } from "@/api/member.js";
+import { followAndFans } from "@/api/social.js";
+import { userLikeNums } from "@/api/video.js";
+import { userInfoX } from "@/store/userInfoX";
+import { Check, Close, QuestionFilled, School, Search, UserFilled } from "@element-plus/icons-vue";
 import {
   regionData,
 } from "element-china-area-data";
-import {userInfoX} from "@/store/userInfoX";
-import {getToken} from "@/utils/auth.js";
 
 export default {
   name: 'User',
@@ -326,11 +319,7 @@ export default {
       saveLogin: true,
       userForm: {},
       memberInfoForm: {},
-      avatarUploadUrl: import.meta.env.VITE_API_BASE_URL + "/member/api/v1/avatar",
-      backImageUploadUrl: import.meta.env.VITE_API_BASE_URL + "/member/api/v1/info/backImage/upload",
-      headers: {
-        Authorization: 'Bearer ' + getToken(),
-      },
+      // backImageUploadUrl: import.meta.env.VITE_API_BASE_URL + "/member/api/v1/info/backImage/upload", // 后端暂无此接口
       followNum: 0, // 关注数
       fansNum: 0, //粉丝数
       likeAllNum: 0, //获赞数
@@ -433,18 +422,52 @@ export default {
       this.editInfoDialogVisible = true
       this.selectedOptions = [this.memberInfoForm.province, this.memberInfoForm.city, this.memberInfoForm.region]
     },
-    //头像上传成功回调
-    handleUploadAvatarSuccess(res) {
-      // Refactored-TikTok backend uses code 0 for success
-      if (res.code === 0 || res.code === 200) {
-        this.userForm.avatar = res.data
-      } else {
-        this.$message.error(res.message || res.msg || '上传失败')
-      }
-    },
-    // 上传失败回调
-    handleUploadAvatarError(res) {
+    // 头像上传前的验证
+    beforeAvatarUpload(file) {
+      const isImage = file.type.startsWith('image/')
+      const isLt5M = file.size / 1024 / 1024 < 5
 
+      if (!isImage) {
+        this.$message.error('只能上传图片文件！')
+        return false
+      }
+      if (!isLt5M) {
+        this.$message.error('图片大小不能超过 5MB！')
+        return false
+      }
+      return true
+    },
+    // 自定义头像上传逻辑
+    async handleAvatarUpload(options) {
+      const { file } = options
+      try {
+        // 1. 获取文件扩展名
+        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+
+        // 2. 获取预签名上传URL
+        const uploadUrlRes = await getAvatarUploadUrl(fileExtension)
+        if (uploadUrlRes.code !== 200 && uploadUrlRes.code !== 0) {
+          this.$message.error(uploadUrlRes.message || uploadUrlRes.msg || '获取上传URL失败')
+          return
+        }
+
+        const { upload_url, access_url } = uploadUrlRes.data
+
+        // 3. 上传文件到OSS
+        await uploadAvatarToOss(upload_url, file)
+
+        // 4. 更新用户头像
+        const updateRes = await updateAvatar(access_url)
+        if (updateRes.code === 200 || updateRes.code === 0) {
+          this.userForm.avatar = access_url
+          this.$message.success('头像上传成功')
+        } else {
+          this.$message.error(updateRes.message || updateRes.msg || '更新头像失败')
+        }
+      } catch (error) {
+        console.error('Avatar upload error:', error)
+        this.$message.error('头像上传失败，请重试')
+      }
     },
     // 确认提交
     confirmUpdateProfile() {
@@ -473,15 +496,6 @@ export default {
       this.memberInfoForm.province = value[0]
       this.memberInfoForm.city = value[1]
       this.memberInfoForm.region = value[value.length - 1]
-    },
-    //头像上传成功回调
-    handleUploadBackImageSuccess(res) {
-      // Refactored-TikTok backend uses code 0 for success
-      if (res.code === 0 || res.code === 200) {
-        this.memberInfoForm.backImage = res.data
-      } else {
-        this.$message.error(res.message || res.msg || '上传失败')
-      }
     },
     //取消
     cancelUpdateInfo() {

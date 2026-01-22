@@ -17,6 +17,7 @@
 </template>
 
 <script>
+import { getPersonInfo } from "@/api/member.js";
 import { recommendVideoFeed } from "@/api/recommend";
 import { videoFeed } from "@/api/video";
 import VideoPlayerCarousel from "@/components/video/VideoPlayerCarousel.vue";
@@ -84,9 +85,11 @@ export default {
       
       console.log('📦 [VIDEO] 转换视频数据:', {
         videoId,
+        userId: video.user_id || video.userId,
         videoUrl,
         coverImage,
-        title: video.title || video.videoTitle
+        title: video.title || video.videoTitle,
+        userNickName: video.user_name || video.username || video.userNickName || '未知用户'
       })
       
       return {
@@ -100,7 +103,7 @@ export default {
         commentNum: video.comment_count || video.commentNum || 0,
         shareNum: video.share_count || video.shareNum || 0,
         createTime: video.created_at || video.createTime,
-        userNickName: video.user_name || video.userNickName || '未知用户',
+        userNickName: video.user_name || video.username || video.userNickName || '未知用户',
         userAvatar: userAvatar,
         publishType: '0', // 默认为视频类型
         weatherLike: false,
@@ -109,11 +112,60 @@ export default {
         category: video.category || ''
       }
     },
+    // 批量获取用户信息
+    async fetchUserInfoBatch(userIds) {
+      const uniqueUserIds = [...new Set(userIds)]
+      const userInfoMap = {}
+      
+      console.log('👤 [VIDEO] 批量获取用户信息:', uniqueUserIds.length, '个用户')
+      
+      for (const userId of uniqueUserIds) {
+        try {
+          const res = await this.getUserInfoById(userId)
+          if (res && (res.code === 200 || res.code === 0) && res.data) {
+            userInfoMap[userId] = {
+              userId: res.data.user_id || res.data.userId,
+              userName: res.data.user_name || res.data.userName,
+              avatarUrl: res.data.avatar_url || res.data.avatarUrl
+            }
+            console.log('✅ [VIDEO] 获取用户信息成功:', userId, userInfoMap[userId])
+          }
+        } catch (error) {
+          console.error('❌ [VIDEO] 获取用户信息失败:', userId, error)
+        }
+      }
+      
+      return userInfoMap
+    },
+    // 获取单个用户信息
+    getUserInfoById(userId) {
+      // 如果是当前登录用户，使用 getInfo
+      const loginUser = this.$store?.state?.userInfoX?.userInfo
+      if (loginUser && loginUser.userId == userId) {
+        return this.$store.dispatch('userInfoX/getInfo')
+      }
+      // 否则请求指定用户信息
+      return getPersonInfo(userId)
+    },
+    // 将用户信息补充到视频列表
+    enrichVideosWithUserInfo(videoList, userInfoMap) {
+      return videoList.map(video => {
+        const userInfo = userInfoMap[video.userId]
+        if (userInfo) {
+          return {
+            ...video,
+            userNickName: userInfo.userName || video.userNickName,
+            userAvatar: userInfo.avatarUrl || video.userAvatar
+          }
+        }
+        return video
+      })
+    },
     getVideoFeed() {
       console.log('📹 [VIDEO] 开始获取视频feed...')
       console.log('📹 [VIDEO] publishTime:', this.publishTime)
       this.loading = true
-      videoFeed(this.publishTime).then(res => {
+      videoFeed(this.publishTime).then(async res => {
         console.log('📥 [VIDEO] 收到视频feed响应:', res)
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
@@ -123,7 +175,19 @@ export default {
           // 转换数据格式
           const data = rawData.map(item => this.transformVideoData(item))
           console.log('📹 [VIDEO] 转换后的视频数据:', data.length, '个视频')
-          this.videoList = this.videoList.concat(data)
+          
+          // 收集所有用户ID
+          const userIds = data.map(video => video.userId).filter(id => id)
+          
+          // 批量获取用户信息
+          let enrichedData = data
+          if (userIds.length > 0) {
+            const userInfoMap = await this.fetchUserInfoBatch(userIds)
+            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
+            console.log('👤 [VIDEO] 补充用户信息后的视频数据:', enrichedData.length, '个视频')
+          }
+          
+          this.videoList = this.videoList.concat(enrichedData)
           console.log('📹 [VIDEO] 当前总视频数:', this.videoList.length)
           this.loading = false
           if (this.videoList.length > 0) {
@@ -146,7 +210,7 @@ export default {
     },
     getRecommendVideoFeed() {
       this.loading = true
-      recommendVideoFeed().then(res => {
+      recommendVideoFeed().then(async res => {
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
           var that = this;
@@ -154,7 +218,18 @@ export default {
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
           // 转换数据格式
           const data = rawData.map(item => this.transformVideoData(item))
-          that.videoList = that.videoList.concat(data)
+          
+          // 收集所有用户ID
+          const userIds = data.map(video => video.userId).filter(id => id)
+          
+          // 批量获取用户信息
+          let enrichedData = data
+          if (userIds.length > 0) {
+            const userInfoMap = await this.fetchUserInfoBatch(userIds)
+            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
+          }
+          
+          that.videoList = that.videoList.concat(enrichedData)
           this.loading = false
           this.showVideoPlayer = true
         } else {
@@ -176,14 +251,25 @@ export default {
       // this.$nextTick(() => {
       // this.showVideoPlayer = true;
       // this.getVideoFeed();
-      videoFeed(this.publishTime).then(res => {
+      videoFeed(this.publishTime).then(async res => {
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
           // 后端返回格式: data.video_list
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
           // 转换数据格式
           const data = rawData.map(item => this.transformVideoData(item))
-          this.videoList = data
+          
+          // 收集所有用户ID
+          const userIds = data.map(video => video.userId).filter(id => id)
+          
+          // 批量获取用户信息
+          let enrichedData = data
+          if (userIds.length > 0) {
+            const userInfoMap = await this.fetchUserInfoBatch(userIds)
+            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
+          }
+          
+          this.videoList = enrichedData
           this.loading = false
           this.showVideoPlayer = true
         } else {
