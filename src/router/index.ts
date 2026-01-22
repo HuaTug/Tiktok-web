@@ -20,6 +20,11 @@ const router = createRouter({
                     }
                 },
                 {
+                    path: "video", name: "video", component: () => import("@/Layout/Video.vue"), meta: {
+                        keepAlive: true
+                    }
+                },
+                {
                     path: "discover", name: "discover", component: () => import("@/Layout/Discover.vue"), meta: {
                         keepAlive: true
                     }

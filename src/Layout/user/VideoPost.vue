@@ -137,17 +137,18 @@ export default {
       if (!Array.isArray(items)) return []
       return items.map(item => {
         const videoId = item.video_id || item.VideoId || item.videoId
+        const userId = item.user_id || item.UserId || item.userId
         
-        // 转换视频URL - 直接使用 MinIO 地址
+        // 转换视频URL - 使用前端代理地址，解决跨域问题
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
-        if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4`
+        if (!videoUrl || (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+          videoUrl = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4`
         }
         
-        // 转换封面URL - 直接使用 MinIO 地址
+        // 转换封面URL - 使用前端代理地址，解决跨域问题
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
-          coverImage = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4_thumb.jpg`
+        if (!coverImage || (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
+          coverImage = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4_thumb.jpg`
         }
         
         return {
@@ -155,7 +156,7 @@ export default {
           videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
           videoUrl: videoUrl,
           coverImage: coverImage,
-          userId: item.user_id || item.UserId || item.userId,
+          userId: userId,
           userNickName: item.user_name || item.UserName || item.userName,
           description: item.description || item.Description || '',
           likeNum: item.like_count || item.LikeCount || item.likeCount || item.likeNum || 0,
@@ -191,12 +192,24 @@ export default {
       })
     },
     handleVideoClick(video) {
-      // this.video = video
-      // this.dialogVisible = true
+      // 实现视频点击跳转逻辑
+      if (video) {
+        console.log('🔗 [VIDEO-CLICK] 点击视频:', video.videoId, video.videoTitle)
+        // 跳转到视频播放页面
+        this.$router.push({
+          path: '/video',
+          query: {
+            videoId: video.videoId,
+            userId: video.userId
+          }
+        })
+      }
     },
     dialogDestroy() {
       const videoD = document.getElementsByClassName("dialog-video")
-      videoD[0].pause();
+      if (videoD && videoD[0]) {
+        videoD[0].pause();
+      }
       this.dialogVisible = false
     },
     handleScroll(e) {

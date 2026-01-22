@@ -94,7 +94,8 @@ export default {
       return formattedDuration;
     },
     handleOpenVideoPlayDialog() {
-      this.userVideoDialogVisible = true
+      // 触发父组件传递的 click 事件
+      this.$emit('click', this.video)
     },
     dialogVisibleEmit(flag) {
       this.userVideoDialogVisible = flag
