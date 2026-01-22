@@ -112,6 +112,18 @@ export function updateAvatar(avatarUrl) {
     })
 }
 
+// 更新用户头像（直接上传方式）
+export function uploadAvatarDirectly(formData) {
+    return request({
+        url: '/v1/user/update',
+        method: 'post',
+        data: formData,
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        }
+    })
+}
+
 //更新用户详情
 export function updateMemberInfo(data) {
     return request({

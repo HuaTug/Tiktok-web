@@ -283,7 +283,7 @@
 </template>
 
 <script>
-import { getAvatarUploadUrl, getInfo, updateAvatar, updateMemberInfo, updateUserProfile, uploadAvatarToOss } from "@/api/member.js";
+import { getInfo, updateMemberInfo, updateUserProfile, uploadAvatarDirectly } from "@/api/member.js";
 import { followAndFans } from "@/api/social.js";
 import { userLikeNums } from "@/api/video.js";
 import { userInfoX } from "@/store/userInfoX";
@@ -451,28 +451,21 @@ export default {
     async handleAvatarUpload(options) {
       const { file } = options
       try {
-        // 1. 获取文件扩展名
-        const fileExtension = '.' + file.name.split('.').pop().toLowerCase()
+        // 使用FormData直接上传头像
+        const formData = new FormData()
+        formData.append('file', file)
+        // 如果需要更新用户名和密码，可以添加以下字段
+        // formData.append('user_name', this.userForm.userName)
+        // formData.append('password', '')
 
-        // 2. 获取预签名上传URL
-        const uploadUrlRes = await getAvatarUploadUrl(fileExtension)
-        if (uploadUrlRes.code !== 200 && uploadUrlRes.code !== 0) {
-          this.$message.error(uploadUrlRes.message || uploadUrlRes.msg || '获取上传URL失败')
-          return
-        }
+        const res = await uploadAvatarDirectly(formData)
 
-        const { upload_url, access_url } = uploadUrlRes.data
-
-        // 3. 上传文件到OSS
-        await uploadAvatarToOss(upload_url, file)
-
-        // 4. 更新用户头像
-        const updateRes = await updateAvatar(access_url)
-        if (updateRes.code === 200 || updateRes.code === 0) {
-          this.userForm.avatar = access_url
+        if (res.code === 200 || res.code === 0) {
+          // 更新头像URL（从响应中获取或使用临时预览URL）
+          this.userForm.avatar = URL.createObjectURL(file)
           this.$message.success('头像上传成功')
         } else {
-          this.$message.error(updateRes.message || updateRes.msg || '更新头像失败')
+          this.$message.error(res.message || res.msg || '上传头像失败')
         }
       } catch (error) {
         console.error('Avatar upload error:', error)
