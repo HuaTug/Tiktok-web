@@ -20,7 +20,7 @@
     </div>
   </div>
   <!--  视频作品区域-->
-  <div class="flex-between videoPost"
+  <div class="videoPost"
        style="overflow-y: auto"
        v-infinite-scroll="loadMore"
        :infinite-scroll-disabled="loadingVideoPost"
@@ -99,10 +99,10 @@ export default {
       postVideoList: [],
       postVideoTotal: null,
       videoQueryParams: {
-        userId: null,
+        author_id: null,
         videoTitle: "",
-        pageNum: 1,
-        pageSize: 10
+        page_num: 1,
+        page_size: 10
       },
       video: {},
       loadingData: true,
@@ -142,13 +142,17 @@ export default {
         // 转换视频URL - 使用前端代理地址，解决跨域问题
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
         if (!videoUrl || (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4`
+          videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
         }
         
         // 转换封面URL - 使用前端代理地址，解决跨域问题
+        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (!coverImage || (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
-          coverImage = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4_thumb.jpg`
+        if (!coverImage || coverImage.includes('localhost:9002')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
+          // 如果是旧格式的路径，转换为新的缩略图格式
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
         }
         
         return {
@@ -171,11 +175,11 @@ export default {
       this.loading = true
       // 从用户信息中获取userId
       if (this.currentUser) {
-        this.videoQueryParams.userId = this.currentUser.userId || this.currentUser.user_id
+        this.videoQueryParams.author_id = this.currentUser.userId || this.currentUser.user_id
       }
       videoMypage(this.videoQueryParams).then(res => {
         if (res.code === 200 || res.code === 10000) {
-          const items = res.data?.Items || res.data?.items || res.rows || []
+          const items = res.data?.video_list || res.data?.Items || res.data?.items || res.rows || []
           this.postVideoList = this.formatVideoList(items)
           this.postVideoTotal = items.length || res.total || 0
           this.loading = false
@@ -221,10 +225,10 @@ export default {
         if (this.loadingData) {
           this.loadingIcon = true
           this.loadingData = false
-          this.videoQueryParams.pageNum += 1
+          this.videoQueryParams.page_num += 1
           videoMypage(this.videoQueryParams).then(res => {
             if (res.code === 200 || res.code === 10000) {
-              const items = res.data?.Items || res.data?.items || res.rows || []
+              const items = res.data?.video_list || res.data?.Items || res.data?.items || res.rows || []
               if (items.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
@@ -253,15 +257,15 @@ export default {
       if (this.loadingData) {
         this.loadingIcon = true
         this.loadingData = false
-        this.videoQueryParams.pageNum += 1
-        // 确保userId存在
+        this.videoQueryParams.page_num += 1
+        // 确保author_id存在
         if (this.currentUser) {
-          this.videoQueryParams.userId = this.videoQueryParams.userId || (this.currentUser.userId || this.currentUser.user_id)
+          this.videoQueryParams.author_id = this.videoQueryParams.author_id || (this.currentUser.userId || this.currentUser.user_id)
         }
         console.log("loadMore")
         videoMypage(this.videoQueryParams).then(res => {
           if (res.code === 200 || res.code === 10000) {
-            const items = res.data?.Items || res.data?.items || res.rows || []
+            const items = res.data?.video_list || res.data?.Items || res.data?.items || res.rows || []
             if (items.length === 0) {
               this.dataNotMore = true
               this.loadingIcon = false
@@ -292,10 +296,18 @@ export default {
 </script>
 
 <style scoped>
+.videoPost {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  align-items: flex-start;
+}
+
 .loading-container {
   display: flex;
-  justify-content: space-between;
+  justify-content: flex-start;
   align-items: center;
+  width: 100%;
 
   .loading-item {
     width: 20%;

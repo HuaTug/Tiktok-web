@@ -66,13 +66,17 @@ export default {
         // 转换视频URL - 直接使用 MinIO 地址
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
         if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4`
+          videoUrl = `/tiktok-user-content/users/${item.user_id || item.UserId || item.userId}/videos/${videoId}/source/original.mp4`
         }
         
-        // 转换封面URL - 直接使用 MinIO 地址
+        // 转换封面URL - 使用缩略图地址
+        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
+        const userId = item.user_id || item.UserId || item.userId
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (coverImage && (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
-          coverImage = `http://localhost:9002/tiktok-user-content/videos/${item.user_id || item.UserId || item.userId}/${videoId}/source.mp4_thumb.jpg`
+        if (!coverImage || coverImage.includes('localhost:9002')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
         }
         
         return {

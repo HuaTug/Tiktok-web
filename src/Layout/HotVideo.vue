@@ -23,6 +23,10 @@
                  fit-width="true"
                  transition-duration="0.2s"
                  item-selector=".hotVideo-item">
+              <!--              热门排行榜（新样式）-->
+              <div style="min-height: 500px; width: 100%; max-width: 600px;" class="hotVideo-item">
+                <HotVideoRanking />
+              </div>
               <!--              热榜-->
               <div style="height: 600px;" class="hotVideo-item">
                 <div class="hotVideo-card wh100">
@@ -53,76 +57,6 @@
                    v-masonry-tile
                    class="hotVideo-item cp">
                 <VideoHotCard :video="item"/>
-                <!--                <el-card class="hotVideo-card">-->
-                <!--                  <div class="video-cover tac">-->
-                <!--                    <el-image class="eli-ofc wh100"-->
-                <!--                              @click="videoDialog(item.videoId)"-->
-                <!--                              :src="item.coverImage"/>-->
-                <!--                  </div>-->
-                <!--                  <div class="user-info" @click="handleVideoPlayDialog(item)">-->
-                <!--                    <div>-->
-                <!--                      <p class="one-line fs9">{{ item.videoTitle }}</p>-->
-                <!--                      <p class="one-line fs7 cg">{{ item.videoDesc }}</p>-->
-                <!--                    </div>-->
-                <!--                    &lt;!&ndash;鼠标悬停在视频发布者头像上时展示该视频发布者的信息&ndash;&gt;-->
-                <!--                    <el-popover :width="300"-->
-                <!--                                placement="top"-->
-                <!--                                popper-class="person-info-pop"-->
-                <!--                                popper-style="box-shadow: rgb(14 18 22 / 35%) 0px 10px 38px -10px, rgb(14 18 22 / 20%) 0px 10px 20px -15px; padding: 20px;"-->
-                <!--                                :ref="'pop'+index">-->
-                <!--                      &lt;!&ndash;视频发布者的头像&ndash;&gt;-->
-                <!--                      <template #reference>-->
-                <!--                        <div>-->
-                <!--                          <el-avatar v-if="item.userAvatar"-->
-                <!--                                     class="cp"-->
-                <!--                                     :lazy="true"-->
-                <!--                                     :src="item.userAvatar"-->
-                <!--                                     @click.stop="handlePersonInfo(item.userId)"-->
-                <!--                                     @mouseover="handleSocialBehaveNumsHover(item.userId,index)"-->
-                <!--                                     @mouseleave="handleSocialBehaveNumsHoverLeave(item.userId,index)"/>-->
-                <!--                          <el-avatar v-else class="cp"-->
-                <!--                                     :icon="UserFilled"-->
-                <!--                                     @click="handlePersonInfo(item.userId)"/>-->
-                <!--                        </div>-->
-                <!--                      </template>-->
-                <!--                      <template #default>-->
-                <!--                        &lt;!&ndash;视频发布者的头像、名称和关注粉丝等信息展示模块&ndash;&gt;-->
-                <!--                        <div class="flex-column">-->
-                <!--                          &lt;!&ndash;视频发布者的头像div&ndash;&gt;-->
-                <!--                          <div style="display: flex;">-->
-                <!--                            <div>-->
-                <!--                              <el-avatar v-if="item.userAvatar" class="cp" :src="item.userAvatar"/>-->
-                <!--                              <el-avatar v-else class="cp" :icon="UserFilled"/>-->
-                <!--                            </div>-->
-                <!--                            &lt;!&ndash;名称和关注粉丝等信息展示模块&ndash;&gt;-->
-                <!--                            <div style="display: grid; margin-left: 10px;">-->
-                <!--                              &lt;!&ndash;名称展示模块&ndash;&gt;-->
-                <!--                              <div v-html="item.userNickName" class="fs9 fw600 cp"></div>-->
-                <!--                              &lt;!&ndash;点赞、关注、粉丝等信息展示模块&ndash;&gt;-->
-                <!--                              <div class="flex-between">-->
-                <!--                                &lt;!&ndash;关注信息展示模块&ndash;&gt;-->
-                <!--                                <p class="">{{ userVideoLikes }}</p><span>关注</span>-->
-                <!--                                &lt;!&ndash;粉丝信息展示模块&ndash;&gt;-->
-                <!--                                <p class="ml-5r">{{ followedNums }}<span>粉丝</span></p>-->
-                <!--                                &lt;!&ndash;获赞信息展示模块&ndash;&gt;-->
-                <!--                                <p class="ml-5r">{{ fanNums }}</p><span>获赞</span>-->
-                <!--                              </div>-->
-                <!--                              &lt;!&ndash;关注以及私信功能模块展示&ndash;&gt;-->
-                <!--                              <div style="display: flex; margin-top: 10px;">-->
-                <!--                                <div v-if="item.weatherFollow">-->
-                <!--                                  <el-button type="info">已关注</el-button>-->
-                <!--                                </div>-->
-                <!--                                <div v-else>-->
-                <!--                                  <el-button type="primary">+关注</el-button>-->
-                <!--                                </div>-->
-                <!--                              </div>-->
-                <!--                            </div>-->
-                <!--                          </div>-->
-                <!--                        </div>-->
-                <!--                      </template>-->
-                <!--                    </el-popover>-->
-                <!--                  </div>-->
-                <!--                </el-card>-->
               </div>
             </div>
             <Loading v-if="loadingIcon" :is-full-screen="false"/>
@@ -169,13 +103,14 @@ import Loading from "@/components/Loading.vue";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import VideoDiscoverCard from "@/components/video/card/VideoDiscoverCard.vue";
 import VideoHotCard from "@/components/video/card/VideoHotCard.vue";
+import HotVideoRanking from "@/components/video/HotVideoRanking.vue";
 import { userInfoX } from "@/store/userInfoX";
 import { encodeData } from "@/utils/roydon.js";
 import { Close, UserFilled } from "@element-plus/icons-vue";
 
 export default {
   name: "HotVideo",
-  components: {VideoHotCard, VideoDiscoverCard, VideoPlayDialog, Loading},
+  components: {VideoHotCard, VideoDiscoverCard, VideoPlayDialog, Loading, HotVideoRanking},
   computed: {
     Close() {
       return Close

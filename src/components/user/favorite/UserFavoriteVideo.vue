@@ -88,14 +88,53 @@ export default {
     document.removeEventListener('scroll', this.handleScroll);
   },
   methods: {
-    // 收藏刷视频分页
+    // 收藏视频分页
     initVideoList() {
       this.loading = true
       videoFavoritePage(this.videoQueryParams).then(res => {
-        if (res.code === 200) {
-          this.favoriteVideoList = res.rows
-          this.favoriteVideoTotal = res.total
+        console.log('📦 [FAVORITE] 收藏视频列表响应:', res)
+        if (res.code === 0 || res.code === 200) {
+          // 后端返回格式: { video_list: [...], total_count: number }
+          const rawList = res.data?.video_list || res.data?.VideoList || res.rows || []
+          this.favoriteVideoList = this.formatVideoList(rawList)
+          this.favoriteVideoTotal = res.data?.total_count || res.data?.TotalCount || res.total || 0
+          console.log('✅ [FAVORITE] 转换后的收藏视频列表:', this.favoriteVideoList)
           this.loading = false
+        } else {
+          this.loading = false
+        }
+      }).catch(err => {
+        console.error('❌ [FAVORITE] 获取收藏视频列表失败:', err)
+        this.loading = false
+      })
+    },
+    // 格式化视频列表
+    formatVideoList(items) {
+      if (!Array.isArray(items)) return []
+      return items.map(item => {
+        const videoId = item.video_id || item.VideoId || item.videoId
+        const userId = item.user_id || item.UserId || item.userId
+        
+        let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
+        if (!videoUrl || videoUrl.includes('localhost:9002')) {
+          videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+        }
+        
+        let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
+        if (!coverImage || coverImage.includes('localhost:9002')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        }
+        
+        return {
+          videoId: videoId,
+          videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+          videoUrl: videoUrl,
+          coverImage: coverImage,
+          userId: userId,
+          userNickName: item.user_name || item.userName || item.userNickName,
+          likeNum: item.like_count || item.LikeCount || item.likeNum || 0,
+          commentNum: item.comment_count || item.CommentCount || item.commentNum || 0,
+          createTime: item.created_at || item.CreatedAt || item.createTime,
         }
       })
     },
@@ -120,14 +159,15 @@ export default {
           this.loadingData = false
           this.videoQueryParams.pageNum += 1
           videoFavoritePage(this.videoQueryParams).then(res => {
-            if (res.code === 200) {
-              if (res.rows == null || res.rows.length === 0) {
+            if (res.code === 0 || res.code === 200) {
+              const rawList = res.data?.video_list || res.data?.VideoList || res.rows || []
+              if (rawList == null || rawList.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
                 this.loadingData = false
                 return;
               }
-              this.favoriteVideoList = this.favoriteVideoList.concat(res.rows)
+              this.favoriteVideoList = this.favoriteVideoList.concat(this.formatVideoList(rawList))
               this.loadingIcon = false
             } else {
               this.loadingIcon = false

@@ -19,6 +19,7 @@
 // vue3视频播放器
 import videoPlay from 'vue3-video-play/lib/index' // 引入组件
 import {syncViewBehave} from "@/api/behave.js"
+import {addWatchHistory} from "@/api/video.js"
 
 export default {
   name: "VideoPlayer",
@@ -74,6 +75,10 @@ export default {
       videoDuration: "00:00",
       timer: null,
       videoCountdown: 60, // 秒
+      watchStartTime: 0, // 观看开始时间
+      currentWatchTime: 0, // 当前观看时长
+      historyRecorded: false, // 是否已记录观看历史
+      visitRecorded: false, // 是否已记录浏览量
     }
   },
   emits: ['videoDuration', 'videoOnPlay', 'videoOnPause'],
@@ -86,25 +91,45 @@ export default {
     video(newVideo) {
       this.options.src = newVideo.videoUrl
       this.options.poster = newVideo.coverImage
+      // 切换视频时重置状态
+      this.historyRecorded = false
+      this.visitRecorded = false
+      this.currentWatchTime = 0
     }
   },
   methods: {
     onPlay(ev) {
       console.log('播放 play ' + this.video.videoId)
       this.videoPlay = true
+      this.watchStartTime = Date.now()
       this.$emit("videoOnPlay", this.video.videoId)
-      this.timer = setTimeout(() => {
+      
+      // 点击播放立即增加浏览量（只在首次播放时记录）
+      if (!this.visitRecorded) {
         this.apiSyncViewBehave()
+        this.visitRecorded = true
+      }
+      
+      // 延迟记录观看历史（观看1/3时长后）
+      this.timer = setTimeout(() => {
+        this.recordWatchHistory()
       }, this.videoCountdown * 1000);
     },
     onPause(ev) {
       // console.log('暂停')
       this.videoPlay = false
+      // 累计观看时长
+      if (this.watchStartTime > 0) {
+        this.currentWatchTime += (Date.now() - this.watchStartTime) / 1000
+        this.watchStartTime = 0
+      }
       this.$emit("videoOnPause", this.video.videoId)
     },
     // 播放结束
     onEnded(ev) {
       console.log('end')
+      // 视频播放结束时记录观看历史
+      this.recordWatchHistory()
     },
     onTimeupdate(ev) {
       this.videoDuration = ev.target.duration
@@ -123,11 +148,48 @@ export default {
 
         }
       })
+    },
+    // 记录观看历史
+    recordWatchHistory() {
+      // 避免重复记录
+      if (this.historyRecorded) return
+      
+      // 计算观看时长
+      let watchDuration = this.currentWatchTime
+      if (this.watchStartTime > 0) {
+        watchDuration += (Date.now() - this.watchStartTime) / 1000
+      }
+      
+      // 计算完成率
+      const completionRate = this.videoDuration > 0 
+        ? Math.min(100, Math.round((watchDuration / this.videoDuration) * 100))
+        : 0
+      
+      // 只有观看超过3秒才记录
+      if (watchDuration < 3) return
+      
+      const videoId = this.video.videoId || this.video.video_id
+      if (!videoId) return
+      
+      addWatchHistory({
+        video_id: videoId,
+        watch_duration: Math.round(watchDuration),
+        completion_rate: completionRate
+      }).then(res => {
+        if (res.code === 0 || res.code === 200) {
+          this.historyRecorded = true
+          console.log('观看历史已记录')
+        }
+      }).catch(err => {
+        console.error('记录观看历史失败:', err)
+      })
     }
   },
   beforeDestroy() {
     console.log("beforeDestroy")
     clearInterval(this.timer);
+    // 组件销毁前记录观看历史
+    this.recordWatchHistory()
   },
 }
 

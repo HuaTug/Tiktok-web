@@ -27,6 +27,69 @@ export async function videoUserpage(data) {
     })
 }
 
+// ========== V2版本分片上传API（推荐使用） ==========
+
+// V2 发布视频 - 开始上传
+export async function publishVideoStartV2(data) {
+    return await request({
+        url: '/v2/publish/start',
+        method: 'post',
+        data: data
+    })
+}
+
+// V2 发布视频 - 上传分片
+export async function publishVideoUploadingV2(formData, onProgress) {
+    return await request({
+        url: '/v2/publish/uploading',
+        method: 'post',
+        data: formData,
+        headers: {
+            'Content-Type': 'multipart/form-data'
+        },
+        onUploadProgress: onProgress,
+        timeout: 300000 // 5分钟超时，适合大文件分片
+    })
+}
+
+// V2 发布视频 - 完成上传
+export async function publishVideoCompleteV2(data) {
+    return await request({
+        url: '/v2/publish/complete',
+        method: 'post',
+        data: data
+    })
+}
+
+// V2 发布视频 - 取消上传
+export async function publishVideoCancelV2(data) {
+    return await request({
+        url: '/v2/publish/cancel',
+        method: 'post',
+        data: data
+    })
+}
+
+// V2 获取上传进度
+export async function getUploadProgressV2(uuid) {
+    return await request({
+        url: '/v2/publish/progress',
+        method: 'get',
+        params: { uuid }
+    })
+}
+
+// V2 恢复上传（断点续传）
+export async function resumeUploadV2(data) {
+    return await request({
+        url: '/v2/publish/resume',
+        method: 'post',
+        data: data
+    })
+}
+
+// ========== V1版本API（兼容旧接口） ==========
+
 // 发布视频 - 开始上传
 export async function publishVideoStart(data) {
     return await request({
@@ -81,10 +144,144 @@ export async function resumeUpload(data) {
     })
 }
 
+// ========== 分片上传工具函数 ==========
+
+// 默认分片大小：5MB
+const DEFAULT_CHUNK_SIZE = 5 * 1024 * 1024
+
+/**
+ * 完整的分片上传流程
+ * @param {Object} options 上传配置
+ * @param {File} options.file 视频文件
+ * @param {string} options.title 视频标题
+ * @param {string} options.description 视频描述
+ * @param {string} options.labName 标签（逗号分隔）
+ * @param {string} options.category 分类
+ * @param {number} options.open 隐私设置: 0=私有, 1=公开, 2=好友可见
+ * @param {number} options.chunkSize 分片大小（字节），默认5MB
+ * @param {Function} options.onProgress 进度回调 (percent, stage)
+ * @param {Function} options.onChunkComplete 分片完成回调 (chunkIndex, totalChunks)
+ * @returns {Promise<Object>} 上传结果
+ */
+export async function uploadVideoWithChunks(options) {
+    const {
+        file,
+        title,
+        description = '',
+        labName = '',
+        category = '',
+        open = 1,
+        chunkSize = DEFAULT_CHUNK_SIZE,
+        onProgress = () => {},
+        onChunkComplete = () => {}
+    } = options
+
+    if (!file) {
+        throw new Error('请选择要上传的视频文件')
+    }
+
+    // 计算分片数量
+    const totalChunks = Math.ceil(file.size / chunkSize)
+    
+    // Step 1: 开始上传，获取 upload_session_uuid
+    onProgress(0, 'starting')
+    const startRes = await publishVideoStartV2({
+        title: title,
+        description: description,
+        lab_name: labName,
+        category: category,
+        open: open,
+        chunk_total_number: totalChunks
+    })
+
+    if (startRes.code !== 0 && startRes.code !== 200) {
+        throw new Error(startRes.message || '开始上传失败')
+    }
+
+    const uuid = startRes.data?.upload_session_uuid
+    if (!uuid) {
+        throw new Error('服务器返回的上传会话ID无效')
+    }
+
+    // Step 2: 分片上传
+    onProgress(5, 'uploading')
+    
+    try {
+        for (let chunkIndex = 0; chunkIndex < totalChunks; chunkIndex++) {
+            const start = chunkIndex * chunkSize
+            const end = Math.min(start + chunkSize, file.size)
+            const chunk = file.slice(start, end)
+
+            const formData = new FormData()
+            formData.append('uuid', uuid)
+            formData.append('chunk_number', chunkIndex + 1) // 后端从1开始计数
+            formData.append('filename', file.name)
+            formData.append('is_m3u8', false)
+            formData.append('data', chunk, file.name)
+
+            const uploadRes = await publishVideoUploadingV2(formData, (progressEvent) => {
+                if (progressEvent.lengthComputable) {
+                    const chunkPercent = (progressEvent.loaded / progressEvent.total) * 100
+                    const overallPercent = 5 + ((chunkIndex + chunkPercent / 100) / totalChunks) * 85
+                    onProgress(Math.round(overallPercent), 'uploading')
+                }
+            })
+
+            if (uploadRes.code !== 0 && uploadRes.code !== 200) {
+                throw new Error(uploadRes.message || `分片 ${chunkIndex + 1} 上传失败`)
+            }
+
+            onChunkComplete(chunkIndex + 1, totalChunks)
+        }
+
+        // Step 3: 完成上传
+        onProgress(90, 'completing')
+        const completeRes = await publishVideoCompleteV2({
+            uuid: uuid
+        })
+
+        if (completeRes.code !== 0 && completeRes.code !== 200) {
+            throw new Error(completeRes.message || '完成上传失败')
+        }
+
+        onProgress(100, 'completed')
+        
+        return {
+            success: true,
+            data: completeRes.data,
+            videoId: completeRes.data?.video_id,
+            videoUrl: completeRes.data?.video_url,
+            coverUrl: completeRes.data?.cover_url
+        }
+
+    } catch (error) {
+        // 上传失败时尝试取消上传会话
+        try {
+            await publishVideoCancelV2({ uuid })
+        } catch (cancelError) {
+            console.error('取消上传会话失败:', cancelError)
+        }
+        throw error
+    }
+}
+
 // 发布视频 - 简化版本（兼容旧接口）
-// 此函数封装了分块上传流程，适用于小文件
 export async function publishVideo(data) {
-    // 1. 开始上传
+    // 如果有file对象，使用V2分片上传
+    if (data.file) {
+        return await uploadVideoWithChunks({
+            file: data.file,
+            title: data.title || data.videoTitle,
+            description: data.description || data.videoDesc,
+            labName: data.labName || '',
+            category: data.category || data.categoryId || '',
+            open: data.open || 1,
+            onProgress: data.onProgress,
+            onChunkComplete: data.onChunkComplete
+        })
+    }
+    
+    // 兼容旧的URL方式
     const startRes = await publishVideoStart({
         title: data.title || data.videoTitle,
         description: data.description || data.videoDesc,
@@ -98,7 +295,6 @@ export async function publishVideo(data) {
     
     const uploadId = startRes.data?.upload_id
     
-    // 2. 完成上传（如果有视频URL则直接完成）
     return await publishVideoComplete({
         upload_id: uploadId,
         video_url: data.videoUrl,
@@ -334,5 +530,63 @@ export async function shareVideo(data) {
         url: '/v1/share/video',
         method: 'post',
         data: data
+    })
+}
+
+// ========== 观看历史相关 API ==========
+
+// 获取观看历史列表
+export async function getWatchHistory(params) {
+    return await request({
+        url: '/v2/history/list',
+        method: 'get',
+        params: params
+    })
+}
+
+// 添加观看历史
+export async function addWatchHistory(data) {
+    return await request({
+        url: '/v2/history/add',
+        method: 'post',
+        data: data
+    })
+}
+
+// 删除单条观看历史
+export async function deleteWatchHistoryItem(videoId) {
+    return await request({
+        url: '/v2/history/delete',
+        method: 'delete',
+        params: { video_id: videoId }
+    })
+}
+
+// 清空观看历史
+export async function clearWatchHistory(dateRange) {
+    return await request({
+        url: '/v2/history/clear',
+        method: 'delete',
+        params: { date_range: dateRange || 'all' }
+    })
+}
+
+// ========== 视频浏览量相关 API ==========
+
+// 记录视频访问（V2版本）
+export async function videoVisitV2(data) {
+    return await request({
+        url: '/v2/video/visit',
+        method: 'post',
+        data: data
+    })
+}
+
+// 获取视频浏览量
+export async function getVideoVisitCount(videoId) {
+    return await request({
+        url: '/v2/video/visit/count',
+        method: 'get',
+        params: { video_id: videoId }
     })
 }

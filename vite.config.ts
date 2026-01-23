@@ -22,11 +22,11 @@ export default defineConfig({
     server: {
         proxy: {
             // 代理 MinIO video bucket - 用于视频资源
+            // MinIO 容器端口映射: 宿主机 9002 -> 容器 9000
             '/video': {
                 target: 'http://localhost:9002',
                 changeOrigin: true,
                 secure: false,
-                // 直接转发到 MinIO
                 rewrite: (path) => path
             },
             // 代理 MinIO picture bucket - 用于封面和头像
@@ -36,12 +36,11 @@ export default defineConfig({
                 secure: false,
                 rewrite: (path) => path
             },
-            // 代理 MinIO 视频资源，解决 ERR_BLOCKED_BY_ORB 跨域问题
+            // 代理 MinIO 视频资源
             '/tiktok-user-content': {
                 target: 'http://localhost:9002',
                 changeOrigin: true,
                 secure: false,
-                // 不重写路径，直接转发
                 rewrite: (path) => path
             },
             '/tiktok-avatarurl': {

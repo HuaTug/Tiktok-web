@@ -20,6 +20,7 @@
 import { getPersonInfo } from "@/api/member.js";
 import { recommendVideoFeed } from "@/api/recommend";
 import { videoFeed } from "@/api/video";
+import { batchLikeStatus, batchFavoriteStatus } from "@/api/behave";
 import VideoPlayerCarousel from "@/components/video/VideoPlayerCarousel.vue";
 import VideoPlayerSwiper from "@/components/video/VideoPlayerSwiper.vue";
 
@@ -102,12 +103,14 @@ export default {
         likeNum: video.likes_count || video.likeNum || 0,
         commentNum: video.comment_count || video.commentNum || 0,
         shareNum: video.share_count || video.shareNum || 0,
+        favoritesNum: video.favorites_count || video.favoritesNum || 0,
         createTime: video.created_at || video.createTime,
         userNickName: video.user_name || video.username || video.userNickName || '未知用户',
         userAvatar: userAvatar,
         publishType: '0', // 默认为视频类型
         weatherLike: false,
         weatherFollow: false,
+        weatherFavorite: false,
         tags: video.label_names ? video.label_names.split(',') : [],
         category: video.category || ''
       }
@@ -122,11 +125,14 @@ export default {
       for (const userId of uniqueUserIds) {
         try {
           const res = await this.getUserInfoById(userId)
+          console.log('📦 [VIDEO] 用户信息响应:', userId, res)
           if (res && (res.code === 200 || res.code === 0) && res.data) {
+            // 后端返回格式: res.data.User (thrift生成) 或 res.data (直接返回)
+            const userData = res.data.User || res.data
             userInfoMap[userId] = {
-              userId: res.data.user_id || res.data.userId,
-              userName: res.data.user_name || res.data.userName,
-              avatarUrl: res.data.avatar_url || res.data.avatarUrl
+              userId: userData.user_id || userData.userId,
+              userName: userData.user_name || userData.userName,
+              avatarUrl: userData.avatar_url || userData.avatarUrl
             }
             console.log('✅ [VIDEO] 获取用户信息成功:', userId, userInfoMap[userId])
           }
@@ -161,6 +167,49 @@ export default {
         return video
       })
     },
+    // 批量获取点赞状态和点赞数并更新视频列表
+    async fetchLikeStatusBatch(videoList) {
+      const videoIds = videoList.map(v => v.videoId).filter(id => id)
+      if (videoIds.length === 0) return videoList
+      
+      try {
+        const res = await batchLikeStatus(videoIds)
+        console.log('❤️ [VIDEO] 批量获取点赞状态响应:', res)
+        if (res && res.code === 200 && res.data) {
+          const likeStatus = res.data.like_status || {}
+          const likeCounts = res.data.like_counts || {}
+          return videoList.map(video => ({
+            ...video,
+            weatherLike: likeStatus[video.videoId] || false,
+            // 如果 Redis 有点赞数则使用，否则保持原值
+            likeNum: likeCounts[video.videoId] > 0 ? likeCounts[video.videoId] : video.likeNum
+          }))
+        }
+      } catch (error) {
+        console.error('❌ [VIDEO] 获取点赞状态失败:', error)
+      }
+      return videoList
+    },
+    // 批量获取收藏状态并更新视频列表
+    async fetchFavoriteStatusBatch(videoList) {
+      const videoIds = videoList.map(v => v.videoId).filter(id => id)
+      if (videoIds.length === 0) return videoList
+      
+      try {
+        const res = await batchFavoriteStatus(videoIds)
+        console.log('⭐ [VIDEO] 批量获取收藏状态响应:', res)
+        if (res && res.code === 200 && res.data) {
+          const favoriteStatus = res.data.favorite_status || {}
+          return videoList.map(video => ({
+            ...video,
+            weatherFavorite: favoriteStatus[video.videoId] || false
+          }))
+        }
+      } catch (error) {
+        console.error('❌ [VIDEO] 获取收藏状态失败:', error)
+      }
+      return videoList
+    },
     getVideoFeed() {
       console.log('📹 [VIDEO] 开始获取视频feed...')
       console.log('📹 [VIDEO] publishTime:', this.publishTime)
@@ -173,21 +222,28 @@ export default {
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
           console.log('📹 [VIDEO] 原始视频数据:', rawData.length, '个视频')
           // 转换数据格式
-          const data = rawData.map(item => this.transformVideoData(item))
+          let data = rawData.map(item => this.transformVideoData(item))
           console.log('📹 [VIDEO] 转换后的视频数据:', data.length, '个视频')
           
           // 收集所有用户ID
           const userIds = data.map(video => video.userId).filter(id => id)
           
           // 批量获取用户信息
-          let enrichedData = data
           if (userIds.length > 0) {
             const userInfoMap = await this.fetchUserInfoBatch(userIds)
-            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
-            console.log('👤 [VIDEO] 补充用户信息后的视频数据:', enrichedData.length, '个视频')
+            data = this.enrichVideosWithUserInfo(data, userInfoMap)
+            console.log('👤 [VIDEO] 补充用户信息后的视频数据:', data.length, '个视频')
           }
           
-          this.videoList = this.videoList.concat(enrichedData)
+          // 批量获取点赞状态
+          data = await this.fetchLikeStatusBatch(data)
+          console.log('❤️ [VIDEO] 补充点赞状态后的视频数据:', data.length, '个视频')
+          
+          // 批量获取收藏状态
+          data = await this.fetchFavoriteStatusBatch(data)
+          console.log('⭐ [VIDEO] 补充收藏状态后的视频数据:', data.length, '个视频')
+          
+          this.videoList = this.videoList.concat(data)
           console.log('📹 [VIDEO] 当前总视频数:', this.videoList.length)
           this.loading = false
           if (this.videoList.length > 0) {
@@ -217,19 +273,21 @@ export default {
           // 后端返回格式: data.video_list
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
           // 转换数据格式
-          const data = rawData.map(item => this.transformVideoData(item))
+          let data = rawData.map(item => this.transformVideoData(item))
           
           // 收集所有用户ID
           const userIds = data.map(video => video.userId).filter(id => id)
           
           // 批量获取用户信息
-          let enrichedData = data
           if (userIds.length > 0) {
             const userInfoMap = await this.fetchUserInfoBatch(userIds)
-            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
+            data = this.enrichVideosWithUserInfo(data, userInfoMap)
           }
           
-          that.videoList = that.videoList.concat(enrichedData)
+          // 批量获取点赞状态
+          data = await this.fetchLikeStatusBatch(data)
+          
+          that.videoList = that.videoList.concat(data)
           this.loading = false
           this.showVideoPlayer = true
         } else {
@@ -257,19 +315,21 @@ export default {
           // 后端返回格式: data.video_list
           const rawData = res.data?.video_list || res.data?.list || (Array.isArray(res.data) ? res.data : [])
           // 转换数据格式
-          const data = rawData.map(item => this.transformVideoData(item))
+          let data = rawData.map(item => this.transformVideoData(item))
           
           // 收集所有用户ID
           const userIds = data.map(video => video.userId).filter(id => id)
           
           // 批量获取用户信息
-          let enrichedData = data
           if (userIds.length > 0) {
             const userInfoMap = await this.fetchUserInfoBatch(userIds)
-            enrichedData = this.enrichVideosWithUserInfo(data, userInfoMap)
+            data = this.enrichVideosWithUserInfo(data, userInfoMap)
           }
           
-          this.videoList = enrichedData
+          // 批量获取点赞状态
+          data = await this.fetchLikeStatusBatch(data)
+          
+          this.videoList = data
           this.loading = false
           this.showVideoPlayer = true
         } else {

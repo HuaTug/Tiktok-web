@@ -145,7 +145,7 @@
         </div>
         <div class="edit-nickname">
           <div class="N3OJZMVX">昵称</div>
-          <el-input v-model="userForm.nickName"
+          <el-input v-model="userForm.user_name"
                     maxlength="20"
                     class="w-50 m-2"
                     placeholder="记得填写昵称"
@@ -362,7 +362,17 @@ export default {
           })
           this.user = userData
           this.memberInfo = userData.memberInfo || {}
-          this.userForm = {...userData}
+          // 构造 userForm，确保字段名与表单绑定一致
+          this.userForm = {
+            ...userData,
+            // 确保 user_name 字段存在（兼容多种命名）
+            user_name: userData.user_name || userData.userName || userData.UserName || '',
+            // 确保 userId 字段存在
+            userId: userData.userId || userData.user_id || userData.UserId,
+            // 确保 sex 字段是字符串（表单使用字符串）
+            sex: String(userData.sex ?? userData.Sex ?? '2')
+          }
+          console.log('📝 [USER-INFO] userForm 初始化:', this.userForm)
           this.memberInfoForm = userData.memberInfo || {}
           if (this.memberInfoForm.likeShowStatus === '1') {
             // 喜欢被禁用
@@ -471,16 +481,57 @@ export default {
     },
     // 确认提交
     confirmUpdateProfile() {
-      updateUserProfile(this.userForm).then(res => {
+      console.log('🔥 [UPDATE-PROFILE] confirmUpdateProfile 被调用')
+      console.log('🔍 [UPDATE-PROFILE] userForm:', JSON.stringify(this.userForm))
+      
+      // 性别转换：前端用字符串 '0'女/'1'男/'2'保密，后端用数字
+      let sexValue = 2 // 默认保密
+      const sexStr = String(this.userForm.sex)
+      if (sexStr === '1') {
+        sexValue = 1 // 男
+      } else if (sexStr === '0') {
+        sexValue = 0 // 女
+      }
+      
+      // 直接使用 userForm.user_name（表单输入绑定的字段）
+      const userName = this.userForm.user_name || ''
+      // 获取用户ID
+      const userId = this.userForm.userId || this.userForm.user_id || this.userForm.UserId
+      
+      console.log('📤 [UPDATE-PROFILE] 准备发送: userName=', userName, ', sex=', sexValue, ', userId=', userId)
+      
+      if (!userName) {
+        console.error('📛 [UPDATE-PROFILE] 用户名为空')
+        this.$message.error('请输入昵称')
+        return
+      }
+      
+      if (!userId) {
+        console.error('📛 [UPDATE-PROFILE] 用户ID为空，无法更新')
+        this.$message.error('用户ID获取失败，请刷新页面重试')
+        return
+      }
+      
+      const updateData = {
+        user_name: userName,
+        userId: userId,
+        sex: sexValue
+      }
+      console.log('📤 [UPDATE-PROFILE] 发送更新请求:', JSON.stringify(updateData))
+      
+      updateUserProfile(updateData).then(res => {
+        console.log('📥 [UPDATE-PROFILE] 响应:', res)
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.editDialogVisible = false
           this.$message.success(res.message || res.msg || '更新成功')
           this.getUserInfo()
         } else {
+          console.log('⚠️ [UPDATE-PROFILE] 更新失败, code:', res.code)
           this.$message.error(res.message || res.msg || '更新失败')
         }
       }).catch(err => {
+        console.error('📛 [UPDATE-PROFILE] 请求错误:', err)
         this.$message.error('更新失败，请检查网络连接')
       })
     },

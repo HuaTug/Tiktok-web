@@ -183,15 +183,38 @@ export default {
     initCollectionList() {
       this.loading = true
       collectionInfoPage(this.collectionQueryParams).then(res => {
-        if (res.code === 200) {
-          this.collectionList = res.rows
-          this.collectionTotal = res.total
-          // 收藏夹集合操作，填充六张作品封面为空串
-          this.collectionList.forEach((item, index) => {
-            let old = item.videoCoverList
-            item.videoCoverList = [...old, ...new Array(6 - old.length).fill('')]
-          })
+        console.log('📦 [COLLECTION] 收藏夹列表响应:', res)
+        if (res.code === 0 || res.code === 200) {
+          // 后端返回格式: { favorite_list: [...], total_count: number }
+          const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.rows || []
+          this.collectionList = this.formatCollectionList(rawList)
+          this.collectionTotal = res.data?.total_count || res.data?.TotalCount || res.total || 0
+          console.log('✅ [COLLECTION] 转换后的收藏夹列表:', this.collectionList)
           this.loading = false
+        } else {
+          this.loading = false
+        }
+      }).catch(err => {
+        console.error('❌ [COLLECTION] 获取收藏夹列表失败:', err)
+        this.loading = false
+      })
+    },
+    // 格式化收藏夹列表
+    formatCollectionList(items) {
+      if (!Array.isArray(items)) return []
+      return items.map(item => {
+        const favoriteId = item.favorite_id || item.FavoriteId || item.favoriteId
+        const videoCoverList = item.video_cover_list || item.VideoCoverList || item.videoCoverList || []
+        // 填充六张作品封面为空串
+        const paddedCovers = [...videoCoverList, ...new Array(Math.max(0, 6 - videoCoverList.length)).fill('')]
+        
+        return {
+          favoriteId: favoriteId,
+          title: item.name || item.Name || item.title || '未命名收藏夹',
+          description: item.description || item.Description || '',
+          videoCount: item.video_count || item.VideoCount || item.videoCount || 0,
+          videoCoverList: paddedCovers,
+          showStatus: item.privacy || item.Privacy || item.showStatus || '0',
         }
       })
     },
@@ -245,14 +268,15 @@ export default {
           this.loadingData = false
           this.collectionQueryParams.pageNum += 1
           collectionInfoPage(this.collectionQueryParams).then(res => {
-            if (res.code === 200) {
-              if (res.rows === null || res.rows.length === 0) {
+            if (res.code === 0 || res.code === 200) {
+              const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.rows || []
+              if (rawList === null || rawList.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
                 this.loadingData = false
                 return;
               }
-              this.collectionList = this.collectionList.concat(res.rows)
+              this.collectionList = this.collectionList.concat(this.formatCollectionList(rawList))
               this.loadingIcon = false
             } else {
               this.loadingIcon = false

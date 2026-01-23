@@ -1,65 +1,46 @@
 <template>
   <div class="follow-container">
-    <div class="follow-left" :style="'width:' + followListWidth">
-      <div class="p5-10 flex-between tac">
-        <span v-if="followExpand" class="fs9 fw600 flex-center" style="flex: 1 1">我的关注（{{ followTotal }}）</span>
-        <span class="cp flex-center" style="margin: 0 auto" @click="handleExpandFold()">
-          <el-tooltip
-              class="box-item"
-              effect="dark"
-              :auto-close="1000"
-              content="展开/收起"
-              placement="top">
-         <svg v-if="followExpand" class="icon" aria-hidden="true">
-              <use xlink:href="#icon-fold"></use>
-          </svg>
-          <svg v-else class="icon" aria-hidden="true">
-              <use xlink:href="#icon-expand"></use>
-          </svg></el-tooltip>
-        </span>
+    <div class="follow-page">
+      <div class="follow-header">
+        <h2 class="follow-title">我的关注（{{ followTotal || 0 }}）</h2>
       </div>
-      <el-scrollbar class="p5-10" v-loading="followListLoading">
-        <div
-            :class="{'user-card user-card-cur': item.userId===curPlayUserId, 'user-card':true}"
-            v-for="item in followList"
-            :key="item.userId">
-          <div class="user-info flex-start pr" @click="getFollowedVideoList(item.userId)">
-            <el-avatar class="user-avatar"
-                       v-if="item.avatar"
-                       :src="item.avatar"
-                       lazy/>
-            <el-avatar v-else :icon="UserFilled"/>
-            <div v-if="followExpand" class="user-nickname">
-              <p class="nickname one-line">{{ item.nickName }}</p>
+      <el-scrollbar class="follow-list-scroll" v-loading="followListLoading">
+        <div class="follow-user-list">
+          <div
+              class="user-card"
+              v-for="item in followList"
+              :key="item.userId"
+              @click="goToUserPage(item.userId)">
+            <div class="user-avatar-wrapper">
+              <el-avatar 
+                  class="user-avatar"
+                  :size="56"
+                  v-if="item.avatar"
+                  :src="item.avatar"
+                  lazy/>
+              <el-avatar v-else :size="56" :icon="UserFilled"/>
             </div>
-            <span v-if="curPlayUserId===item.userId" class="cur-play-dot pa"></span>
+            <div class="user-info-detail">
+              <p class="nickname one-line">{{ item.nickName || '未知用户' }}</p>
+              <p class="user-id">ID: {{ item.userId }}</p>
+            </div>
+            <el-button type="primary" size="small" plain @click.stop="goToUserPage(item.userId)">
+              查看主页
+            </el-button>
           </div>
         </div>
-        <div v-if="followListDataNotMore">
+        <div v-if="followListDataNotMore && followList.length > 0" class="list-end">
           <el-divider>到底了</el-divider>
         </div>
-        <el-empty v-show="followTotal<=0" description="暂无数据"/>
+        <el-empty v-if="!followListLoading && followList.length === 0" description="暂无关注用户"/>
       </el-scrollbar>
-    </div>
-    <!--    <div class="video-container"-->
-    <!--         :style="'width:calc(100% - '+followListWidth+');'"> -->
-    <div class="video-container"
-         style="flex: 1;width: 100%"><!--width: 100%不会有动画效果-->
-      <VideoPlayerCarousel
-          v-if="showVideoPlayer"
-          :loading="loading"
-          :video-list="videoList"
-          @reloadVideoFeed="reloadVideoFeedEmit"/>
-      <el-empty v-if="dataNotMore" description="暂无关注视频动态"/>
     </div>
   </div>
 </template>
 
 <script>
-import VideoPlayerCarousel from "@/components/video/VideoPlayerCarousel.vue";
 import {UserFilled} from "@element-plus/icons-vue";
-import {videoUserpage} from "@/api/video"
-import {followPageList, followVideoFeed, initUserInBox} from '@/api/social'
+import {followPageList} from '@/api/social'
 
 export default {
   name: "Follow",
@@ -68,55 +49,26 @@ export default {
       return UserFilled
     }
   },
-  components: {VideoPlayerCarousel},
   data() {
     return {
-      loading: true,
-      showVideoPlayer: true,
       followQueryParams: {
         pageNum: 1,
         pageSize: 20,
       },
-      followTotal: null,
+      followTotal: 0,
       followList: [],
       followListDataNotMore: false,
       loadingFollowListData: true,
-      videoList: [],
-      videoTotal: 0,
-      userPageQueryParams: {
-        videoTitle: "",
-        pageNum: 1,
-        pageSize: 10,
-      },
-      queryParams: {
-        lastTime: null,
-      },
-      dataNotMore: false,
       followListLoading: true,
-      followExpand: true, // 默认展开，false：fold
-      followListWidth: '208px',
-      curPlayUserId: null,
-      curPlayUserVideoNotMore: false,
     };
   },
   created() {
-    this.getInitUserInBox()
     this.getFollowList()
-    this.getFollowVideoFeed()
   },
   mounted() {
-    // 事件监听
     window.addEventListener('scroll', this.listenFollowListScroll, true)
   },
   methods: {
-    getInitUserInBox() {
-      initUserInBox().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-
-        }
-      }).catch(err => console.log('Init user inbox failed'))
-    },
     // 获取关注用户列表
     getFollowList() {
       if (this.followListDataNotMore) {
@@ -124,21 +76,27 @@ export default {
       }
       this.followListLoading = true
       followPageList(this.followQueryParams).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
+        console.log('📦 [FOLLOW] 关注列表响应:', res)
         if (res.code === 0 || res.code === 200) {
-          const rows = res.rows || res.data?.list || []
+          const rawItems = res.data?.items || res.data?.Items || res.rows || res.data?.list || []
+          const rows = rawItems.map(item => ({
+            userId: item.uid || item.userId || item.user_id,
+            nickName: item.user_name || item.userName || item.nickName,
+            avatar: item.avatar_url || item.avatarUrl || item.avatar,
+            bio: item.bio || ''
+          }))
+          console.log('✅ [FOLLOW] 转换后的关注列表:', rows)
           this.followList = this.followList.concat(rows)
-          this.followTotal = res.total || res.data?.total || 0
-          if (rows === null || rows.length == 0) {
+          this.followTotal = res.data?.total || res.total || 0
+          if (rawItems === null || rawItems.length == 0) {
             this.followListDataNotMore = true
           } else {
             this.followListDataNotMore = false
           }
         } else {
-          // 处理 Relation 服务错误
-          if (res.code === 10001 && res.msg.includes('Relation')) {
+          if (res.code === 10001 && res.msg?.includes('Relation')) {
             this.$message.error('关注服务暂时不可用，请稍后重试')
-          } else {
+          } else if (res.msg) {
             this.$message.error(res.msg)
           }
         }
@@ -149,74 +107,9 @@ export default {
         this.followListLoading = false
       })
     },
-    getFollowedVideoList(userId) {
-      this.userPageQueryParams.userId = userId
-      this.curPlayUserId = userId
-      this.curPlayUserVideoNotMore = false
-      this.loading = true
-      this.followQueryParams = {
-        pageNum: 1,
-        pageSize: 20,
-      }
-      videoUserpage(this.userPageQueryParams).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          const rows = res.rows || res.data?.list || []
-          console.log(typeof rows)
-          if (rows === null || rows.length === 0) {
-            this.$message.info("暂无更多视频")
-          } else {
-            this.videoList = rows
-          }
-          this.showVideoPlayer = true
-          this.loading = false
-        }
-      }).catch(err => {
-        console.log('User video fetch failed:', err)
-        this.loading = false
-      })
-    },
-    reloadVideoFeedEmit(val) {
-      if (this.curPlayUserId !== null) {
-        this.userPageQueryParams.pageNum++
-        this.getFollowedVideoList(this.curPlayUserId)
-      } else {
-        this.getFollowVideoFeed()
-      }
-    },
-    // 获取关注视频流
-    getFollowVideoFeed() {
-      this.loading = true
-      followVideoFeed(this.queryParams).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          const data = res.data || []
-          if (data === null || data.length === 0) {
-            this.loading = false
-            this.dataNotMore = true
-            this.showVideoPlayer = false
-          } else {
-            this.videoList = data
-            this.queryParams.lastTime = new Date(this.videoList[this.videoList.length - 1].createTime).getTime()
-            this.loading = false
-            this.showVideoPlayer = true
-          }
-          // console.log(this.queryParams.lastTime)
-        }
-      }).catch(err => {
-        console.log('Follow video feed fetch failed:', err)
-        this.loading = false
-        this.dataNotMore = true
-        this.showVideoPlayer = false
-      })
-    },
-    handleExpandFold() {
-      this.followExpand = !this.followExpand
-      if (this.followExpand) {
-        this.followListWidth = '208px'
-      } else {
-        this.followListWidth = '76px'
-      }
+    // 跳转到用户主页
+    goToUserPage(userId) {
+      this.$router.push({ path: `/user/${userId}` })
     },
     listenFollowListScroll(e) {
       if (e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10) {
@@ -225,77 +118,100 @@ export default {
           this.getFollowList()
           this.loadingFollowListData = false
           setTimeout(() => {
-            // 流控
             this.loadingFollowListData = true
           }, 1000);
         }
-
       }
     },
   },
   destroyed() {
-    // 离开页面取消监听
     window.removeEventListener('scroll', this.listenFollowListScroll)
   }
 };
 </script>
 
-<style>
+<style scoped>
 .follow-container {
   width: 100%;
   height: 100%;
-  border-radius: 1rem;
   display: flex;
-  transition: all .3s ease-in-out;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.follow-page {
+  width: 100%;
+  max-width: 600px;
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+}
+
+.follow-header {
+  padding: 1rem;
+  border-bottom: 1px solid var(--el-border-color-light);
+}
+
+.follow-title {
+  margin: 0;
+  font-size: 1.25rem;
+  font-weight: 600;
+}
+
+.follow-list-scroll {
+  flex: 1;
+}
+
+.follow-user-list {
+  display: flex;
+  flex-direction: column;
 }
 
 .user-card {
-  border-radius: 1rem;
-  padding: 0.5rem;
+  display: flex;
+  align-items: center;
+  padding: 1rem;
   cursor: pointer;
-  transition: all .3s ease;
-
-  .user-info {
-    display: flex;
-    align-items: center;
-
-    .user-nickname {
-      padding-left: 10px;
-
-      .nickname {
-        font-size: 0.8rem;
-      }
-
-    }
-  }
-}
-
-.user-card-cur {
-  background-color: var(--bg-aside-a);
-  backdrop-filter: blur(10px);
+  transition: background-color .2s ease;
+  gap: 1rem;
+  border-bottom: 1px solid var(--el-border-color-lighter);
 }
 
 .user-card:hover {
-  background-color: var(--bg-aside-a);
-  backdrop-filter: blur(10px);
+  background-color: var(--el-fill-color-light);
 }
 
-.follow-left {
-  display: flex;
-  flex-flow: column;
+.user-avatar-wrapper {
+  flex-shrink: 0;
 }
 
-.video-container {
-  transition: all .3s ease-in-out;
+.user-avatar {
+  border: 2px solid var(--el-border-color-light);
 }
 
-.cur-play-dot {
-  position: absolute;
-  right: -5px;
-  display: inline-block;
-  width: 10px;
-  height: 10px;
-  border-radius: 50%;
-  background-color: var(--niuyin-primary-color);
+.user-info-detail {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.user-info-detail .nickname {
+  font-size: 1rem;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin: 0 0 4px 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-info-detail .user-id {
+  font-size: 0.8rem;
+  color: var(--el-text-color-secondary);
+  margin: 0;
+}
+
+.list-end {
+  padding: 1rem;
 }
 </style>

@@ -51,6 +51,7 @@ const router = createRouter({
                 {path: "follow", component: () => import("@/Layout/Follow.vue")},
                 {path: "channel", component: () => import("@/Layout/Channel.vue")},
                 {path: "hotVideo", component: () => import("@/Layout/HotVideo.vue")},
+                {path: "upload", component: () => import("@/Layout/VideoUpload.vue")},
                 {
                     path: 'person/:userId', component: () => import('@/Layout/Person.vue'),
                     // redirect: '/person/:userId(\\d+)/videoPost',

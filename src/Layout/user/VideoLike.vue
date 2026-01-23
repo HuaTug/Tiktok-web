@@ -115,13 +115,16 @@ export default {
         // 转换视频URL - 使用前端代理地址，解决跨域问题
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
         if (!videoUrl || (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4`
+          videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
         }
         
         // 转换封面URL - 使用前端代理地址，解决跨域问题
+        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (!coverImage || (coverImage.includes('localhost:9002') || coverImage.includes('tiktok-user-content'))) {
-          coverImage = `/tiktok-user-content/videos/${userId}/${videoId}/source.mp4_thumb.jpg`
+        if (!coverImage || coverImage.includes('localhost:9002')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
+          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
         }
         
         return {

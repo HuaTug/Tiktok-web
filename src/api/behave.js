@@ -45,6 +45,24 @@ export function likeVideo(videoId, actionType = 1) {
     })
 }
 
+// 批量检查视频点赞状态
+export function batchLikeStatus(videoIds) {
+    return request({
+        url: '/v1/action/batch_status',
+        method: 'post',
+        data: { video_ids: videoIds }
+    })
+}
+
+// 批量检查视频收藏状态
+export function batchFavoriteStatus(videoIds) {
+    return request({
+        url: '/v1/favorite/batch_status',
+        method: 'post',
+        data: { video_ids: videoIds }
+    })
+}
+
 // 分页查询我喜欢的视频
 export function videoLikePage(data) {
     // Convert camelCase to snake_case for backend API
@@ -64,7 +82,11 @@ export function videoFavoritePage(data) {
     return request({
         url: '/v1/favorite/video/list',
         method: 'get',
-        params: data
+        params: {
+            favorite_id: data.favoriteId || 0,
+            page_num: data.pageNum || 1,
+            page_size: data.pageSize || 10
+        }
     })
 }
 
@@ -181,12 +203,15 @@ export function collectionInfoList() {
     })
 }
 
-// 分页收藏夹详情
+// 分页收藏夹详情（获取收藏夹列表）
 export function collectionInfoPage(data) {
     return request({
-        url: '/v1/favorite/video/list',
+        url: '/v1/favorite/list',
         method: 'get',
-        params: data
+        params: {
+            page_num: data.pageNum || 1,
+            page_size: data.pageSize || 10
+        }
     })
 }
 

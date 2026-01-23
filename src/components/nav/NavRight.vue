@@ -74,8 +74,8 @@
 <!--          </p>-->
 <!--        </div>-->
 <!--      </router-link>-->
-      <!--发布视频-->
-      <router-link class="link-type cp" to="" @click.native="openTargetLink('http://43.240.221.8:5273')">
+      <!--发布视频 - 使用新的上传页面-->
+      <router-link class="link-type cp" to="/upload">
         <div class="link-div icon-click cg plr10px">
           <div style="height: 20px;width: 20px;">
             <svg class="icon" aria-hidden="true">
@@ -83,7 +83,7 @@
             </svg>
           </div>
           <p>
-            <span class="cg fs7">投稿</span>
+            <span class="cg fs7">上传视频</span>
           </p>
         </div>
       </router-link>

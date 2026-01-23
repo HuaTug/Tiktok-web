@@ -331,8 +331,11 @@ export default {
     },
     // 点赞视频
     videoLikeClick(videoId) {
+      let actionType = 1 // 默认点赞
       this.videoList.forEach((item, index) => {
         if (item.videoId === videoId) {
+          // 根据当前状态决定action类型
+          actionType = item.weatherLike ? 2 : 1 // 已点赞则取消(2)，未点赞则点赞(1)
           // 设置为已点赞
           item.weatherLike = !item.weatherLike
           if (item.weatherLike) {
@@ -342,8 +345,8 @@ export default {
           }
         }
       })
-      likeVideo(videoId).then(res => {
-        if (res.code === 200) {
+      likeVideo(videoId, actionType).then(res => {
+        if (res.code === 200 || res.code === 0) {
 
         } else {
           this.videoList.forEach((item, index) => {

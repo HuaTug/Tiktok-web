@@ -34,15 +34,26 @@ instance.interceptors.response.use(res => {
     // 检查响应数据是否存在
     if (!res.data) {
         console.error('❌ [RESPONSE] 响应数据为空:', res.config.url)
-        ElMessage.error('服务器返回异常，请稍后重试')
+        ElMessage.error('服务器返回异常，请稀后重试')
         return Promise.reject('响应数据为空')
     }
     
     // 未设置状态码则默认成功状态
-    // Refactored-TikTok 后端成功码是 10000，也兼容 0 和 200
-    const code = res.data.code;
+    // Refactored-TikTok 后端有两种响应格式:
+    // 1. 直接返回 { code, msg/message, data }
+    // 2. 返回 { base: { code, msg }, ...otherFields }
+    let code = res.data.code;
+    let msg = res.data.message || res.data.msg;
+    
+    // 检查是否是 base 嵌套格式
+    if (code === undefined && res.data.base && res.data.base.code !== undefined) {
+        code = res.data.base.code;
+        msg = res.data.base.msg || res.data.base.message;
+        console.log('🔄 [RESPONSE] 检测到 base 格式响应，code:', code)
+    }
+    
     // 获取错误信息
-    const msg = errorCode[code] || res.data.message || res.data.msg || errorCode['default']
+    msg = errorCode[code] || msg || errorCode['default']
     
     // 二进制数据则直接返回
     if (res.request.responseType === 'blob' || res.request.responseType === 'arraybuffer') {
@@ -50,7 +61,7 @@ instance.interceptors.response.use(res => {
     }
     
     // 未认证
-    if (code === 401 || code === 10013) {
+    if (code === 401 || code === 10004 || code === 10013) {
         console.error('❌ [RESPONSE] 未认证! code:', code)
         console.error('❌ [RESPONSE] 错误信息:', msg)
         // 展示重新登陆逻辑
@@ -89,11 +100,8 @@ instance.interceptors.response.use(res => {
         // 成功时统一将 code 转换为 200 以兼容前端判断逻辑
         // Refactored-TikTok 后端返回 10000 表示成功
         console.log('✅ [RESPONSE] 请求成功! code:', code)
-        const result = { ...res.data }
-        if (result.code === 0 || result.code === 10000) {
-            console.log('🔄 [RESPONSE] 将code从', result.code, '转换为 200')
-            result.code = 200  // 统一转换为 200，兼容前端现有判断
-        }
+        const result = { ...res.data, code: 200 }  // 统一设置 code 为 200
+        console.log('🔄 [RESPONSE] 将code从', code, '转换为 200')
         return result
     }
 }, function (error) {
@@ -101,7 +109,7 @@ instance.interceptors.response.use(res => {
     console.error('🌐 [RESPONSE] 错误详情:', error.response?.data)
     
     // 检查是否是认证错误（即使连接被关闭）
-    if (error.response?.data?.code === 10013) {
+    if (error.response?.data?.code === 10004 || error.response?.data?.code === 10013) {
         console.error('❌ [RESPONSE] 未认证! code:', error.response.data.code)
         console.error('❌ [RESPONSE] 错误信息:', error.response.data.message || error.response.data.msg)
         // 展示重新登陆逻辑

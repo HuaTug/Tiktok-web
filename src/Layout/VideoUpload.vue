@@ -1,0 +1,638 @@
+<template>
+  <div class="upload-page">
+    <div class="upload-container">
+      <h2 class="page-title">上传视频</h2>
+      
+      <!-- 上传区域 -->
+      <div class="upload-section">
+        <div 
+          class="upload-area" 
+          :class="{ 'is-dragover': isDragover, 'has-file': selectedFile }"
+          @dragover.prevent="isDragover = true"
+          @dragleave.prevent="isDragover = false"
+          @drop.prevent="handleDrop"
+          @click="triggerFileSelect"
+        >
+          <!-- 上传中状态 -->
+          <div v-if="uploading" class="upload-progress">
+            <el-progress type="circle" :percentage="uploadPercent" :status="uploadStatus" :width="120"></el-progress>
+            <p class="stage-text">{{ stageText }}</p>
+            <p v-if="chunkInfo" class="chunk-text">分片进度: {{ chunkInfo.current }} / {{ chunkInfo.total }}</p>
+            <el-button type="danger" size="small" @click.stop="cancelUpload" style="margin-top: 15px;">取消上传</el-button>
+          </div>
+          
+          <!-- 已选择文件预览 -->
+          <div v-else-if="selectedFile" class="file-preview">
+            <video v-if="previewUrl" :src="previewUrl" class="preview-video" controls></video>
+            <div class="file-info">
+              <p class="file-name">{{ selectedFile.name }}</p>
+              <p class="file-size">{{ formatSize(selectedFile.size) }}</p>
+              <el-button type="danger" size="small" @click.stop="clearFile">移除文件</el-button>
+            </div>
+          </div>
+          
+          <!-- 默认上传提示 -->
+          <div v-else class="upload-placeholder">
+            <i class="upload-icon">📹</i>
+            <p class="upload-title">点击或拖拽视频文件到此处</p>
+            <p class="upload-hint">支持 MP4, AVI, MKV, MOV 等格式，最大 2GB</p>
+          </div>
+          
+          <input 
+            ref="fileInput" 
+            type="file" 
+            accept="video/*" 
+            style="display: none;" 
+            @change="handleFileSelect"
+          />
+        </div>
+      </div>
+
+      <!-- 视频信息表单 -->
+      <div class="form-section">
+        <el-form :model="form" :rules="rules" ref="formRef" label-width="100px" label-position="top">
+          <el-form-item label="视频标题" prop="title">
+            <el-input 
+              v-model="form.title" 
+              placeholder="请输入视频标题" 
+              maxlength="100" 
+              show-word-limit
+            ></el-input>
+          </el-form-item>
+
+          <el-form-item label="视频简介" prop="description">
+            <el-input 
+              type="textarea" 
+              v-model="form.description" 
+              placeholder="请输入视频简介" 
+              maxlength="500" 
+              show-word-limit
+              :rows="4"
+            ></el-input>
+          </el-form-item>
+
+          <el-row :gutter="20">
+            <el-col :span="12">
+              <el-form-item label="视频标签">
+                <div class="tags-container">
+                  <el-tag 
+                    v-for="(tag, index) in form.tags" 
+                    :key="index" 
+                    closable 
+                    @close="removeTag(index)"
+                    style="margin-right: 8px; margin-bottom: 8px;"
+                  >
+                    {{ tag }}
+                  </el-tag>
+                  <el-input
+                    v-if="showTagInput"
+                    ref="tagInput"
+                    v-model="newTag"
+                    size="small"
+                    style="width: 100px;"
+                    @keyup.enter="addTag"
+                    @blur="addTag"
+                    placeholder="输入标签"
+                  ></el-input>
+                  <el-button v-else-if="form.tags.length < 5" size="small" @click="showTagInput = true">
+                    + 添加标签
+                  </el-button>
+                </div>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
+              <el-form-item label="公开设置">
+                <el-radio-group v-model="form.open">
+                  <el-radio :label="1">公开</el-radio>
+                  <el-radio :label="0">私密</el-radio>
+                  <el-radio :label="2">好友可见</el-radio>
+                </el-radio-group>
+              </el-form-item>
+            </el-col>
+          </el-row>
+
+          <el-form-item>
+            <el-button 
+              type="primary" 
+              size="large" 
+              :loading="uploading" 
+              :disabled="!selectedFile || uploading"
+              @click="submitUpload"
+              style="width: 200px;"
+            >
+              {{ uploading ? '上传中...' : '发布视频' }}
+            </el-button>
+          </el-form-item>
+        </el-form>
+      </div>
+
+      <!-- 上传结果 -->
+      <el-dialog v-model="showResult" title="上传成功" width="400px" center>
+        <div class="result-content">
+          <i class="result-icon">✅</i>
+          <p>视频已成功上传！</p>
+          <p class="result-info">视频ID: {{ uploadResult?.videoId }}</p>
+        </div>
+        <template #footer>
+          <el-button @click="resetAndClose">继续上传</el-button>
+          <el-button type="primary" @click="goToVideo">查看视频</el-button>
+        </template>
+      </el-dialog>
+    </div>
+  </div>
+</template>
+
+<script>
+import { ref, reactive, nextTick, onUnmounted } from 'vue'
+import { ElMessage } from 'element-plus'
+import request from '@/utils/request'
+
+export default {
+  name: 'VideoUpload',
+  setup() {
+    // 文件相关
+    const fileInput = ref(null)
+    const selectedFile = ref(null)
+    const previewUrl = ref('')
+    const isDragover = ref(false)
+
+    // 上传状态
+    const uploading = ref(false)
+    const uploadPercent = ref(0)
+    const uploadStatus = ref('')
+    const stageText = ref('')
+    const chunkInfo = ref(null)
+    const currentUuid = ref(null)
+
+    // 表单
+    const formRef = ref(null)
+    const form = reactive({
+      title: '',
+      description: '',
+      tags: [],
+      open: 1
+    })
+    const rules = {
+      title: [
+        { required: true, message: '请输入视频标题', trigger: 'blur' },
+        { min: 1, max: 100, message: '标题长度不能超过100个字符', trigger: 'blur' }
+      ]
+    }
+
+    // 标签输入
+    const showTagInput = ref(false)
+    const newTag = ref('')
+    const tagInput = ref(null)
+
+    // 上传结果
+    const showResult = ref(false)
+    const uploadResult = ref(null)
+
+    // 格式化文件大小
+    const formatSize = (bytes) => {
+      if (bytes === 0) return '0 B'
+      const k = 1024
+      const sizes = ['B', 'KB', 'MB', 'GB']
+      const i = Math.floor(Math.log(bytes) / Math.log(k))
+      return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i]
+    }
+
+    // 触发文件选择
+    const triggerFileSelect = () => {
+      if (!uploading.value && !selectedFile.value) {
+        fileInput.value?.click()
+      }
+    }
+
+    // 处理文件选择
+    const handleFileSelect = (e) => {
+      const file = e.target.files?.[0]
+      if (file) processFile(file)
+    }
+
+    // 处理拖拽
+    const handleDrop = (e) => {
+      isDragover.value = false
+      const file = e.dataTransfer?.files?.[0]
+      if (file) processFile(file)
+    }
+
+    // 处理文件
+    const processFile = (file) => {
+      // 验证文件类型
+      if (!file.type.startsWith('video/')) {
+        ElMessage.error('请选择视频文件')
+        return
+      }
+      // 验证文件大小 (2GB)
+      if (file.size > 2 * 1024 * 1024 * 1024) {
+        ElMessage.error('视频文件不能超过 2GB')
+        return
+      }
+
+      // 清理旧的预览
+      if (previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+      }
+
+      selectedFile.value = file
+      previewUrl.value = URL.createObjectURL(file)
+
+      // 自动填充标题
+      if (!form.title) {
+        form.title = file.name.replace(/\.[^/.]+$/, '').substring(0, 100)
+      }
+    }
+
+    // 清除文件
+    const clearFile = () => {
+      if (previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+      }
+      selectedFile.value = null
+      previewUrl.value = ''
+      if (fileInput.value) {
+        fileInput.value.value = ''
+      }
+    }
+
+    // 添加标签
+    const addTag = () => {
+      const tag = newTag.value.trim()
+      if (tag && !form.tags.includes(tag) && form.tags.length < 5) {
+        form.tags.push(tag)
+      }
+      newTag.value = ''
+      showTagInput.value = false
+    }
+
+    // 移除标签
+    const removeTag = (index) => {
+      form.tags.splice(index, 1)
+    }
+
+    // ========== 核心：分片上传逻辑 ==========
+    const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
+
+    const submitUpload = async () => {
+      // 表单验证
+      const valid = await formRef.value?.validate().catch(() => false)
+      if (!valid) return
+
+      if (!selectedFile.value) {
+        ElMessage.error('请先选择视频文件')
+        return
+      }
+
+      uploading.value = true
+      uploadPercent.value = 0
+      uploadStatus.value = ''
+      stageText.value = '初始化上传...'
+      chunkInfo.value = null
+
+      const file = selectedFile.value
+      const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+
+      try {
+        // Step 1: 开始上传
+        stageText.value = '创建上传会话...'
+        const startRes = await request({
+          url: '/v2/publish/start',
+          method: 'post',
+          data: {
+            title: form.title,
+            description: form.description,
+            lab_name: form.tags.join(','),
+            category: '',
+            open: form.open,
+            chunk_total_number: totalChunks
+          }
+        })
+
+        if (startRes.code !== 0 && startRes.code !== 200) {
+          throw new Error(startRes.message || '创建上传会话失败')
+        }
+
+        const uuid = startRes.data?.upload_session_uuid
+        if (!uuid) {
+          throw new Error('服务器返回的会话ID无效')
+        }
+        currentUuid.value = uuid
+        uploadPercent.value = 5
+
+        // Step 2: 分片上传
+        stageText.value = '上传视频分片...'
+        for (let i = 0; i < totalChunks; i++) {
+          const start = i * CHUNK_SIZE
+          const end = Math.min(start + CHUNK_SIZE, file.size)
+          const chunk = file.slice(start, end)
+
+          const formData = new FormData()
+          formData.append('uuid', uuid)
+          formData.append('chunk_number', i + 1)
+          formData.append('filename', file.name)
+          formData.append('is_m3u8', 'false')
+          formData.append('data', chunk, file.name)
+
+          const uploadRes = await request({
+            url: '/v2/publish/uploading',
+            method: 'post',
+            data: formData,
+            headers: { 'Content-Type': 'multipart/form-data' },
+            timeout: 300000
+          })
+
+          if (uploadRes.code !== 0 && uploadRes.code !== 200) {
+            throw new Error(uploadRes.message || `分片 ${i + 1} 上传失败`)
+          }
+
+          chunkInfo.value = { current: i + 1, total: totalChunks }
+          uploadPercent.value = Math.round(5 + ((i + 1) / totalChunks) * 85)
+        }
+
+        // Step 3: 完成上传
+        stageText.value = '处理视频中...'
+        uploadPercent.value = 92
+
+        const completeRes = await request({
+          url: '/v2/publish/complete',
+          method: 'post',
+          data: { uuid: uuid }
+        })
+
+        if (completeRes.code !== 0 && completeRes.code !== 200) {
+          throw new Error(completeRes.message || '完成上传失败')
+        }
+
+        // 上传成功
+        uploadPercent.value = 100
+        uploadStatus.value = 'success'
+        stageText.value = '上传完成！'
+
+        uploadResult.value = {
+          videoId: completeRes.data?.video_id,
+          videoUrl: completeRes.data?.video_url,
+          coverUrl: completeRes.data?.cover_url
+        }
+
+        ElMessage.success('视频上传成功！')
+        showResult.value = true
+
+      } catch (error) {
+        console.error('上传失败:', error)
+        uploadStatus.value = 'exception'
+        stageText.value = '上传失败'
+        ElMessage.error(error.message || '视频上传失败，请重试')
+
+        // 取消上传会话
+        if (currentUuid.value) {
+          try {
+            await request({
+              url: '/v2/publish/cancel',
+              method: 'post',
+              data: { uuid: currentUuid.value }
+            })
+          } catch (e) {
+            console.error('取消上传会话失败:', e)
+          }
+        }
+      } finally {
+        uploading.value = false
+        currentUuid.value = null
+      }
+    }
+
+    // 取消上传
+    const cancelUpload = async () => {
+      if (currentUuid.value) {
+        try {
+          await request({
+            url: '/v2/publish/cancel',
+            method: 'post',
+            data: { uuid: currentUuid.value }
+          })
+          ElMessage.info('已取消上传')
+        } catch (e) {
+          console.error('取消上传失败:', e)
+        }
+      }
+      uploading.value = false
+      uploadPercent.value = 0
+      uploadStatus.value = ''
+      stageText.value = ''
+      chunkInfo.value = null
+      currentUuid.value = null
+    }
+
+    // 重置并关闭
+    const resetAndClose = () => {
+      showResult.value = false
+      clearFile()
+      form.title = ''
+      form.description = ''
+      form.tags = []
+      form.open = 1
+      uploadPercent.value = 0
+      uploadStatus.value = ''
+      stageText.value = ''
+      chunkInfo.value = null
+    }
+
+    // 跳转到视频
+    const goToVideo = () => {
+      showResult.value = false
+      // 可以跳转到视频详情页
+      window.location.href = '/'
+    }
+
+    // 清理
+    onUnmounted(() => {
+      if (previewUrl.value) {
+        URL.revokeObjectURL(previewUrl.value)
+      }
+    })
+
+    return {
+      // 文件
+      fileInput,
+      selectedFile,
+      previewUrl,
+      isDragover,
+      // 上传状态
+      uploading,
+      uploadPercent,
+      uploadStatus,
+      stageText,
+      chunkInfo,
+      // 表单
+      formRef,
+      form,
+      rules,
+      // 标签
+      showTagInput,
+      newTag,
+      tagInput,
+      // 结果
+      showResult,
+      uploadResult,
+      // 方法
+      formatSize,
+      triggerFileSelect,
+      handleFileSelect,
+      handleDrop,
+      clearFile,
+      addTag,
+      removeTag,
+      submitUpload,
+      cancelUpload,
+      resetAndClose,
+      goToVideo
+    }
+  }
+}
+</script>
+
+<style scoped>
+.upload-page {
+  min-height: 100vh;
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 40px 20px;
+}
+
+.upload-container {
+  max-width: 800px;
+  margin: 0 auto;
+  background: #fff;
+  border-radius: 16px;
+  padding: 40px;
+  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+}
+
+.page-title {
+  text-align: center;
+  font-size: 28px;
+  color: #333;
+  margin-bottom: 30px;
+  font-weight: 600;
+}
+
+.upload-section {
+  margin-bottom: 30px;
+}
+
+.upload-area {
+  border: 3px dashed #ddd;
+  border-radius: 12px;
+  padding: 40px;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  min-height: 250px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.upload-area:hover,
+.upload-area.is-dragover {
+  border-color: #667eea;
+  background: #f8f9ff;
+}
+
+.upload-area.has-file {
+  border-style: solid;
+  border-color: #67c23a;
+  cursor: default;
+}
+
+.upload-placeholder {
+  color: #666;
+}
+
+.upload-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 20px;
+}
+
+.upload-title {
+  font-size: 18px;
+  margin-bottom: 10px;
+  color: #333;
+}
+
+.upload-hint {
+  font-size: 14px;
+  color: #999;
+}
+
+.file-preview {
+  width: 100%;
+}
+
+.preview-video {
+  max-width: 100%;
+  max-height: 300px;
+  border-radius: 8px;
+  margin-bottom: 15px;
+}
+
+.file-info {
+  text-align: center;
+}
+
+.file-name {
+  font-size: 16px;
+  color: #333;
+  margin-bottom: 5px;
+  word-break: break-all;
+}
+
+.file-size {
+  font-size: 14px;
+  color: #999;
+  margin-bottom: 10px;
+}
+
+.upload-progress {
+  text-align: center;
+}
+
+.stage-text {
+  margin-top: 15px;
+  font-size: 16px;
+  color: #666;
+}
+
+.chunk-text {
+  margin-top: 8px;
+  font-size: 14px;
+  color: #999;
+}
+
+.form-section {
+  margin-top: 30px;
+}
+
+.tags-container {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+}
+
+.result-content {
+  text-align: center;
+  padding: 20px;
+}
+
+.result-icon {
+  font-size: 64px;
+  display: block;
+  margin-bottom: 15px;
+}
+
+.result-info {
+  color: #999;
+  font-size: 14px;
+}
+</style>
