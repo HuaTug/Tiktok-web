@@ -1,5 +1,5 @@
 <template>
-<div class="fixed inset-0 z-[999] flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
+<div class="relative z-[50] flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
        v-loading="loading"
        :element-loading-svg="svg"
        element-loading-svg-view-box="-10, -10, 50, 50">
@@ -571,7 +571,7 @@ export default {
   data() {
     return {
       // New Layout Props
-      showRightPanel: true,
+      showRightPanel: false,
       activeTab: 'comments',
       currentVideo: null,
       
