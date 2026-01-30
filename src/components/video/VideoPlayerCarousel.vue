@@ -1,272 +1,192 @@
 <template>
-  <div class="video-carousel-container wh100 pr flex-between"
+<div class="flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
        v-loading="loading"
        :element-loading-svg="svg"
        element-loading-svg-view-box="-10, -10, 50, 50">
-    <el-carousel class="video-player"
-                 ref="carousel"
-                 :element-loading-spinner="true"
-                 direction="vertical"
-                 :autoplay="false"
-                 :loop="false"
-                 :lazy="true"
-                 indicator-position="none"
-                 @keydown.stop="keyDown"
-                 @mousewheel="rollScroll($event)"
-                 @change="carouselChange"
-                 @ended="carouselEnd">
-      <el-carousel-item v-for="item in videoList"
-                        :key="item.videoId"
-                        :lazy="true"
-                        @keydown="keyDownZ(item.videoId,$event)">
-        <div class="video-box">
-          <div class="video-container">
-            <!--            图文轮播-->
-            <ImagePlayer v-if="item.publishType==='1'" :cover-image="item.coverImage" :image-list="item.imageList"/>
-            <!--            视频-->
-            <VideoPlayer v-if="item.publishType==='0'"
-                         class="videoPlayer"
-                         id="videoPlayer"
-                         :video="item"/>
-            <!--            视频类型-->
-            <div v-if="item.publishType==='1'" class="flex-center video-type-pics">
-              <svg class="icon1rem" aria-hidden="true">
-                <use xlink:href="#icon-pics"></use>
-              </svg>
-              <span class="type-desc fs7 fw500">图文</span>
-            </div>
-            <!--          视频简介区域-->
-            <div class="videoinfo-area">
-              <!--              定位信息-->
-              <div v-if="item.positionFlag==='1'">
-                <div v-if="item.position!=null" class="video-position mtb5 flex-center">
-                  <svg class="icon mr5px" aria-hidden="true">
-                    <use xlink:href="#icon-position"></use>
-                  </svg>
-                  <span v-if="item.position.city!==null" class="position-city fs9">{{ item.position.city }}</span>
-                  <span v-else class="position-city fs9">{{ item.position.province }}</span>
-                  <span class="position-dist fs9">{{ item.position.district }}</span>
-                  <span class="position-add fs9">{{ parseAddress(item.position) }}</span>
-                </div>
+       
+    <!-- Left Sidebar -->
+    <div class="w-[72px] xl:w-[240px] flex flex-col border-r border-white/5 bg-[#0f1015] transition-all duration-300 z-50">
+      <!-- Logo -->
+      <div class="h-16 flex items-center justify-center xl:justify-start xl:px-6 shrink-0 cursor-pointer" @click="$router.push('/')">
+         <img class="w-8 h-8 object-contain" src="@/assets/logo/logo-cheese.png" alt="Logo">
+         <span class="hidden xl:block ml-3 font-bold text-xl tracking-tight">TikTok</span>
+      </div>
+      
+      <!-- Nav Menu -->
+      <div class="flex-1 py-4 overflow-y-auto">
+        <div class="px-2 space-y-2">
+           <div v-for="(item, i) in navItems" :key="i" 
+                class="flex items-center gap-4 px-3 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all cursor-pointer group"
+                :class="{'bg-white/10 text-white font-bold': activeNav === item.id}"
+                @click="handleNavClick(item)">
+              <div class="w-6 h-6 flex items-center justify-center">
+                 <svg class="w-6 h-6 fill-current" aria-hidden="true"><use :xlink:href="item.icon"></use></svg>
               </div>
-              <!--              视频信息-->
-              <div class="video-title one-line cw fs125 fw600">
-                <span>@ </span><span v-html="item.userNickName" class="cp"
-                                     @click="handleLinkUserInfo(item.userId)"></span>
-                <span class="fs9 fw400 cg"> · {{ smartDateFormat(item.createTime) }}</span>
-              </div>
-              <div v-html="item.videoTitle" class="video-title one-line cw fw400 mtb5"></div>
-              <div>
-                <span v-for="tag in item.tags" class="video-tag fs9 cp mr5px"
-                      @click="handleClickVideoTag(tag)"><span>#</span>{{ tag }}</span>
-              </div>
-            </div>
-            <!--          视频点赞等操作区域-->
-            <div class="video-operate">
-              <div class="operate-area">
-                <div class="video-author" @click="handlePersonInfo(item.userId,item)">
-                  <el-avatar v-if="item.userAvatar"
-                             class="user-avatar cp hv-scale"
-                             :size="64"
-                             :src="item.userAvatar"
-                             lazy/>
-                  <el-avatar v-else
-                             class="user-avatar cp"
-                             :icon="UserFilled"/>
-                  <span v-if="!item.weatherFollow" class="user-att cp operate-icon">
-                    <svg class="icon1-5rem" aria-hidden="true" @click="handleAttUser(item.userId)">
-                      <use xlink:href="#icon-attention"></use></svg>
-                  </span>
-                </div>
-                <!--            点赞  -->
-                <div class="op">
-                  <svg v-if="item.weatherLike" class="icon32 operate-svg" aria-hidden="true"
-                       @click="videoLikeClick(item.videoId)">
-                    <use xlink:href="#icon-like-ed"></use>
-                  </svg>
-                  <svg v-else class="icon32 operate-svg" aria-hidden="true" @click="videoLikeClick(item.videoId)">
-                    <use xlink:href="#icon-like"></use>
-                  </svg>
-                  <div style="text-align: center;color: white">{{ item.likeNum }}</div>
-                </div>
-                <!--              评论-->
-                <div class="op">
-                  <svg class="icon32 operate-svg" aria-hidden="true" @click="videoCommentClick(item.videoId)">
-                    <use xlink:href="#icon-comment"></use>
-                  </svg>
-                  <div style="text-align: center;color: white">{{ item.commentNum }}</div>
-                </div>
-                <!--              收藏-->
-                <div class="op">
-                  <!--收藏按钮弹框-->
-                  <el-popover placement="left-end"
-                              :width="300"
-                              :show-arrow="false"
-                              :ref="'favoritePop'+item.videoId">
-                    <!--收藏按钮根据是否收藏显示不同的状态-->
-                    <template #reference>
-                      <svg v-if="item.weatherFavorite" class="icon32 operate-svg" aria-hidden="true"
-                           @click="handleCancelFavoriteOver(item.videoId)"
-                           @mouseover.stop="handleFavoriteOver(item.videoId)">
-                        <use xlink:href="#icon-favorite-ed"></use>
-                      </svg>
-                      <svg v-else class="icon32 operate-svg" aria-hidden="true"
-                           @mouseover.stop="handleFavoriteOver(item.videoId)"
-                           @mouseleave.stop="handleFavoriteLeave(item.videoId)">
-                        <use xlink:href="#icon-favorite"></use>
-                      </svg>
-                    </template>
-                    <template #default>
-                      <!--弹窗主体-->
-                      <div class="p1rem" style="min-height: 12vh;">
-                        <!--头部-->
-                        <div class="flex-between mb5">
-                          <span>选择收藏夹</span>
-                          <!--新建文件夹按钮-->
-                          <div>
-                            <el-button class="tac" @click="dialogFormVisible = true">
-                              <el-icon class="mr-5r" :size="16">
-                                <CirclePlus/>
-                              </el-icon>
-                              新建
-                            </el-button>
-                          </div>
-                        </div>
-                        <!--卡片主题内容列表-->
-                        <div class="favorite-container">
-                          <el-checkbox-group v-model="favoriteChecked"
-                                             @change="handleFavoriteCheckedChange">
-                            <el-checkbox class="mb5 w100"
-                                         v-for="item2 in userFavoriteList"
-                                         border
-                                         :key="item2.favoriteId"
-                                         :label="item2.favoriteId"
-                                         :name="item2.title">{{ item2.title }}
-                            </el-checkbox>
-                          </el-checkbox-group>
-                        </div>
-                        <div class="favorite-op tac">
-                          <!--                          已收藏-->
-                          <!--                          <el-button v-if="item.weatherFavorite"-->
-                          <!--                                     type="warning"-->
-                          <!--                                     disabled>已收藏-->
-                          <!--                          </el-button>-->
-                          <!--                          <el-button v-else-->
-                          <!--                                     type="info"-->
-                          <!--                                     @click="handleOnlyFavoriteVideo(item.videoId)">仅收藏视频-->
-                          <!--                          </el-button>-->
-                          <el-button
-                              type="info"
-                              @click="handleOnlyFavoriteVideo(item.videoId)">仅收藏视频
-                          </el-button>
-                          <el-button type="primary"
-                                     :disabled="favoriteBtn"
-                                     @click="handleCollectVideo(item.videoId)">收藏至收藏夹
-                          </el-button>
-                        </div>
-                      </div>
-                    </template>
-                  </el-popover>
-                  <div class="video-nums cw tac">{{ item.favoritesNum }}</div>
-                </div>
-                <!--              分享-->
-                <div class="op">
-                  <svg class="icon32 operate-svg" aria-hidden="true">
-                    <use xlink:href="#icon-share"></use>
-                  </svg>
-                  <div class="video-nums cw tac">{{ item.favoritesNum }}</div>
-                </div>
-                <!--                更多-->
-                <div class="op">
-                  <el-popover placement="left-end"
-                              :show-arrow="false"
-                              trigger="click"
-                              :width="240">
-                    <!--收藏按钮根据是否收藏显示不同的状态-->
-                    <template #reference>
-                      <el-icon class="operate-icon"
-                               :size="28"
-                               color="white">
-                        <MoreFilled/>
-                      </el-icon>
-                    </template>
-                    <template #default>
-                      <div class="p1rem">
-                        <div class="flex-between">
-                          <div class="flex-center flex-column cp">
-                            <div class="more-pop-icon hv-svg">
-                              <svg class="icon1-5rem flex-center" aria-hidden="true">
-                                <use xlink:href="#icon-unlike"></use>
-                              </svg>
-                            </div>
-                            <div class="mtb5 cg fs8">不感兴趣</div>
-                          </div>
-                          <div class="flex-center flex-column cp">
-                            <div class="more-pop-icon hv-svg">
-                              <svg class="icon1-5rem flex-center" aria-hidden="true">
-                                <use xlink:href="#icon-report"></use>
-                              </svg>
-                            </div>
-                            <div class="mtb5 cg fs8">举报</div>
-                          </div>
-                          <div class="flex-center flex-column cp">
-                            <div class="more-pop-icon hv-svg">
-                              <svg class="icon1-5rem flex-center" aria-hidden="true">
-                                <use xlink:href="#icon-shortcut"></use>
-                              </svg>
-                            </div>
-                            <div class="mtb5 cg fs8">快捷键列表</div>
-                          </div>
-                        </div>
-                      </div>
-                    </template>
-                  </el-popover>
-                </div>
-              </div>
-            </div>
-          </div>
+              <span class="hidden xl:block text-base font-medium">{{ item.name }}</span>
+           </div>
         </div>
-        <!-- 视频评论抽屉 -->
-        <el-drawer class="video-sidebar"
-                   v-model="drawer"
-                   v-if="showVideoComment"
-                   :show-close="false"
-                   @mousewheel.stop
-                   :before-close="videoCommentTree=null">
-          <template #header="{ close, titleId, titleClass }">
-            <h2 class="cw" :id="titleId" :class="titleClass">评论 <span>( {{ item.commentNum }} )</span></h2>
-            <!--            <h2 class="cw" :id="titleId" :class="titleClass">评论</h2>-->
-            <el-button circle class="cb" :icon="Close" type="info" @click="close">
-            </el-button>
-          </template>
-          <VideoComment :video-id="videoId"
-                        :show="true"
-                        @emitUpdateVideoCommentNum="updateVideoCommentNumEmit"/>
-        </el-drawer>
-      </el-carousel-item>
-    </el-carousel>
-    <!-- 视频右侧控制按钮-->
-    <div class="player-playswitch flex-center">
-      <div class="player-playswitch-tab">
-        <div class="player-playswitch-prev cp" @click="handleVideoPrev">
-          <el-icon color="#c0bdbd" :size="18">
-            <ArrowUpBold/>
-          </el-icon>
-        </div>
-        <div class="player-playswitch-next cp" @click="handleVideoNext">
-          <el-icon color="#c0bdbd" :size="18">
-            <ArrowDownBold/>
-          </el-icon>
-        </div>
+      </div>
+      
+      <!-- Bottom Actions -->
+      <div class="p-4 border-t border-white/5">
+         <div class="flex items-center justify-center xl:justify-start gap-3 text-gray-400 hover:text-white cursor-pointer">
+            <el-icon :size="24"><Setting /></el-icon>
+            <span class="hidden xl:block">Settings</span>
+         </div>
       </div>
     </div>
-    <!-- 反馈-->
-    <div class="feedback">
-      <div class="feedback-icon flex-center cp">
-        <el-icon color="#5a5a5a" :size="20">
-          <QuestionFilled/>
-        </el-icon>
+
+    <!-- Main Content (Player) -->
+    <div class="flex-1 relative bg-black flex flex-col justify-center items-center overflow-hidden">
+      <div class="relative w-full h-full max-w-[calc(100vh*9/16)] xl:max-w-full xl:w-full xl:h-full flex justify-center items-center">
+          <el-carousel class="w-full h-full"
+                       ref="carousel"
+                       direction="vertical"
+                       :autoplay="false"
+                       :loop="false"
+                       indicator-position="none"
+                       @mousewheel="rollScroll($event)"
+                       @change="carouselChange">
+            <el-carousel-item v-for="item in videoList" :key="item.videoId" class="flex justify-center items-center bg-black">
+               <div class="relative w-full h-full flex justify-center items-center bg-black">
+                  <!-- Video Player Component -->
+                  <div class="relative w-full h-full max-w-[calc(100vh*9/16)] xl:max-w-full xl:w-full xl:h-full bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5">
+                      <VideoPlayer v-if="item.publishType==='0'" class="w-full h-full object-contain" :video="item"/>
+                      <ImagePlayer v-else :cover-image="item.coverImage" :image-list="item.imageList"/>
+                      
+                      <!-- Overlay UI -->
+                      <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
+                      
+                      <!-- Right Floating Actions (Inside Video) -->
+                      <div class="absolute right-4 bottom-20 z-20 flex flex-col items-center gap-6 pointer-events-auto">
+                          <!-- Avatar -->
+                          <div class="relative group cursor-pointer" @click="handlePersonInfo(item.userId, item)">
+                             <el-avatar :size="48" :src="item.userAvatar" class="border-2 border-white shadow-lg transition-transform group-hover:scale-110"/>
+                             <div v-if="!item.weatherFollow" class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#FE2C55] rounded-full w-5 h-5 flex items-center justify-center text-white shadow-sm" @click.stop="handleAttUser(item.userId)">
+                                <el-icon :size="12"><Plus /></el-icon>
+                             </div>
+                          </div>
+                          
+                          <!-- Like -->
+                          <div class="flex flex-col items-center gap-1 cursor-pointer group" @click="videoLikeClick(item.videoId)">
+                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
+                                <svg class="w-7 h-7 transition-colors" :class="item.weatherLike ? 'text-[#FE2C55]' : 'text-white'" aria-hidden="true"><use :xlink:href="item.weatherLike ? '#icon-like-ed' : '#icon-like'"></use></svg>
+                             </div>
+                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.likeNum }}</span>
+                          </div>
+                          
+                          <!-- Comment (Toggle Right Panel) -->
+                          <div class="flex flex-col items-center gap-1 cursor-pointer group" @click="toggleCommentPanel">
+                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
+                                <svg class="w-7 h-7 text-white" aria-hidden="true"><use xlink:href="#icon-comment"></use></svg>
+                             </div>
+                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.commentNum }}</span>
+                          </div>
+                          
+                          <!-- Favorite -->
+                          <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                             <!-- Popover for Favorite -->
+                             <el-popover placement="left" :width="300" :show-arrow="false" :ref="'favoritePop'+item.videoId" trigger="hover">
+                                <template #reference>
+                                   <div class="flex flex-col items-center gap-1">
+                                     <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
+                                        <svg class="w-7 h-7 transition-colors" :class="item.weatherFavorite ? 'text-[#FACC15]' : 'text-white'" aria-hidden="true"><use :xlink:href="item.weatherFavorite ? '#icon-favorite-ed' : '#icon-favorite'"></use></svg>
+                                     </div>
+                                   </div>
+                                </template>
+                                <div class="p-4">
+                                   <div class="flex justify-between items-center mb-4">
+                                      <span class="font-bold">Add to Favorites</span>
+                                      <el-button size="small" @click="dialogFormVisible = true">New</el-button>
+                                   </div>
+                                   <div class="max-h-40 overflow-y-auto mb-4">
+                                      <el-checkbox-group v-model="favoriteChecked" @change="handleFavoriteCheckedChange">
+                                         <el-checkbox v-for="fav in userFavoriteList" :key="fav.favoriteId" :label="fav.favoriteId" class="w-full mb-2">{{ fav.title }}</el-checkbox>
+                                      </el-checkbox-group>
+                                   </div>
+                                   <div class="flex justify-end gap-2">
+                                      <el-button size="small" @click="handleOnlyFavoriteVideo(item.videoId)">Quick Save</el-button>
+                                      <el-button type="primary" size="small" :disabled="favoriteBtn" @click="handleCollectVideo(item.videoId)">Done</el-button>
+                                   </div>
+                                </div>
+                             </el-popover>
+                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.favoritesNum }}</span>
+                          </div>
+                          
+                          <!-- Share -->
+                          <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
+                                <svg class="w-7 h-7 text-white" aria-hidden="true"><use xlink:href="#icon-share"></use></svg>
+                             </div>
+                             <span class="text-xs font-medium text-white drop-shadow-md">Share</span>
+                          </div>
+                      </div>
+                      
+                      <!-- Bottom Info -->
+                      <div class="absolute bottom-4 left-4 right-16 z-20 text-left pointer-events-auto">
+                          <div class="mb-2 flex items-center gap-2">
+                             <span class="text-lg font-bold text-white drop-shadow-md cursor-pointer hover:underline" @click="handlePersonInfo(item.userId, item)">@{{ item.userNickName }}</span>
+                             <span class="text-xs text-gray-300 drop-shadow-md">{{ smartDateFormat(item.createTime) }}</span>
+                             <div v-if="item.positionFlag==='1' && item.position" class="flex items-center bg-black/30 px-2 py-0.5 rounded text-xs text-gray-300">
+                                <el-icon class="mr-1"><Location /></el-icon>
+                                {{ item.position.city || item.position.province }}
+                             </div>
+                          </div>
+                          <div class="text-sm text-white/90 mb-2 line-clamp-2 drop-shadow-md" v-html="item.videoTitle"></div>
+                          <div class="flex flex-wrap gap-2">
+                             <span v-for="tag in item.tags" :key="tag" class="text-xs font-bold text-yellow-400 drop-shadow-md cursor-pointer hover:text-yellow-300" @click="handleClickVideoTag(tag)">#{{ tag }}</span>
+                          </div>
+                      </div>
+                  </div>
+               </div>
+            </el-carousel-item>
+          </el-carousel>
+          
+          <!-- Navigation Buttons -->
+          <div class="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30 hidden xl:flex">
+             <div class="w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-700/80 flex items-center justify-center cursor-pointer transition-all" @click="handleVideoPrev">
+                <el-icon color="white"><ArrowUpBold /></el-icon>
+             </div>
+             <div class="w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-700/80 flex items-center justify-center cursor-pointer transition-all" @click="handleVideoNext">
+                <el-icon color="white"><ArrowDownBold /></el-icon>
+             </div>
+          </div>
       </div>
+    </div>
+
+    <!-- Right Sidebar (Comments) -->
+    <div class="w-[360px] bg-[#0f1015] border-l border-white/5 flex flex-col transition-all duration-300 z-40" v-if="showRightPanel">
+       <!-- Tabs -->
+       <div class="flex border-b border-white/5">
+          <div class="flex-1 py-4 text-center text-sm font-medium cursor-pointer transition-colors relative" 
+               :class="activeTab === 'comments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'"
+               @click="activeTab = 'comments'">
+             Comments <span class="text-xs bg-gray-800 px-1.5 py-0.5 rounded-full ml-1">{{ currentVideo?.commentNum || 0 }}</span>
+             <div v-if="activeTab === 'comments'" class="absolute bottom-0 left-0 w-full h-0.5 bg-[#FE2C55]"></div>
+          </div>
+          <div class="flex-1 py-4 text-center text-sm font-medium cursor-pointer transition-colors relative"
+               :class="activeTab === 'creator' ? 'text-white' : 'text-gray-500 hover:text-gray-300'"
+               @click="activeTab = 'creator'">
+             Creator
+             <div v-if="activeTab === 'creator'" class="absolute bottom-0 left-0 w-full h-0.5 bg-[#FE2C55]"></div>
+          </div>
+       </div>
+       
+       <!-- Content -->
+       <div class="flex-1 overflow-hidden relative">
+          <div v-if="activeTab === 'comments'" class="h-full">
+             <VideoComment :video-id="currentVideo?.videoId" :show="true" @emitUpdateVideoCommentNum="updateVideoCommentNumEmit" />
+          </div>
+          <div v-else class="h-full p-4 text-center text-gray-500">
+             <div class="flex flex-col items-center mt-10">
+                <el-avatar :size="80" :src="currentVideo?.userAvatar" class="mb-4"/>
+                <h3 class="text-xl font-bold text-white mb-2">{{ currentVideo?.userNickName }}</h3>
+                <el-button type="primary" class="w-full mt-4" @click="handleAttUser(currentVideo?.userId)">
+                   {{ currentVideo?.weatherFollow ? 'Unfollow' : 'Follow' }}
+                </el-button>
+             </div>
+          </div>
+       </div>
     </div>
   </div>
   <!-- 新建收藏夹提示框 -->
@@ -623,7 +543,13 @@ import { encodeData, smartDateFormat } from "@/utils/roydon.js";
 import {
     ArrowDownBold,
     ArrowUpBold,
-    ChatDotRound, ChromeFilled, CirclePlus, Close, MoreFilled, QuestionFilled, UserFilled
+    ChatDotRound, ChromeFilled, CirclePlus, Close,
+    Location,
+    MoreFilled,
+    Plus,
+    QuestionFilled,
+    Setting,
+    UserFilled
 } from '@element-plus/icons-vue';
 
 export default {
@@ -639,7 +565,8 @@ export default {
     MoreFilled,
     VideoPlayer,
     VideoComment,
-    VideoPlayDialog
+    VideoPlayDialog,
+    Setting, Location, Plus
   },
   computed: {
     UserFilled() {
@@ -661,6 +588,18 @@ export default {
   },
   data() {
     return {
+      // New Layout Props
+      navItems: [
+        {id: 0, name: 'Home', icon: '#icon-index', link: '/'},
+        {id: 1, name: 'Discover', icon: '#icon-discover', link: '/discover'},
+        {id: 2, name: 'Following', icon: '#icon-follow', link: '/follow'},
+        {id: 3, name: 'Profile', icon: '#icon-erciyuan', link: '/user'}
+      ],
+      activeNav: 0,
+      showRightPanel: true,
+      activeTab: 'comments',
+      currentVideo: null,
+      
       dialogFormVisible: false,
       favoriteBtn: false,
       userFavoriteForm: {
@@ -723,6 +662,14 @@ export default {
     })
   },
   watch: {
+    videoList: {
+      handler(val) {
+        if (val && val.length > 0 && !this.currentVideo) {
+          this.currentVideo = val[0];
+        }
+      },
+      immediate: true
+    },
     dialogVideo(newVideo) {
       // 监听 dialogVideo 的变化
 
@@ -730,6 +677,15 @@ export default {
     }
   },
   methods: {
+    toggleCommentPanel() {
+      this.showRightPanel = !this.showRightPanel;
+    },
+    handleNavClick(item) {
+      this.activeNav = item.id;
+      if (item.link) {
+          this.$router.push(item.link);
+      }
+    },
     smartDateFormat,
     dialogVisibleEmit(flag) {
       this.userVideoDialogVisible = flag
@@ -852,6 +808,7 @@ export default {
     carouselChange(newVal, oldVal) {
       console.log("newVal=>" + newVal + "、oldVal=>" + oldVal + "、videoLength=>" + this.videoList.length)
       this.currentIndex = newVal
+      this.currentVideo = this.videoList[newVal]
       
       // 立即暂停所有视频（不使用延迟）
       const videos = document.getElementsByClassName("d-player-video-main");
@@ -1192,536 +1149,6 @@ export default {
 }
 </script>
 <style scoped lang="scss">
-.video-carousel-container {
-  padding-bottom: 1rem;
-}
-
-.video-player {
-  flex: 1;
-  border-radius: 1rem;
-  height: 100%;
-  /* GPU 硬件加速优化 */
-  transform: translateZ(0);
-  will-change: transform;
-}
-
-.video-container * {
-  vertical-align: baseline;
-}
-
-.video-box {
-  height: 100%;
-  width: 100%;
-  transition: all 0.3s ease;
-  /* GPU 硬件加速 */
-  transform: translateZ(0);
-  will-change: transform;
-  backface-visibility: hidden;
-
-  .video-container {
-    width: 100%;
-    float: left;
-    border-radius: 1rem;
-    margin: 0 auto;
-    height: 100%;
-    position: relative;
-    background-position: center;
-    background-repeat: no-repeat;
-    background-size: cover;
-
-    .videoPlayer {
-      height: 100%;
-      width: 100%;
-      border-radius: 1rem;
-    }
-
-    .videoinfo-area {
-      position: absolute;
-      bottom: 20px;
-      padding: 20px;
-      width: 70%;
-      left: 0;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: flex-start;
-      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
-
-      .video-title {
-        max-width: 95%;
-        font-size: 16px;
-        line-height: 1.5;
-        
-        span {
-           font-weight: 600;
-        }
-      }
-      
-      .video-tag {
-         display: inline-block;
-         margin-right: 8px;
-         font-weight: 600;
-         color: #FACC15;
-         font-size: 14px;
-         
-         span { opacity: 0.7; margin-right: 1px; }
-      }
-    }
-
-    .video-operate {
-      position: absolute;
-      bottom: 100px;
-      right: 20px;
-      z-index: 20;
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-
-      .operate-area {
-        display: flex;
-        flex-direction: column;
-        gap: 24px;
-        align-items: center;
-
-        .video-author {
-          position: relative;
-          margin-bottom: 10px;
-          cursor: pointer;
-
-          .user-avatar {
-            border: 2px solid white;
-            transition: transform 0.2s;
-            &:hover { transform: scale(1.1); }
-          }
-
-          .user-att {
-            position: absolute;
-            bottom: -8px;
-            left: 50%;
-            transform: translateX(-50%);
-            background: #FACC15;
-            border-radius: 50%;
-            width: 24px;
-            height: 24px;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            color: white;
-            border: 2px solid white;
-            
-            svg { width: 14px; height: 14px; }
-          }
-        }
-
-        .op {
-          display: flex;
-          flex-direction: column;
-          align-items: center;
-          cursor: pointer;
-          
-          .operate-svg {
-            width: 48px;
-            height: 48px;
-            padding: 10px;
-            background: rgba(255, 255, 255, 0.15);
-            backdrop-filter: blur(4px);
-            border-radius: 50%;
-            transition: all 0.2s ease;
-            color: white;
-            margin-bottom: 4px;
-            
-            &:hover {
-              background: rgba(255, 255, 255, 0.3);
-              transform: scale(1.1);
-            }
-            
-            &:active {
-              transform: scale(0.95);
-            }
-          }
-
-          .video-nums {
-            font-size: 13px;
-            font-weight: 600;
-            color: white;
-            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
-          }
-        }
-      }
-    }
-  }
-
-}
-
-.operate-icon {
-  font-size: 30px;
-  text-align: center;
-  transition: font-size 0.2s linear, width 0.2s linear;
-  display: inline-block;
-  vertical-align: middle;
-}
-
-.operate-icon:hover {
-  font-size: 35px;
-  color: red;
-}
-
-.video-sidebar {
-  backdrop-filter: blur(20px);
-  background: rgba(15, 23, 42, 0.95) !important;
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  
-  :deep(.el-drawer__header) {
-    margin-bottom: 0;
-    padding: 20px;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-    color: white;
-  }
-  
-  :deep(.el-drawer__body) {
-    padding: 0;
-  }
-}
-
-.user-avatar {
-  width: 50px;
-  height: 50px;
-  border-radius: 25px;
-  box-shadow: rgba(0, 0, 0, 0.133) 0 1.6px 3.6px 0, rgba(0, 0, 0, 0.11) 0 0.3px 0.9px 0;
-}
-
-.video-tag {
-  color: gold;
-}
-
-.player-playswitch {
-  margin: auto .5rem;
-  z-index: 2;
-
-  .player-playswitch-tab {
-    background-color: var(--niuyin-custom-bg);
-    border-radius: 1.5rem;
-    padding: 1px;
-
-    &:hover {
-      backdrop-filter: blur(5px);
-    }
-
-    .player-playswitch-prev {
-      padding: 10px;
-      transition: all 0.5s ease;
-
-      &:hover .el-icon {
-        --color: var(--niuyin-primary-color) !important;
-      }
-    }
-
-    .player-playswitch-next {
-      padding: 10px;
-      transition: all 0.5s ease;
-
-      &:hover .el-icon {
-        --color: var(--niuyin-primary-color) !important;
-      }
-    }
-  }
-}
-
-.feedback {
-  position: fixed;
-  bottom: 1rem;
-  right: 6px;
-
-  .feedback-icon {
-    padding: 10px;
-    background-color: var(--niuyin-custom-bg);
-    vertical-align: middle;
-    border-radius: 2rem;
-  }
-}
-
-.video-type-pics {
-  position: absolute;
-  left: 2%;
-  top: 2%;
-  padding: 5px 10px;
-  background: var(--niuyin-bg-color2);
-  backdrop-filter: blur(10px);
-  border-radius: 6px;
-
-  .type-desc {
-    margin-left: 2px;
-    color: gold;
-  }
-}
-
-.video-position {
-  padding: 5px 10px;
-  border-radius: 8px;
-  background-color: rgba(118, 195, 118, 0.46);
-
-  .position-city:after {
-    border-left: 2px solid var(--niuyin-text-color);
-    content: "";
-    margin: 0 5px;
-  }
-
-  .position-dist:after {
-    border-left: 2px solid var(--niuyin-text-color);
-    content: "";
-    margin: 0 5px;
-  }
-
-}
-
-$video-sidebar-width: 520px;
-
-@media (max-width: 1500px) {
-  $video-sidebar-width: 420px;
-}
-
-@media (max-width: 768px) {
-  $video-sidebar-width: 320px;
-}
-
-/*用户视频弹窗*/
-.user-video-dialog .el-dialog__header {
-  display: none;
-}
-
-.user-video-dialog-body {
-  position: relative;
-
-  :deep(.el-carousel__container) {
-    height: 100%;
-  }
-
-  /*关闭按钮*/
-
-  .user-video-dialog-close {
-    position: absolute;
-    left: 2rem;
-    top: 2rem;
-    z-index: 2;
-    cursor: pointer;
-    width: 4rem;
-    height: 4rem;
-    border-radius: 50%;
-    background-color: rgba(10, 10, 10, 0.1);
-    border: 2px solid rgba(255, 255, 255, 0.2);
-    transition: all 0.3s ease;
-
-    &:hover {
-      background-color: rgba(10, 10, 10, 0.2);
-    }
-  }
-
-  .user-video-box {
-    background-size: cover;
-    background-repeat: no-repeat;
-    background-position: center;
-    display: flex;
-    transition: width .5s ease; /* 添加过渡效果 */
-  }
-
-  .user-video-container {
-    flex-grow: 1; /* 占据剩余空间 */
-    width: calc(100% - $video-sidebar-width);
-    display: inline-block;
-    transition: width .5s ease; /* 添加过渡效果 */
-    /*展开按钮*/
-
-    .user-video-dialog-more-open {
-      position: absolute;
-      right: 2rem;
-      top: 2rem;
-      z-index: 2;
-      cursor: pointer;
-      width: 3rem;
-      height: 3rem;
-      border-radius: 50%;
-      background-color: rgba(10, 10, 10, 0.2);
-      transition: all 0.3s ease;
-
-      &:hover {
-        background-color: rgba(10, 10, 10, 0.3);
-      }
-
-    }
-
-    .videoinfo-area {
-      position: absolute;
-      bottom: 50px;
-      padding: 10px;
-      width: 60%;
-      left: 0;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: self-start;
-    }
-
-    .video-operate {
-      position: absolute;
-      bottom: 50px;
-      padding-right: 16px;
-      z-index: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: flex-end;
-      align-items: center;
-      right: 0;
-
-      .operate-area {
-        align-items: center;
-        display: flex;
-        filter: drop-shadow(0 0 3px rgba(0, 0, 0, .3));
-        flex-direction: column;
-        flex-shrink: 0;
-        justify-content: center;
-        position: relative;
-
-        .video-author {
-          vertical-align: bottom;
-          position: relative;
-          padding: 10px 0;
-
-          .user-avatar {
-          }
-
-          .user-att {
-            position: absolute;
-            left: 50%;
-            bottom: 0;
-            transform: translate(-50%, 10%);
-          }
-
-        }
-
-        .op {
-          vertical-align: bottom;
-          position: relative;
-          padding: 10px;
-          cursor: pointer;
-
-          .iconfont {
-            color: white;
-          }
-
-          .video-nums {
-            align-items: center;
-            color: #fff;
-            display: flex;
-            font-size: 15px;
-            font-weight: 500;
-            justify-content: center;
-            line-height: 23px;
-            opacity: .9;
-          }
-
-        }
-      }
-    }
-  }
-
-  .user-video-slidebar {
-    width: 30%;
-    padding: 0 1rem;
-    z-index: 10;
-    transition: width .5s ease; /* 添加过渡效果 */
-    display: inline-block;
-  }
-}
-
-:deep(.el-tabs__header) {
-  background: transparent;
-  margin-bottom: 0;
-  border-bottom: 2px solid rgba(144, 144, 144, 0.2);
-}
-
-.user-post {
-  width: 33.3333%;
-  height: 200px;
-  padding: 0 5px 10px;
-
-  .post-card {
-    position: relative;
-    border-radius: 0.5rem;
-    overflow: hidden;
-
-    .post-cover {
-      transition: all .3s ease;
-      transform: scale(1);
-      height: 100%;
-      width: 100%;
-      -o-object-fit: cover;
-      object-fit: cover;
-
-      &:hover {
-        transform: scale(1.1);
-      }
-    }
-
-    .post-like {
-      position: absolute;
-      left: 10px;
-      bottom: 5px;
-    }
-
-    .post-type {
-      position: absolute;
-      left: 10px;
-      top: 5px;
-      padding: 4px 8px;
-      background: var(--niuyin-bg-color5);
-      border-radius: 4px;
-    }
-
-  }
-}
-
-.user-info-post {
-  display: flex;
-  height: calc(100% - 40px);
-  flex-direction: column;
-
-  .user-post-area {
-    height: 100%;
-    margin: 0 -1rem;
-    overflow: hidden;
-
-    :deep(.el-scrollbar__view) {
-      display: flex;
-      flex-flow: row wrap;
-    }
-  }
-
-}
-
-
-.video-more-close {
-  border-radius: 50%;
-  padding: 5px;
-  background-color: rgba(10, 10, 10, 0.1);
-  border: 2px solid rgba(255, 255, 255, 0.2);
-  transition: all 0.3s ease;
-
-  &:hover {
-    transform: scale(1.1);
-    background-color: rgba(10, 10, 10, 0.2);
-  }
-}
-
-// 操作栏：更多
-.more-pop-icon {
-  background-color: var(--niuyin-icon-bg0);
-  padding: 1rem;
-  border-radius: 50%
-}
-
 /* Carousel 过渡动画优化 - 使用GPU加速 */
 :deep(.el-carousel__container) {
   height: 100%;
@@ -1750,4 +1177,19 @@ $video-sidebar-width: 520px;
   transform: translateZ(0);
 }
 
+/* Custom Scrollbar for Nav */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
+}
 </style>

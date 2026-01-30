@@ -1,164 +1,133 @@
 <template>
-  <el-scrollbar v-if="show" style="padding-bottom: 40px">
-    <div class="video-comment-tree" v-for="(item, index) in videoCommentTree" :key="item.commentId">
-      <div class="comment-container">
-        <el-card class="comment-info">
-          <div class="user-info">
-            <el-image class="user-avatar" :src="item.avatar" alt="" lazy></el-image>
-            <div class="user-nickname">
-              <p class="nickname one-line">{{ item.nickName }}</p>
-              <span class="cg fs7 create-time">{{ smartDateFormat(item.createTime) }}</span>
-            </div>
-          </div>
-          <div class="comment-content">
-            <p class="fs8 m mtb5 fw400" style="color: #333;">{{ item.content }}</p>
-            <div class="flex-between">
-              <div class="comment-operate flex-row">
-                <div class="flex-center mr-5r tac cp operate-icon"
-                     @click="handleReplay(item.commentId,item.commentId,item.nickName)">
-                  <svg class="icon1rem" aria-hidden="true">
-                    <use xlink:href="#icon-replay"></use>
-                  </svg>
-                  <p class="cg fs7 ml2">回复</p>
-                </div>
-                <div class="flex-center mr-5r tac cp operate-icon">
-                  <svg class="icon1rem" aria-hidden="true">
-                    <use xlink:href="#icon-shared"></use>
-                  </svg>
-                  <p class="cg fs7 ml2">分享</p>
-                </div>
-                <div class="flex-center mr-5r tac cp operate-icon" @click="handleCommentLike(item)">
-                  <svg class="icon1rem" aria-hidden="true">
-                    <use :xlink:href="item.isLiked ? '#icon-like-red' : '#icon-like-grey'"></use>
-                  </svg>
-                  <p class="cg fs7 ml2">{{ item.likeCount || 0 }}</p>
-                </div>
-              </div>
-              <div class="flex-center mr-5r tac cp" v-if="item.userId === user.userId">
-                <el-popconfirm
-                    confirm-button-text="Y"
-                    cancel-button-text="N"
-                    :icon="InfoFilled"
-                    icon-color="#626AEF"
-                    title="删除？"
-                    style="padding: 10px"
-                    @confirm="handleDelConfirm(item.commentId)"
-                    @cancel="handleDelCancel">
-                  <template #reference>
-                    <el-icon color="red">
-                      <DeleteFilled/>
-                    </el-icon>
-                  </template>
-                </el-popconfirm>
+  <div class="h-full relative flex flex-col bg-[#0f1015]">
+    <el-scrollbar v-if="show" class="flex-1" wrap-style="padding-bottom: 80px;">
+      <div class="video-comment-tree" v-for="(item, index) in videoCommentTree" :key="item.commentId">
+        <div class="comment-container px-4 py-2">
+          <div class="comment-info">
+            <div class="user-info flex items-center mb-1">
+              <el-image class="user-avatar w-8 h-8 rounded-full border border-white/10" :src="item.avatar" alt="" lazy></el-image>
+              <div class="user-nickname ml-2">
+                <p class="nickname one-line text-gray-300 text-sm font-bold">{{ item.nickName }}</p>
+                <span class="text-gray-500 text-xs">{{ smartDateFormat(item.createTime) }}</span>
               </div>
             </div>
-          </div>
-          <!-- 二级子评论 -->
-          <div class="comment-children">
-            <div class="comment-container" v-for="(child, index) in item.children" :key="child.commentId">
-              <div class="user-info">
-                <el-image class="user-avatar" :src="child.avatar" lazy></el-image>
-                <div class="user-nickname">
-                  <p class="nickname one-line">{{ child.nickName }}
-                    <span class="aite"
-                          v-if="child.replayUserId != null">
-                            {{ '@' + child.replayUserNickName }}
-                          </span>
-                  </p>
-                  <span class="cg fs7 create-time">{{ smartDateFormat(child.createTime) }}</span>
-                </div>
-              </div>
-              <div class="comment-content">
-                <p class="fs8 m mtb5 fw400" style="color: #333;">{{ child.content }}</p>
-                <div class="flex-between">
-                  <div class="comment-operate flex-row">
-                    <div class="flex-center mr-5r tac cp operate-icon"
-                         @click="handleReplay(child.commentId,item.commentId,child.nickName)">
-                      <svg class="icon1rem" aria-hidden="true">
-                        <use xlink:href="#icon-replay"></use>
-                      </svg>
-                      <p class="cg fs7 ml2">回复</p>
-                    </div>
-                    <div class="flex-center mr-5r tac cp operate-icon">
-                      <svg class="icon1rem" aria-hidden="true">
-                        <use xlink:href="#icon-shared"></use>
-                      </svg>
-                      <p class="cg fs7 ml2">分享</p>
-                    </div>
-                    <div class="flex-center mr-5r tac cp" @click="handleCommentLike(child)">
-                      <svg class="icon1rem" aria-hidden="true">
-                        <use :xlink:href="child.isLiked ? '#icon-like-red' : '#icon-like-grey'"></use>
-                      </svg>
-                      <p class="cg fs7 ml2">{{ child.likeCount || 0 }}</p>
-                    </div>
+            <div class="comment-content pl-10">
+              <p class="text-sm text-gray-200 mb-2">{{ item.content }}</p>
+              <div class="flex justify-between items-center">
+                <div class="comment-operate flex gap-4">
+                  <div class="flex items-center cursor-pointer group"
+                       @click="handleReplay(item.commentId,item.commentId,item.nickName)">
+                    <span class="text-xs text-gray-500 group-hover:text-white">Reply</span>
                   </div>
-                  <div class="flex-center mr-5r tac cp" v-if="child.userId === user.userId">
-                    <el-popconfirm
-                        confirm-button-text="Y"
-                        cancel-button-text="N"
-                        :icon="InfoFilled"
-                        icon-color="#626AEF"
-                        title="删除？"
-                        @confirm="handleDelConfirm(child.commentId)"
-                        @cancel="handleDelCancel">
-                      <template #reference>
-                        <el-icon color="red">
-                          <DeleteFilled/>
-                        </el-icon>
-                      </template>
-                    </el-popconfirm>
+                  <div class="flex items-center cursor-pointer group" @click="handleCommentLike(item)">
+                    <el-icon :size="14" :color="item.isLiked ? '#FE2C55' : '#6B7280'"><component :is="item.isLiked ? 'StarFilled' : 'Star'" /></el-icon>
+                    <span class="text-xs text-gray-500 ml-1 group-hover:text-white">{{ item.likeCount || 0 }}</span>
+                  </div>
+                </div>
+                <div class="flex items-center cursor-pointer" v-if="item.userId === user.userId">
+                  <el-popconfirm
+                      confirm-button-text="Yes"
+                      cancel-button-text="No"
+                      title="Delete this comment?"
+                      @confirm="handleDelConfirm(item.commentId)">
+                    <template #reference>
+                      <el-icon class="text-gray-600 hover:text-red-500"><Delete /></el-icon>
+                    </template>
+                  </el-popconfirm>
+                </div>
+              </div>
+            </div>
+            
+            <!-- Children Comments -->
+            <div class="comment-children pl-10 mt-2 space-y-2" v-if="item.children && item.children.length > 0">
+              <div class="comment-container" v-for="(child, index) in item.children" :key="child.commentId">
+                <div class="user-info flex items-center mb-1">
+                  <el-image class="user-avatar w-6 h-6 rounded-full border border-white/10" :src="child.avatar" lazy></el-image>
+                  <div class="user-nickname ml-2">
+                    <p class="nickname one-line text-gray-300 text-xs font-bold">{{ child.nickName }}
+                      <span class="text-blue-400 ml-1" v-if="child.replayUserId != null">@{{ child.replayUserNickName }}</span>
+                    </p>
+                    <span class="text-gray-500 text-[10px]">{{ smartDateFormat(child.createTime) }}</span>
+                  </div>
+                </div>
+                <div class="comment-content pl-8">
+                  <p class="text-xs text-gray-300 mb-1">{{ child.content }}</p>
+                  <div class="flex justify-between items-center">
+                    <div class="comment-operate flex gap-3">
+                      <div class="flex items-center cursor-pointer group"
+                           @click="handleReplay(child.commentId,item.commentId,child.nickName)">
+                        <span class="text-[10px] text-gray-500 group-hover:text-white">Reply</span>
+                      </div>
+                      <div class="flex items-center cursor-pointer group" @click="handleCommentLike(child)">
+                        <el-icon :size="12" :color="child.isLiked ? '#FE2C55' : '#6B7280'"><component :is="child.isLiked ? 'StarFilled' : 'Star'" /></el-icon>
+                        <span class="text-[10px] text-gray-500 ml-1 group-hover:text-white">{{ child.likeCount || 0 }}</span>
+                      </div>
+                    </div>
+                    <div class="flex items-center cursor-pointer" v-if="child.userId === user.userId">
+                      <el-popconfirm
+                          confirm-button-text="Yes"
+                          cancel-button-text="No"
+                          title="Delete?"
+                          @confirm="handleDelConfirm(child.commentId)">
+                        <template #reference>
+                          <el-icon class="text-gray-600 hover:text-red-500" :size="12"><Delete /></el-icon>
+                        </template>
+                      </el-popconfirm>
+                    </div>
                   </div>
                 </div>
               </div>
             </div>
           </div>
-        </el-card>
+        </div>
       </div>
+      <el-empty v-show="commentTotal<=0" description="No comments yet" :image-size="60" />
+      <div class="p-4 flex justify-center" v-show="commentTotal>0">
+         <el-pagination 
+             small
+             background
+             layout="prev, pager, next"
+             :total="commentTotal"
+             :page-size="commentQueryParams.pageSize"
+             :current-page="commentQueryParams.pageNum"
+             @current-change="handleCurrentChange"/>
+      </div>
+    </el-scrollbar>
+    
+    <div class="comment-input-area absolute bottom-0 left-0 w-full p-4 bg-[#0f1015] border-t border-white/5 z-20">
+      <el-input
+          v-model="commentInput"
+          clearable
+          maxlength="100"
+          show-word-limit
+          @keyup.enter="handleCommentClick"
+          placeholder="Add a comment..."
+          class="custom-input">
+        <template #prepend v-if="replayVisible">
+          <div class="flex items-center cursor-pointer" @click="handleCancelReplay">
+             <span class="text-xs text-gray-400 mr-1">Replying to</span>
+             <span class="text-xs text-blue-400 max-w-[80px] truncate">@{{ replayNickName }}</span>
+             <el-icon class="ml-1 text-gray-500 hover:text-white"><Close /></el-icon>
+          </div>
+        </template>
+        <template #append>
+          <el-button @click="handleCommentClick">
+            <el-icon :color="'#FE2C55'"><Position /></el-icon>
+          </el-button>
+        </template>
+      </el-input>
     </div>
-    <el-empty v-show="commentTotal<=0" description="暂无评论"/>
-    <el-pagination v-show="commentTotal>0"
-                   :total="commentTotal"
-                   background
-                   layout="prev, pager, next"
-                   :page-sizes="[10, 20, 50]"
-                   :current-page="commentQueryParams.pageNum"
-                   :page-size="commentQueryParams.pageSize"
-                   @sizeChange="handleSizeChange"
-                   @currentChange="handleCurrentChange"/>
-  </el-scrollbar>
-  <div class="comment-input-area one-line">
-    <el-input slot="reference"
-              v-model="commentInput"
-              clearable
-              maxlength="100"
-              show-word-limit
-              @keyup.enter.native="handleCommentClick"
-              placeholder="留下你的精彩评论吧">
-      <template #prepend v-if="replayVisible">
-        <el-tooltip content="点击此处取消回复哦 0.o" placement="bottom">
-          <span class="cp cg" style="max-width: 100px; overflow: hidden" @click="handleCancelReplay">
-            @{{ replayNickName }}</span>
-        </el-tooltip>
-      </template>
-      <template #append>
-        <el-button class="flex-center" @click="handleCommentClick">
-          <el-icon :size="18" :color="'var(--niuyin-primary-color)'">
-            <ChromeFilled/>
-          </el-icon>
-        </el-button>
-      </template>
-    </el-input>
   </div>
 </template>
 
 <script>
-import {addVideoComment, videoCommentPageList, deleteVideoComment, likeComment} from "@/api/behave.js";
-import {ChromeFilled, DeleteFilled, InfoFilled} from "@element-plus/icons-vue";
-import {userInfoX} from "@/store/userInfoX";
+import { addVideoComment, deleteVideoComment, likeComment, videoCommentPageList } from "@/api/behave.js";
+import { userInfoX } from "@/store/userInfoX";
+import { ChromeFilled, Close, Delete, DeleteFilled, InfoFilled, Position, Star, StarFilled } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoComment",
-  components: {ChromeFilled, DeleteFilled},
+  components: {ChromeFilled, DeleteFilled, Star, StarFilled, Delete, Close, Position},
   computed: {
     InfoFilled() {
       return InfoFilled
@@ -334,102 +303,40 @@ export default {
 </script>
 
 <style scoped>
-/*视频评论树形结构*/
-.video-comment-tree {
-  height: 100%;
-  overflow: hidden;
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: rgba(255, 255, 255, 0.2);
+  border-radius: 2px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: rgba(255, 255, 255, 0.3);
 }
 
-/*评论抽屉*/
-.comment-container {
-  margin: 0 0 1rem 0;
-}
-
-.user-avatar {
-  width: 40px;
-  height: 40px;
+/* Input Styles Override */
+:deep(.custom-input .el-input__wrapper) {
+  background-color: rgba(255, 255, 255, 0.1);
+  box-shadow: none;
   border-radius: 20px;
-  box-shadow: 0 0 2px 0 grey;
+  padding-left: 15px;
 }
-
-.user-info {
-  display: flex;
-  align-items: center;
-
-  .user-nickname {
-    padding-left: 10px;
-
-    .nickname {
-      color: grey;
-      font-size: 0.8rem;
-    }
-
-    .create-time {
-      padding-left: 0;
-    }
-  }
+:deep(.custom-input .el-input__inner) {
+  color: white;
 }
-
-.comment-children {
-  padding-left: 50px;
-  margin-top: 1rem;
-}
-
-.comment-content {
-  padding-left: 50px;
-}
-
-.aite {
-  padding-left: 10px;
-  color: blue;
-}
-
-.comment-input-area {
-  width: 100%;
-  position: absolute;
-  bottom: 1rem;
-  left: 0;
-  margin: 0 auto;
-  padding: 0 1rem;
-
-  :deep(.el-input__wrapper) {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: .8rem;
-  }
-
-  :deep(.el-input__inner) {
-    color: white !important;
-  }
-
-  :deep(.el-input__count-inner) {
-    color: #fff;
-  }
-
-  :deep(.el-input-group__prepend) {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: .8rem;
-  }
-
-  :deep(.el-input-group__append, .el-input-group__prepend) {
-    background-color: rgba(255, 255, 255, 0.2);
-    border-radius: 50%;
-    width: var(--el-component-size);
-  }
-}
-
-
-.operate-icon {
-  transition: all 0.3s linear, width 0.3s linear;
-  text-align: center;
-  vertical-align: middle;
-}
-
-.operate-icon:hover {
-  transform: scale(1.1);
-}
-
-.el-card {
+:deep(.custom-input .el-input-group__append) {
   background-color: transparent;
+  box-shadow: none;
+  padding: 0 10px;
 }
-
+:deep(.custom-input .el-input-group__prepend) {
+  background-color: transparent;
+  box-shadow: none;
+  padding: 0 10px;
+}
 </style>
