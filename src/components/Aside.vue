@@ -1,40 +1,40 @@
 <template>
   <!--  侧边栏-->
-  <el-aside class="w-[60px] md:w-64 h-full bg-bg-surface border-r border-border transition-all duration-300 flex flex-col overflow-hidden">
+  <aside class="aside-container">
     <!-- logo -->
-    <div class="h-16 flex items-center justify-center md:justify-start md:px-6 border-b border-border shrink-0">
-      <router-link class="flex items-center gap-3 w-full justify-center md:justify-start" to="/">
-        <img class="w-8 h-8 object-contain" src="@/assets/logo/logo-cheese.png" alt="Logo">
-        <span class="hidden md:block font-bold text-xl text-primary tracking-tight font-sans">ZhiShi</span>
+    <div class="logo-container">
+      <router-link class="logo-link" to="/">
+        <img class="logo-img" src="@/assets/logo/logo-cheese.png" alt="Logo">
+        <span class="logo-text">ZhiShi</span>
       </router-link>
     </div>
     
-    <el-scrollbar class="flex-1 py-4">
+    <div class="nav-scroll">
       <!-- tab栏区域 -->
-      <div class="px-2">
-        <ul class="space-y-1">
-          <li v-for="(item, i) in tabsTopList" :key="i">
+      <nav class="nav-menu">
+        <ul class="menu-list">
+          <li v-for="(item, i) in tabsTopList" :key="i" class="menu-item">
             <router-link 
-              class="flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-main transition-all group relative"
-              active-class="text-[#FE2C55] dark:text-[#FE2C55] font-bold bg-red-50 dark:bg-white/5"
+              class="menu-link"
+              active-class="menu-link-active"
               :to="item.link">
-              <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                <svg class="w-6 h-6 fill-current transition-transform group-hover:scale-110" aria-hidden="true">
+              <div class="menu-icon">
+                <svg class="icon-svg" aria-hidden="true">
                   <use :xlink:href="item.class"></use>
                 </svg>
               </div>
-              <span class="hidden md:block text-base font-medium">{{ item.name }}</span>
+              <span class="menu-text">{{ item.name }}</span>
               
               <!-- Tooltip for mobile/collapsed -->
-              <div class="md:hidden absolute left-full ml-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+              <div class="menu-tooltip">
                 {{ item.name }}
               </div>
             </router-link>
           </li>
         </ul>
-      </div>
-    </el-scrollbar>
-  </el-aside>
+      </nav>
+    </div>
+  </aside>
 </template>
 
 <script>
@@ -49,11 +49,11 @@ export default {
   data() {
     return {
       tabsTopList: [
-        {id: 0, name: "Home", class: "#icon-index", link: "/"},
-        {id: 1, name: "Discover", class: "#icon-discover", link: "/discover"},
-        {id: 2, name: "Trending", class: "#icon-hotVideo", link: "/hotVideo"},
-        {id: 3, name: "Following", class: "#icon-follow", link: "/follow"},
-        {id: 5, name: "Profile", class: "#icon-erciyuan", link: "/user",},
+        {id: 0, name: "首页", class: "#icon-index", link: "/"},
+        {id: 1, name: "发现", class: "#icon-discover", link: "/discover"},
+        {id: 2, name: "热门", class: "#icon-hotVideo", link: "/hotVideo"},
+        {id: 3, name: "关注", class: "#icon-follow", link: "/follow"},
+        {id: 5, name: "我的", class: "#icon-erciyuan", link: "/user",},
       ],
     }
   },
@@ -66,6 +66,161 @@ export default {
 }
 </script>
 
-<style scoped>
-/* Remove old styles */
+<style scoped lang="scss">
+.aside-container {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background-color: #121212; /* 深灰色，比纯黑稍亮 */
+}
+
+.logo-container {
+  flex-shrink: 0;
+  height: 60px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0 16px;
+  
+  @media (min-width: 769px) {
+    justify-content: flex-start;
+    padding: 0 24px;
+  }
+}
+
+.logo-link {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  width: 100%;
+  justify-content: center;
+  
+  @media (min-width: 769px) {
+    justify-content: flex-start;
+  }
+}
+
+.logo-img {
+  width: 32px;
+  height: 32px;
+  object-fit: contain;
+}
+
+.logo-text {
+  display: none;
+  font-weight: 700;
+  font-size: 20px;
+  color: #FE2C55;
+  letter-spacing: -0.5px;
+  
+  @media (min-width: 769px) {
+    display: block;
+  }
+}
+
+.nav-scroll {
+  flex: 1;
+  overflow-y: auto;
+  overflow-x: hidden;
+  padding: 16px 0;
+}
+
+.nav-menu {
+  padding: 0 8px;
+}
+
+.menu-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.menu-item {
+  margin-bottom: 4px;
+}
+
+.menu-link {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 16px;
+  padding: 12px;
+  border-radius: 12px;
+  color: var(--text-muted);
+  text-decoration: none;
+  transition: all 0.2s ease;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.05);
+    color: var(--text-main);
+    
+    .icon-svg {
+      transform: scale(1.1);
+    }
+  }
+}
+
+.menu-link-active {
+  color: #FE2C55 !important;
+  font-weight: 700;
+  background-color: rgba(254, 44, 85, 0.1);
+  
+  .icon-svg {
+    color: #FE2C55;
+  }
+}
+
+.menu-icon {
+  flex-shrink: 0;
+  width: 24px;
+  height: 24px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.icon-svg {
+  width: 24px;
+  height: 24px;
+  fill: currentColor;
+  transition: transform 0.2s ease;
+}
+
+.menu-text {
+  display: none;
+  font-size: 15px;
+  font-weight: 500;
+  white-space: nowrap;
+  
+  @media (min-width: 769px) {
+    display: block;
+  }
+}
+
+.menu-tooltip {
+  display: none;
+  position: absolute;
+  left: 100%;
+  margin-left: 8px;
+  padding: 6px 12px;
+  background-color: #1a1a1a;
+  color: #fff;
+  font-size: 12px;
+  border-radius: 6px;
+  white-space: nowrap;
+  z-index: 100;
+  pointer-events: none;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+  
+  @media (max-width: 768px) {
+    .menu-link:hover & {
+      display: block;
+      opacity: 1;
+    }
+  }
+}
 </style>

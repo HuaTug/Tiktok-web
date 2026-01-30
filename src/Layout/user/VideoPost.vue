@@ -174,8 +174,12 @@ export default {
     initVideoList() {
       this.loading = true
       // 从用户信息中获取userId
-      if (this.currentUser) {
-        this.videoQueryParams.author_id = this.currentUser.userId || this.currentUser.user_id
+      const authorId = this.currentUser?.userId || this.currentUser?.user_id
+      if (authorId) {
+        this.videoQueryParams.author_id = authorId
+      } else {
+        // 如果没有 author_id，从参数中删除它避免发送 null
+        delete this.videoQueryParams.author_id
       }
       videoMypage(this.videoQueryParams).then(res => {
         if (res.code === 200 || res.code === 10000) {

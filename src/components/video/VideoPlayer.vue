@@ -199,14 +199,17 @@ export default {
 <style scoped>
 /*@import 'vue3-video-play/dist/style.css'; */
 .vue3-video-play {
-  /*//backdrop-filter: blur(60px) !important;*/
-
+  position: relative;
+  z-index: 1;
+  width: 100% !important;
+  height: 100% !important;
 }
 
 .video-cover {
   filter: blur(60px);
   opacity: 0.8;
   user-select: none;
+  pointer-events: none;
 }
 
 .video-play {
@@ -217,31 +220,62 @@ export default {
   height: calc(100vh - 160px);
 }
 
-.d-player-wrap {
+/* 播放器容器填满 */
+:deep(.d-player-wrap) {
+  width: 100% !important;
+  height: 100% !important;
   background-color: transparent;
 }
 
+:deep(.d-player-wrap .d-player-video) {
+  width: 100% !important;
+  height: 100% !important;
+}
+
+/* 确保控制栏可以交互 */
 :deep(.d-player-wrap .d-player-control) {
-  z-index: 200;
+  z-index: 100 !important;
+  pointer-events: auto !important;
 }
 
 :deep(.d-player-wrap .d-player-control .d-control-tool) {
-  background-color: rgba(0, 0, 0, 0.2);
+  background-color: rgba(0, 0, 0, 0.4);
+  pointer-events: auto !important;
+}
+
+/* 进度条样式 */
+:deep(.d-player-wrap .d-player-control .d-control-progress) {
+  pointer-events: auto !important;
+  z-index: 100 !important;
 }
 
 :deep(.d-slider .d-slider__runway) {
-  background-color: rgba(0, 0, 0, 0.20);
+  background-color: rgba(255, 255, 255, 0.3);
+  cursor: pointer !important;
+  pointer-events: auto !important;
+}
+
+:deep(.d-slider .d-slider__bar) {
+  background-color: #FE2C55;
+}
+
+:deep(.d-slider .d-slider__btn) {
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
 :deep(.d-player-wrap .d-player-control .d-control-progress .d-progress-bar) {
-  /*height: 5px;*/
   transition: height 0.2s;
+  pointer-events: auto !important;
+  cursor: pointer !important;
 }
 
+/* 视频元素填满并覆盖整个容器 */
 :deep(.d-player-wrap .d-player-video .d-player-video-main) {
-  max-width: 100%;
-  max-height: 100%;
+  width: 100% !important;
+  height: 100% !important;
+  object-fit: cover !important; /* 视频填充满整个容器 */
   transition: none !important;
-  z-index: 10;
+  z-index: 1;
 }
 </style>

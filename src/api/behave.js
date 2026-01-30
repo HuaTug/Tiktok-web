@@ -1,5 +1,17 @@
 import request from '@/utils/request'
 
+// 辅助函数：过滤掉 null/undefined/空字符串的参数
+function filterParams(params) {
+    if (!params) return {}
+    const filtered = {}
+    for (const [key, value] of Object.entries(params)) {
+        if (value != null && value !== '') {
+            filtered[key] = value
+        }
+    }
+    return filtered
+}
+
 // 评论列表
 export function videoCommentPageList(data) {
     // Convert camelCase to snake_case for backend API
@@ -12,7 +24,7 @@ export function videoCommentPageList(data) {
     return request({
         url: '/v1/comment/list',
         method: 'get',
-        params: params
+        params: filterParams(params)
     })
 }
 

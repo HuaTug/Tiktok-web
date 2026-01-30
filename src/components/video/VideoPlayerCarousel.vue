@@ -1,18 +1,18 @@
 <template>
-<div class="relative z-[50] flex h-[calc(100vh-64px)] w-full bg-[#0f1015] text-white overflow-hidden"
+<div class="video-player-wrapper"
        v-loading="loading"
        :element-loading-svg="svg"
        element-loading-svg-view-box="-10, -10, 50, 50">
 
     <!-- Main Content (Player) -->
-    <div class="flex-1 relative bg-black flex flex-col justify-center items-center overflow-hidden">
+    <div class="video-main-content">
       <!-- Back Button -->
-      <div class="absolute top-6 left-6 z-50 cursor-pointer w-10 h-10 rounded-full bg-black/20 hover:bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group" @click="$router.back()">
-         <el-icon :size="24" class="text-white/70 group-hover:text-white transition-colors"><ArrowLeftBold /></el-icon>
+      <div class="back-button" @click="$router.back()">
+         <el-icon :size="24" class="back-icon"><ArrowLeftBold /></el-icon>
       </div>
 
-      <div class="relative w-full h-full flex justify-center items-center">
-          <el-carousel class="w-full h-full"
+      <div class="carousel-wrapper">
+          <el-carousel class="video-carousel"
                        ref="carousel"
                        direction="vertical"
                        :autoplay="false"
@@ -20,50 +20,50 @@
                        indicator-position="none"
                        @mousewheel="rollScroll($event)"
                        @change="carouselChange">
-            <el-carousel-item v-for="item in videoList" :key="item.videoId" class="flex justify-center items-center bg-black">
-               <div class="relative w-full h-full flex justify-center items-center bg-black">
+            <el-carousel-item v-for="item in videoList" :key="item.videoId" class="carousel-item">
+               <div class="video-item-container">
                   <!-- Video Player Component -->
-                  <div class="relative h-full aspect-[9/16] max-h-full bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5">
-                      <VideoPlayer v-if="item.publishType==='0'" class="w-full h-full object-contain" :video="item"/>
+                  <div class="video-player-box">
+                      <VideoPlayer v-if="item.publishType==='0'" class="video-player" :video="item"/>
                       <ImagePlayer v-else :cover-image="item.coverImage" :image-list="item.imageList"/>
                       
                       <!-- Overlay UI -->
-                      <div class="absolute inset-0 pointer-events-none bg-gradient-to-t from-black/80 via-transparent to-transparent z-10"></div>
+                      <div class="video-overlay"></div>
                       
                       <!-- Right Floating Actions (Inside Video) -->
-                      <div class="absolute right-4 bottom-20 z-20 flex flex-col items-center gap-6 pointer-events-auto">
+                      <div class="video-actions">
                           <!-- Avatar -->
-                          <div class="relative group cursor-pointer" @click="handlePersonInfo(item.userId, item)">
-                             <el-avatar :size="48" :src="item.userAvatar" class="border-2 border-white shadow-lg transition-transform group-hover:scale-110"/>
-                             <div v-if="!item.weatherFollow" class="absolute -bottom-2 left-1/2 -translate-x-1/2 bg-[#FE2C55] rounded-full w-5 h-5 flex items-center justify-center text-white shadow-sm" @click.stop="handleAttUser(item.userId)">
+                          <div class="action-avatar" @click="handlePersonInfo(item.userId, item)">
+                             <el-avatar :size="48" :src="item.userAvatar" class="avatar-img"/>
+                             <div v-if="!item.weatherFollow" class="follow-badge" @click.stop="handleAttUser(item.userId)">
                                 <el-icon :size="12"><Plus /></el-icon>
                              </div>
                           </div>
                           
                           <!-- Like -->
-                          <div class="flex flex-col items-center gap-1 cursor-pointer group" @click="videoLikeClick(item.videoId)">
-                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
-                                <svg class="w-7 h-7 transition-colors" :class="item.weatherLike ? 'text-[#FE2C55]' : 'text-white'" aria-hidden="true"><use :xlink:href="item.weatherLike ? '#icon-like-ed' : '#icon-like'"></use></svg>
+                          <div class="action-item" @click="videoLikeClick(item.videoId)">
+                             <div class="action-btn">
+                                <svg class="action-icon" :class="item.weatherLike ? 'liked' : ''" aria-hidden="true"><use :xlink:href="item.weatherLike ? '#icon-like-ed' : '#icon-like'"></use></svg>
                              </div>
-                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.likeNum }}</span>
+                             <span class="action-count">{{ item.likeNum }}</span>
                           </div>
                           
                           <!-- Comment (Toggle Right Panel) -->
-                          <div class="flex flex-col items-center gap-1 cursor-pointer group" @click="toggleCommentPanel">
-                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
-                                <svg class="w-7 h-7 text-white" aria-hidden="true"><use xlink:href="#icon-comment"></use></svg>
+                          <div class="action-item" @click="toggleCommentPanel">
+                             <div class="action-btn">
+                                <svg class="action-icon" aria-hidden="true"><use xlink:href="#icon-comment"></use></svg>
                              </div>
-                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.commentNum }}</span>
+                             <span class="action-count">{{ item.commentNum }}</span>
                           </div>
                           
                           <!-- Favorite -->
-                          <div class="flex flex-col items-center gap-1 cursor-pointer group">
+                          <div class="action-item">
                              <!-- Popover for Favorite -->
                              <el-popover placement="left" :width="300" :show-arrow="false" :ref="'favoritePop'+item.videoId" trigger="hover">
                                 <template #reference>
-                                   <div class="flex flex-col items-center gap-1">
-                                     <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
-                                        <svg class="w-7 h-7 transition-colors" :class="item.weatherFavorite ? 'text-[#FACC15]' : 'text-white'" aria-hidden="true"><use :xlink:href="item.weatherFavorite ? '#icon-favorite-ed' : '#icon-favorite'"></use></svg>
+                                   <div class="action-btn-wrapper">
+                                     <div class="action-btn">
+                                        <svg class="action-icon" :class="item.weatherFavorite ? 'favorited' : ''" aria-hidden="true"><use :xlink:href="item.weatherFavorite ? '#icon-favorite-ed' : '#icon-favorite'"></use></svg>
                                      </div>
                                    </div>
                                 </template>
@@ -83,31 +83,31 @@
                                    </div>
                                 </div>
                              </el-popover>
-                             <span class="text-xs font-medium text-white drop-shadow-md">{{ item.favoritesNum }}</span>
+                             <span class="action-count">{{ item.favoritesNum }}</span>
                           </div>
                           
                           <!-- Share -->
-                          <div class="flex flex-col items-center gap-1 cursor-pointer group">
-                             <div class="w-10 h-10 rounded-full bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group-hover:bg-white/20 group-active:scale-90">
-                                <svg class="w-7 h-7 text-white" aria-hidden="true"><use xlink:href="#icon-share"></use></svg>
+                          <div class="action-item">
+                             <div class="action-btn">
+                                <svg class="action-icon" aria-hidden="true"><use xlink:href="#icon-share"></use></svg>
                              </div>
-                             <span class="text-xs font-medium text-white drop-shadow-md">Share</span>
+                             <span class="action-count">分享</span>
                           </div>
                       </div>
                       
                       <!-- Bottom Info -->
-                      <div class="absolute bottom-4 left-4 right-16 z-20 text-left pointer-events-auto">
-                          <div class="mb-2 flex items-center gap-2">
-                             <span class="text-lg font-bold text-white drop-shadow-md cursor-pointer hover:underline" @click="handlePersonInfo(item.userId, item)">@{{ item.userNickName }}</span>
-                             <span class="text-xs text-gray-300 drop-shadow-md">{{ smartDateFormat(item.createTime) }}</span>
-                             <div v-if="item.positionFlag==='1' && item.position" class="flex items-center bg-black/30 px-2 py-0.5 rounded text-xs text-gray-300">
-                                <el-icon class="mr-1"><Location /></el-icon>
+                      <div class="video-info">
+                          <div class="info-header">
+                             <span class="info-username" @click="handlePersonInfo(item.userId, item)">@{{ item.userNickName }}</span>
+                             <span class="info-time">{{ smartDateFormat(item.createTime) }}</span>
+                             <div v-if="item.positionFlag==='1' && item.position" class="info-location">
+                                <el-icon class="location-icon"><Location /></el-icon>
                                 {{ item.position.city || item.position.province }}
                              </div>
                           </div>
-                          <div class="text-sm text-white/90 mb-2 line-clamp-2 drop-shadow-md" v-html="item.videoTitle"></div>
-                          <div class="flex flex-wrap gap-2">
-                             <span v-for="tag in item.tags" :key="tag" class="text-xs font-bold text-yellow-400 drop-shadow-md cursor-pointer hover:text-yellow-300" @click="handleClickVideoTag(tag)">#{{ tag }}</span>
+                          <div class="info-title" v-html="item.videoTitle"></div>
+                          <div class="info-tags">
+                             <span v-for="tag in item.tags" :key="tag" class="tag-item" @click="handleClickVideoTag(tag)">#{{ tag }}</span>
                           </div>
                       </div>
                   </div>
@@ -116,11 +116,11 @@
           </el-carousel>
           
           <!-- Navigation Buttons -->
-          <div class="absolute right-6 top-1/2 -translate-y-1/2 flex flex-col gap-4 z-30 hidden xl:flex">
-             <div class="w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-700/80 flex items-center justify-center cursor-pointer transition-all" @click="handleVideoPrev">
+          <div class="nav-buttons">
+             <div class="nav-btn" @click="handleVideoPrev">
                 <el-icon color="white"><ArrowUpBold /></el-icon>
              </div>
-             <div class="w-10 h-10 rounded-full bg-gray-800/50 hover:bg-gray-700/80 flex items-center justify-center cursor-pointer transition-all" @click="handleVideoNext">
+             <div class="nav-btn" @click="handleVideoNext">
                 <el-icon color="white"><ArrowDownBold /></el-icon>
              </div>
           </div>
@@ -128,41 +128,40 @@
     </div>
 
     <!-- Right Sidebar (Comments) -->
-    <div class="bg-[#0f1015] border-l border-white/5 flex flex-col transition-all duration-300 ease-in-out z-40 relative" 
-         :class="showRightPanel ? 'w-[360px] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full overflow-hidden'">
+    <div class="comment-sidebar" :class="{ 'sidebar-open': showRightPanel }">
        
        <!-- Close Button (Absolute) -->
-       <div class="absolute top-4 right-4 z-50 cursor-pointer text-gray-400 hover:text-white" @click="showRightPanel = false">
+       <div class="sidebar-close" @click="showRightPanel = false">
           <el-icon :size="20"><Close /></el-icon>
        </div>
 
        <!-- Tabs -->
-       <div class="flex border-b border-white/5 pr-10">
-          <div class="flex-1 py-4 text-center text-sm font-medium cursor-pointer transition-colors relative" 
-               :class="activeTab === 'comments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'"
+       <div class="sidebar-tabs">
+          <div class="tab-item" 
+               :class="{ 'tab-active': activeTab === 'comments' }"
                @click="activeTab = 'comments'">
-             Comments <span class="text-xs bg-gray-800 px-1.5 py-0.5 rounded-full ml-1">{{ currentVideo?.commentNum || 0 }}</span>
-             <div v-if="activeTab === 'comments'" class="absolute bottom-0 left-0 w-full h-0.5 bg-[#FE2C55]"></div>
+             评论 <span class="tab-count">{{ currentVideo?.commentNum || 0 }}</span>
+             <div v-if="activeTab === 'comments'" class="tab-indicator"></div>
           </div>
-          <div class="flex-1 py-4 text-center text-sm font-medium cursor-pointer transition-colors relative"
-               :class="activeTab === 'creator' ? 'text-white' : 'text-gray-500 hover:text-gray-300'"
+          <div class="tab-item"
+               :class="{ 'tab-active': activeTab === 'creator' }"
                @click="activeTab = 'creator'">
-             Creator
-             <div v-if="activeTab === 'creator'" class="absolute bottom-0 left-0 w-full h-0.5 bg-[#FE2C55]"></div>
+             创作者
+             <div v-if="activeTab === 'creator'" class="tab-indicator"></div>
           </div>
        </div>
        
        <!-- Content -->
-       <div class="flex-1 overflow-hidden relative">
-          <div v-if="activeTab === 'comments'" class="h-full">
+       <div class="sidebar-content">
+          <div v-if="activeTab === 'comments'" class="comment-wrapper">
              <VideoComment :video-id="currentVideo?.videoId" :show="true" @emitUpdateVideoCommentNum="updateVideoCommentNumEmit" />
           </div>
-          <div v-else class="h-full p-4 text-center text-gray-500">
-             <div class="flex flex-col items-center mt-10">
-                <el-avatar :size="80" :src="currentVideo?.userAvatar" class="mb-4"/>
-                <h3 class="text-xl font-bold text-white mb-2">{{ currentVideo?.userNickName }}</h3>
-                <el-button type="primary" class="w-full mt-4" @click="handleAttUser(currentVideo?.userId)">
-                   {{ currentVideo?.weatherFollow ? 'Unfollow' : 'Follow' }}
+          <div v-else class="creator-wrapper">
+             <div class="creator-info">
+                <el-avatar :size="80" :src="currentVideo?.userAvatar" class="creator-avatar"/>
+                <h3 class="creator-name">{{ currentVideo?.userNickName }}</h3>
+                <el-button type="primary" class="follow-btn" @click="handleAttUser(currentVideo?.userId)">
+                   {{ currentVideo?.weatherFollow ? '已关注' : '关注' }}
                 </el-button>
              </div>
           </div>
@@ -1118,6 +1117,450 @@ export default {
 }
 </script>
 <style scoped lang="scss">
+/* 主容器 */
+.video-player-wrapper {
+  position: relative;
+  display: flex;
+  width: 100%;
+  height: 100%;
+  background-color: #0f1015;
+  color: #fff;
+  overflow: hidden;
+  z-index: 50;
+}
+
+/* 视频主内容区域 */
+.video-main-content {
+  flex: 1;
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* 返回按钮 */
+.back-button {
+  position: absolute;
+  top: 24px;
+  left: 24px;
+  z-index: 50;
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(0, 0, 0, 0.2);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+  }
+  
+  .back-icon {
+    color: rgba(255, 255, 255, 0.7);
+    transition: color 0.2s;
+  }
+  
+  &:hover .back-icon {
+    color: #fff;
+  }
+}
+
+/* 轮播容器 */
+.carousel-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+}
+
+.video-carousel {
+  width: 100%;
+  height: 100%;
+}
+
+.carousel-item {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+}
+
+.video-item-container {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  background-color: #000;
+  overflow: hidden;
+}
+
+/* 视频播放器盒子 - 全屏填充 */
+.video-player-box {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  background-color: #000;
+  overflow: hidden;
+}
+
+.video-player {
+  width: 100%;
+  height: 100%;
+  object-fit: cover; /* 视频填充满整个容器 */
+}
+
+/* 视频遮罩层 - 不覆盖底部进度条区域 */
+.video-overlay {
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 60px; /* 留出底部空间给进度条 */
+  pointer-events: none;
+  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 30%, transparent 100%);
+  z-index: 10;
+}
+
+/* 操作按钮区域 */
+.video-actions {
+  position: absolute;
+  right: 16px;
+  bottom: 120px; /* 留出空间给进度条和视频信息 */
+  z-index: 20;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 24px;
+  pointer-events: auto;
+}
+
+.action-avatar {
+  position: relative;
+  cursor: pointer;
+  
+  .avatar-img {
+    border: 2px solid #fff;
+    box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+    transition: transform 0.2s;
+    
+    &:hover {
+      transform: scale(1.1);
+    }
+  }
+  
+  .follow-badge {
+    position: absolute;
+    bottom: -8px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    background-color: #FE2C55;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #fff;
+    box-shadow: 0 2px 4px rgba(0, 0, 0, 0.2);
+  }
+}
+
+.action-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+  cursor: pointer;
+}
+
+.action-btn-wrapper {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 4px;
+}
+
+.action-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(255, 255, 255, 0.1);
+  backdrop-filter: blur(4px);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: all 0.2s;
+  
+  &:hover {
+    background-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  &:active {
+    transform: scale(0.9);
+  }
+}
+
+.action-icon {
+  width: 28px;
+  height: 28px;
+  fill: #fff;
+  transition: fill 0.2s;
+  
+  &.liked {
+    fill: #FE2C55;
+  }
+  
+  &.favorited {
+    fill: #FACC15;
+  }
+}
+
+.action-count {
+  font-size: 12px;
+  font-weight: 500;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+/* 视频信息区域 */
+.video-info {
+  position: absolute;
+  bottom: 70px; /* 留出空间给进度条 */
+  left: 16px;
+  right: 80px;
+  z-index: 20;
+  text-align: left;
+  pointer-events: auto;
+}
+
+.info-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+  flex-wrap: wrap;
+}
+
+.info-username {
+  font-size: 18px;
+  font-weight: 700;
+  color: #fff;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  
+  &:hover {
+    text-decoration: underline;
+  }
+}
+
+.info-time {
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.info-location {
+  display: flex;
+  align-items: center;
+  background-color: rgba(0, 0, 0, 0.3);
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  color: rgba(255, 255, 255, 0.7);
+  
+  .location-icon {
+    margin-right: 4px;
+  }
+}
+
+.info-title {
+  font-size: 14px;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 8px;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+}
+
+.info-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.tag-item {
+  font-size: 12px;
+  font-weight: 700;
+  color: #FACC15;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  cursor: pointer;
+  
+  &:hover {
+    color: #fde047;
+  }
+}
+
+/* 导航按钮 */
+.nav-buttons {
+  position: absolute;
+  right: 24px;
+  top: 50%;
+  transform: translateY(-50%);
+  display: none;
+  flex-direction: column;
+  gap: 16px;
+  z-index: 30;
+  
+  @media (min-width: 1280px) {
+    display: flex;
+  }
+}
+
+.nav-btn {
+  width: 40px;
+  height: 40px;
+  border-radius: 50%;
+  background-color: rgba(55, 65, 81, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: background-color 0.2s;
+  
+  &:hover {
+    background-color: rgba(55, 65, 81, 0.8);
+  }
+}
+
+/* 评论侧边栏 */
+.comment-sidebar {
+  position: relative;
+  display: flex;
+  flex-direction: column;
+  background-color: #0f1015;
+  border-left: 1px solid rgba(255, 255, 255, 0.05);
+  transition: all 0.3s ease;
+  z-index: 40;
+  width: 0;
+  opacity: 0;
+  transform: translateX(100%);
+  overflow: hidden;
+  
+  &.sidebar-open {
+    width: 360px;
+    opacity: 1;
+    transform: translateX(0);
+  }
+}
+
+.sidebar-close {
+  position: absolute;
+  top: 16px;
+  right: 16px;
+  z-index: 50;
+  cursor: pointer;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+  
+  &:hover {
+    color: #fff;
+  }
+}
+
+.sidebar-tabs {
+  display: flex;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.05);
+  padding-right: 40px;
+}
+
+.tab-item {
+  flex: 1;
+  padding: 16px 0;
+  text-align: center;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  position: relative;
+  color: rgba(255, 255, 255, 0.5);
+  transition: color 0.2s;
+  
+  &:hover {
+    color: rgba(255, 255, 255, 0.7);
+  }
+  
+  &.tab-active {
+    color: #fff;
+  }
+}
+
+.tab-count {
+  font-size: 12px;
+  background-color: rgba(55, 65, 81, 1);
+  padding: 2px 6px;
+  border-radius: 9999px;
+  margin-left: 4px;
+}
+
+.tab-indicator {
+  position: absolute;
+  bottom: 0;
+  left: 0;
+  width: 100%;
+  height: 2px;
+  background-color: #FE2C55;
+}
+
+.sidebar-content {
+  flex: 1;
+  overflow: hidden;
+  position: relative;
+}
+
+.comment-wrapper {
+  height: 100%;
+}
+
+.creator-wrapper {
+  height: 100%;
+  padding: 16px;
+}
+
+.creator-info {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  margin-top: 40px;
+}
+
+.creator-avatar {
+  margin-bottom: 16px;
+}
+
+.creator-name {
+  font-size: 20px;
+  font-weight: 700;
+  color: #fff;
+  margin-bottom: 8px;
+}
+
+.follow-btn {
+  width: 100%;
+  margin-top: 16px;
+}
+
 /* Carousel 过渡动画优化 - 使用GPU加速 */
 :deep(.el-carousel__container) {
   height: 100%;

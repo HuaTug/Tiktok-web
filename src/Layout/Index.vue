@@ -1,12 +1,12 @@
 <template>
   <!--  首页-->
-  <div :class="{ 'dark': isDark }" class="min-h-screen bg-bg-base text-text-main transition-colors duration-300">
-    <div class="bg-mask fixed inset-0 -z-10 bg-bg-base"></div>
-    <el-container class="layout-container h-screen">
-      <Aside :siteTitle="siteTitle" class="border-r border-border bg-bg-surface"></Aside>
-      <el-container class="is-vertical">
-        <Header @themeChangeEmit="emitThemeChange" class="border-b border-white/5 bg-[#0f1015]/80 backdrop-blur-xl sticky top-0 z-50"></Header>
-        <el-main class="main-container p-0 overflow-x-hidden">
+  <div :class="{ 'dark': isDark }" class="app-wrapper">
+    <div class="bg-mask"></div>
+    <div class="layout-container">
+      <Aside :siteTitle="siteTitle" class="sidebar-container"></Aside>
+      <div class="main-wrapper">
+        <Header @themeChangeEmit="emitThemeChange" class="header-container"></Header>
+        <main class="main-container">
           <!--路由-->
           <router-view v-slot="{ Component }">
             <keep-alive :include="['Video','Discover','HotVideo','Follow','User','CategoryVideo2']">
@@ -14,9 +14,9 @@
             </keep-alive>
           </router-view>
           <el-backtop :right="16" :bottom="16" target=".main-container"></el-backtop>
-        </el-main>
-      </el-container>
-    </el-container>
+        </main>
+      </div>
+    </div>
   </div>
 </template>
 <script>
@@ -62,8 +62,62 @@ export default {
 }
 </script>
 
-<style rel="stylesheet/scss" lang="scss" scoped>
+<style lang="scss" scoped>
+.app-wrapper {
+  position: relative;
+  width: 100%;
+  height: 100vh;
+  overflow: hidden;
+  background-color: var(--bg-base);
+  color: var(--text-main);
+  transition: background-color 0.3s, color 0.3s;
+}
+
+.bg-mask {
+  position: fixed;
+  inset: 0;
+  z-index: -1;
+  background-color: var(--bg-base);
+}
+
+.layout-container {
+  display: flex;
+  width: 100%;
+  height: 100%;
+}
+
+.sidebar-container {
+  flex-shrink: 0;
+  width: 240px;
+  height: 100%;
+  background-color: #121212; /* 深灰色，比纯黑稍亮 */
+  transition: width 0.3s;
+  
+  @media (max-width: 768px) {
+    width: 60px;
+  }
+}
+
+.main-wrapper {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-width: 0; // 防止flex子元素溢出
+  height: 100%;
+  overflow: hidden;
+}
+
+.header-container {
+  flex-shrink: 0;
+  height: 60px;
+  background-color: #121212; /* 深灰色，比纯黑稍亮 */
+  z-index: 100;
+}
+
 .main-container {
-  height: calc(100vh - 60px);
+  flex: 1;
+  overflow-x: hidden;
+  overflow-y: auto;
+  padding: 0;
 }
 </style>

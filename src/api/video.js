@@ -1,11 +1,28 @@
 import request from '@/utils/request'
 
+// 辅助函数：过滤掉 null/undefined/空字符串的参数
+function filterParams(params) {
+    if (!params) return {}
+    const filtered = {}
+    for (const [key, value] of Object.entries(params)) {
+        if (value != null && value !== '') {
+            filtered[key] = value
+        }
+    }
+    return filtered
+}
+
 // 视频流-feed
 export async function videoFeed(createTime) {
+    // 过滤掉 null/undefined 值，避免后端解析错误
+    const params = {}
+    if (createTime != null && createTime !== '') {
+        params.create_time = createTime
+    }
     return await request({
         url: '/v1/video/feed',
         method: 'get',
-        params: { create_time: createTime }
+        params: params
     })
 }
 
@@ -14,7 +31,7 @@ export async function videoMypage(data) {
     return await request({
         url: '/v1/video/list',
         method: 'get',
-        params: data
+        params: filterParams(data)
     })
 }
 
@@ -23,7 +40,7 @@ export async function videoUserpage(data) {
     return await request({
         url: '/v1/video/list',
         method: 'get',
-        params: data
+        params: filterParams(data)
     })
 }
 

@@ -1,12 +1,12 @@
 <template>
   <!--  导航栏-->
-  <el-header class="niuyin-header">
-    <div class="nav-left"></div>
+  <header class="header-wrapper">
+    <div class="header-left"></div>
     <!-- 导航栏中间区域 -->
-    <NavCenter/>
+    <NavCenter class="header-center"/>
     <!-- 导航栏右侧区域 -->
-    <NavRight :user="user" @darkChangeEmit="emitDarkChange"/>
-  </el-header>
+    <NavRight :user="user" @darkChangeEmit="emitDarkChange" class="header-right"/>
+  </header>
 </template>
 
 <script>
@@ -76,6 +76,35 @@ export default {
 }
 </script>
 
-<style>
-@import "@/assets/styles/header.scss";
+<style lang="scss" scoped>
+.header-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  height: 100%;
+  padding: 0 24px;
+  box-sizing: border-box;
+  background: transparent;
+}
+
+.header-left {
+  flex-shrink: 0;
+  width: 80px;
+}
+
+.header-center {
+  flex: 1;
+  display: flex;
+  justify-content: center;
+  max-width: 400px;
+  margin: 0 24px;
+}
+
+.header-right {
+  flex-shrink: 0;
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+}
 </style>

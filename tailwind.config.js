@@ -21,6 +21,9 @@ export default {
           800: '#A50A35',
           900: '#8C0D33',
         },
+        accent: {
+          DEFAULT: '#FACC15', // Yellow accent
+        },
         bg: {
           base: 'var(--bg-base)',
           surface: 'var(--bg-surface)',
@@ -36,7 +39,7 @@ export default {
         }
       },
       fontFamily: {
-        sans: ['Inter', 'system-ui', 'sans-serif'],
+        sans: ['PingFang SC', 'Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
         'glow': '0 0 20px -5px rgba(254, 44, 85, 0.3)',

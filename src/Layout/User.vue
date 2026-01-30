@@ -9,9 +9,8 @@
       <!--      用户信息区域-->
       <div class="user-container" :style="{ backgroundImage: `url(${memberInfo.backImage})` }">
         <div v-viewer class="avatar-area">
-          <!-- 调试用户头像显示 -->
-          <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar" @load="console.log('
-✅ [AVATAR] 头像加载成功:', user.avatar_url || user.avatar)" @error="console.log('❌ [AVATAR] 头像加载失败:', user.avatar_url || user.avatar)"/>                                                                                                                                                    <el-avatar v-else class="user-avatar pr" :icon="UserFilled"/>
+          <el-avatar v-if="user.avatar_url || user.avatar" class="user-avatar pr" :src="user.avatar_url || user.avatar"/>
+          <el-avatar v-else class="user-avatar pr" :icon="UserFilled"/>
 
           <div class="image-dot dn-phone"></div>
         </div>
