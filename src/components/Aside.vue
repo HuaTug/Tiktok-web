@@ -15,15 +15,15 @@
         <ul class="space-y-1">
           <li v-for="(item, i) in tabsTopList" :key="i">
             <router-link 
-              class="flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:bg-zinc-100 dark:hover:bg-slate-800 hover:text-primary transition-all group relative"
-              active-class="bg-primary-50 dark:bg-primary-900/20 text-primary font-bold shadow-sm"
+              class="flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:bg-black/5 dark:hover:bg-white/5 hover:text-text-main transition-all group relative"
+              active-class="text-[#FE2C55] dark:text-[#FE2C55] font-bold bg-red-50 dark:bg-white/5"
               :to="item.link">
               <div class="w-6 h-6 flex items-center justify-center shrink-0">
-                <svg class="w-5 h-5 fill-current transition-transform group-hover:scale-110" aria-hidden="true">
+                <svg class="w-6 h-6 fill-current transition-transform group-hover:scale-110" aria-hidden="true">
                   <use :xlink:href="item.class"></use>
                 </svg>
               </div>
-              <span class="hidden md:block text-sm font-medium">{{ item.name }}</span>
+              <span class="hidden md:block text-base font-medium">{{ item.name }}</span>
               
               <!-- Tooltip for mobile/collapsed -->
               <div class="md:hidden absolute left-full ml-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">

@@ -1,4 +1,75 @@
 
+:root {
+  --niuyin-primary-color: #FACC15;
+  --niuyin-text-color: #333333;
+  
+  /* Light Mode Variables */
+  --bg-base: #ffffff;
+  --bg-surface: #ffffff;
+  --text-main: #161823;
+  --text-muted: #86909c;
+  --border-color: rgba(22, 24, 35, 0.12);
+}
+
+/* Dark Mode Variables */
+html.dark {
+  --bg-base: #0f1015;
+  --bg-surface: #0f1015; /* Sidebar matches body in dark mode usually */
+  --text-main: #ffffff;
+  --text-muted: rgba(255, 255, 255, 0.5);
+  --border-color: rgba(255, 255, 255, 0.08);
+  
+  /* Element Plus Overrides */
+  .el-dialog {
+    background-color: #161823;
+    border: 1px solid rgba(255, 255, 255, 0.08);
+  }
+  .el-dialog__title {
+    color: white;
+  }
+  .el-input__wrapper {
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+  }
+  .el-input__inner {
+    color: white;
+  }
+  .el-textarea__inner {
+    background-color: rgba(255, 255, 255, 0.05);
+    box-shadow: none;
+    color: white;
+  }
+  .el-button--default {
+    background-color: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  .el-button--default:hover {
+    background-color: rgba(255, 255, 255, 0.1);
+    border-color: rgba(255, 255, 255, 0.2);
+  }
+  
+  /* Dropdown & Popper */
+  .el-dropdown__popper.el-popper {
+    background-color: #161823 !important;
+    border: 1px solid rgba(255, 255, 255, 0.08) !important;
+  }
+  .el-dropdown-menu {
+    background-color: #161823 !important;
+  }
+  .el-dropdown-menu__item {
+    color: white !important;
+  }
+  .el-dropdown-menu__item:hover, .el-dropdown-menu__item:focus {
+    background-color: rgba(255, 255, 255, 0.05) !important;
+    color: var(--niuyin-primary-color) !important;
+  }
+  .el-popper__arrow::before {
+    background-color: #161823 !important;
+    border-color: rgba(255, 255, 255, 0.08) !important;
+  }
+}
+
 * {
   margin: 0;
   padding: 0;

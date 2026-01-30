@@ -24,10 +24,15 @@ export default {
         bg: {
           base: 'var(--bg-base)',
           surface: 'var(--bg-surface)',
+          'dark-base': '#0f1015',
+          'dark-surface': '#161823',
         },
         text: {
           main: 'var(--text-main)',
           muted: 'var(--text-muted)',
+        },
+        border: {
+          DEFAULT: 'var(--border-color)',
         }
       },
       fontFamily: {

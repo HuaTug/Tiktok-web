@@ -1,43 +1,16 @@
 <template>
-<div class="flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
+<div class="fixed inset-0 z-[999] flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
        v-loading="loading"
        :element-loading-svg="svg"
        element-loading-svg-view-box="-10, -10, 50, 50">
-       
-    <!-- Left Sidebar -->
-    <div class="w-[72px] xl:w-[240px] flex flex-col border-r border-white/5 bg-[#0f1015] transition-all duration-300 z-50">
-      <!-- Logo -->
-      <div class="h-16 flex items-center justify-center xl:justify-start xl:px-6 shrink-0 cursor-pointer" @click="$router.push('/')">
-         <img class="w-8 h-8 object-contain" src="@/assets/logo/logo-cheese.png" alt="Logo">
-         <span class="hidden xl:block ml-3 font-bold text-xl tracking-tight">TikTok</span>
-      </div>
-      
-      <!-- Nav Menu -->
-      <div class="flex-1 py-4 overflow-y-auto">
-        <div class="px-2 space-y-2">
-           <div v-for="(item, i) in navItems" :key="i" 
-                class="flex items-center gap-4 px-3 py-3 rounded-xl text-gray-400 hover:bg-white/5 hover:text-white transition-all cursor-pointer group"
-                :class="{'bg-white/10 text-white font-bold': activeNav === item.id}"
-                @click="handleNavClick(item)">
-              <div class="w-6 h-6 flex items-center justify-center">
-                 <svg class="w-6 h-6 fill-current" aria-hidden="true"><use :xlink:href="item.icon"></use></svg>
-              </div>
-              <span class="hidden xl:block text-base font-medium">{{ item.name }}</span>
-           </div>
-        </div>
-      </div>
-      
-      <!-- Bottom Actions -->
-      <div class="p-4 border-t border-white/5">
-         <div class="flex items-center justify-center xl:justify-start gap-3 text-gray-400 hover:text-white cursor-pointer">
-            <el-icon :size="24"><Setting /></el-icon>
-            <span class="hidden xl:block">Settings</span>
-         </div>
-      </div>
-    </div>
 
     <!-- Main Content (Player) -->
     <div class="flex-1 relative bg-black flex flex-col justify-center items-center overflow-hidden">
+      <!-- Back Button -->
+      <div class="absolute top-6 left-6 z-50 cursor-pointer w-10 h-10 rounded-full bg-black/20 hover:bg-white/10 backdrop-blur-sm flex items-center justify-center transition-all group" @click="$router.back()">
+         <el-icon :size="24" class="text-white/70 group-hover:text-white transition-colors"><ArrowLeftBold /></el-icon>
+      </div>
+
       <div class="relative w-full h-full max-w-[calc(100vh*9/16)] xl:max-w-full xl:w-full xl:h-full flex justify-center items-center">
           <el-carousel class="w-full h-full"
                        ref="carousel"
@@ -155,9 +128,16 @@
     </div>
 
     <!-- Right Sidebar (Comments) -->
-    <div class="w-[360px] bg-[#0f1015] border-l border-white/5 flex flex-col transition-all duration-300 z-40" v-if="showRightPanel">
+    <div class="bg-[#0f1015] border-l border-white/5 flex flex-col transition-all duration-300 ease-in-out z-40 relative" 
+         :class="showRightPanel ? 'w-[360px] opacity-100 translate-x-0' : 'w-0 opacity-0 translate-x-full overflow-hidden'">
+       
+       <!-- Close Button (Absolute) -->
+       <div class="absolute top-4 right-4 z-50 cursor-pointer text-gray-400 hover:text-white" @click="showRightPanel = false">
+          <el-icon :size="20"><Close /></el-icon>
+       </div>
+
        <!-- Tabs -->
-       <div class="flex border-b border-white/5">
+       <div class="flex border-b border-white/5 pr-10">
           <div class="flex-1 py-4 text-center text-sm font-medium cursor-pointer transition-colors relative" 
                :class="activeTab === 'comments' ? 'text-white' : 'text-gray-500 hover:text-gray-300'"
                @click="activeTab = 'comments'">
@@ -542,6 +522,7 @@ import { userInfoX } from "@/store/userInfoX";
 import { encodeData, smartDateFormat } from "@/utils/roydon.js";
 import {
     ArrowDownBold,
+    ArrowLeftBold,
     ArrowUpBold,
     ChatDotRound, ChromeFilled, CirclePlus, Close,
     Location,
@@ -562,6 +543,7 @@ export default {
     QuestionFilled,
     ArrowDownBold,
     ArrowUpBold,
+    ArrowLeftBold,
     MoreFilled,
     VideoPlayer,
     VideoComment,
@@ -589,13 +571,6 @@ export default {
   data() {
     return {
       // New Layout Props
-      navItems: [
-        {id: 0, name: 'Home', icon: '#icon-index', link: '/'},
-        {id: 1, name: 'Discover', icon: '#icon-discover', link: '/discover'},
-        {id: 2, name: 'Following', icon: '#icon-follow', link: '/follow'},
-        {id: 3, name: 'Profile', icon: '#icon-erciyuan', link: '/user'}
-      ],
-      activeNav: 0,
       showRightPanel: true,
       activeTab: 'comments',
       currentVideo: null,
@@ -679,12 +654,6 @@ export default {
   methods: {
     toggleCommentPanel() {
       this.showRightPanel = !this.showRightPanel;
-    },
-    handleNavClick(item) {
-      this.activeNav = item.id;
-      if (item.link) {
-          this.$router.push(item.link);
-      }
     },
     smartDateFormat,
     dialogVisibleEmit(flag) {

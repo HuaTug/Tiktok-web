@@ -1,9 +1,9 @@
 <template>
   <div class="min-h-screen bg-bg-base pb-20 transition-colors duration-300">
     <!-- Banner Header -->
-    <div class="relative h-48 md:h-64 w-full bg-slate-200 dark:bg-slate-800 overflow-hidden group">
+    <div class="relative h-48 md:h-64 w-full bg-gray-100 dark:bg-[#161823] overflow-hidden group">
       <img v-if="memberInfo.backImage" :src="memberInfo.backImage" class="w-full h-full object-cover transition-transform duration-700 group-hover:scale-105">
-      <div v-else class="w-full h-full bg-gradient-to-r from-primary-400 to-primary-600 opacity-80"></div>
+      <div v-else class="w-full h-full bg-gradient-to-r from-gray-800 to-gray-900 opacity-80"></div>
       
       <!-- Edit Banner Button (Visible on Hover) -->
       <button @click="handleEditInfo" class="absolute top-4 right-4 bg-black/30 hover:bg-black/50 text-white p-2 rounded-full backdrop-blur-sm opacity-0 group-hover:opacity-100 transition-opacity">
@@ -16,11 +16,11 @@
       <div class="relative -mt-16 mb-8 flex flex-col md:flex-row items-start md:items-end gap-6">
         <!-- Avatar -->
         <div class="relative z-10 group">
-          <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-bg-base shadow-xl overflow-hidden bg-white dark:bg-slate-800">
+          <div class="w-32 h-32 md:w-40 md:h-40 rounded-full border-4 border-bg-base shadow-xl overflow-hidden bg-white dark:bg-[#161823]">
              <el-avatar v-if="user.avatar_url || user.avatar" :size="160" :src="user.avatar_url || user.avatar" class="w-full h-full object-cover" />
-             <el-avatar v-else :size="160" :icon="UserFilled" class="w-full h-full bg-slate-200 text-slate-400" />
+             <el-avatar v-else :size="160" :icon="UserFilled" class="w-full h-full bg-gray-100 dark:bg-white/5 text-gray-400" />
           </div>
-          <div class="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white rounded-full"></div>
+          <div class="absolute bottom-2 right-2 w-6 h-6 bg-green-500 border-2 border-white dark:border-[#0f1015] rounded-full"></div>
         </div>
 
         <!-- User Details -->
@@ -34,7 +34,7 @@
               </h1>
               <div class="flex items-center gap-4 mt-2 text-sm text-text-muted">
                 <span class="flex items-center gap-1">
-                  <span class="font-mono text-xs bg-slate-100 dark:bg-slate-800 px-2 py-0.5 rounded">ID: {{ user.user_id || user.userId }}</span>
+                  <span class="font-mono text-xs bg-gray-100 dark:bg-white/10 px-2 py-0.5 rounded">ID: {{ user.user_id || user.userId }}</span>
                 </span>
                 <span class="flex items-center gap-1" v-if="memberInfo.province">
                   <el-icon><Location /></el-icon> {{ memberInfo.province }} · {{ memberInfo.city }}
@@ -361,7 +361,7 @@ export default {
 /* Custom Tab Styles */
 :deep(.el-tabs__nav-wrap::after) {
   height: 1px;
-  background-color: var(--el-border-color-light);
+  background-color: rgba(255, 255, 255, 0.08);
 }
 :deep(.el-tabs__item) {
   font-size: 16px;

@@ -5,7 +5,7 @@
     <el-container class="layout-container h-screen">
       <Aside :siteTitle="siteTitle" class="border-r border-border bg-bg-surface"></Aside>
       <el-container class="is-vertical">
-        <Header @themeChangeEmit="emitThemeChange" class="border-b border-border bg-bg-surface/80 backdrop-blur-md sticky top-0 z-50"></Header>
+        <Header @themeChangeEmit="emitThemeChange" class="border-b border-white/5 bg-[#0f1015]/80 backdrop-blur-xl sticky top-0 z-50"></Header>
         <el-main class="main-container p-0 overflow-x-hidden">
           <!--路由-->
           <router-view v-slot="{ Component }">
@@ -30,13 +30,15 @@ export default {
   data() {
     return {
       siteTitle: "ZhiShi",
-      isDark: false,
+      isDark: true, // Default to dark mode for better initial impression
     }
   },
   created() {
   },
   mounted() {
-    this.initTheme()
+    // Force dark mode initially if not set
+    const dark = themeX().dark !== false; 
+    this.emitThemeChange(dark);
   },
   methods: {
     initTheme() {
