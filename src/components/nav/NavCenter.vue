@@ -94,14 +94,14 @@
 </template>
 
 <script>
+import { delSearchHistory, searchHistoryLoad, searchHotLoad } from "@/api/search.js";
+import { themeX } from "@/store/themeX";
+import { userInfoX } from "@/store/userInfoX";
 import {
-  ArrowRightBold, CaretTop,
-  Message, QuestionFilled,
-  Sunrise, SwitchButton, UserFilled,
-} from '@element-plus/icons-vue'
-import {searchHistoryLoad, delSearchHistory, searchHotLoad} from "@/api/search.js";
-import {userInfoX} from "@/store/userInfoX";
-import {themeX} from "@/store/themeX";
+    ArrowRightBold, CaretTop,
+    Message, QuestionFilled,
+    Sunrise, SwitchButton, UserFilled,
+} from '@element-plus/icons-vue';
 
 export default {
   name: "NavCenter",
@@ -160,7 +160,12 @@ export default {
     getHotSearch(pageDto) {
       searchHotLoad(pageDto).then(res => {
         pageDto = this.pageDto
-        this.hotSearch = res.data
+        // Fix: Ensure we are getting the list, not the whole response object if it was leaking
+        if (res.code === 200 && Array.isArray(res.data)) {
+             this.hotSearch = res.data
+        } else {
+             this.hotSearch = []
+        }
       })
     },
     // 判断选中了哪个搜索历史
@@ -212,8 +217,33 @@ export default {
 </script>
 
 <style scoped>
-.nav-center-search:hover {
-  border: 2px solid var(--niuyin-primary-color);
+.nav-center-search {
+  border-radius: 9999px;
+  background: rgba(255, 255, 255, 0.8);
+  backdrop-filter: blur(10px);
+  border: 1px solid transparent;
+  transition: all 0.3s ease;
+}
+
+.dark .nav-center-search {
+  background: rgba(30, 41, 59, 0.8);
+}
+
+.nav-center-search:hover,
+.nav-center-search:focus-within {
+  border-color: var(--niuyin-primary-color);
+  background: rgba(255, 255, 255, 1);
+  box-shadow: 0 0 15px rgba(250, 204, 21, 0.1);
+}
+
+.dark .nav-center-search:hover,
+.dark .nav-center-search:focus-within {
+  background: rgba(30, 41, 59, 1);
+}
+
+:deep(.el-input__wrapper) {
+  box-shadow: none !important;
+  background: transparent !important;
 }
 
 :deep(.el-input__wrapper.is-focus) {
@@ -222,13 +252,13 @@ export default {
 
 :deep(.el-button) {
   border: none !important;
-  background-color: var(--bg-video-card)
+  background: transparent !important;
+  border-radius: 0 9999px 9999px 0;
 }
 
 :deep(.el-button:hover) {
-  /* color: var(--el-button-hover-text-color); */
   color: var(--niuyin-text-color) !important;
-  background-color: var(--niuyin-primary-color);
+  background-color: var(--niuyin-primary-color) !important;
   outline: 0;
 }
 </style>

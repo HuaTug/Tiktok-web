@@ -1,52 +1,44 @@
 <template>
   <!--  侧边栏-->
-  <el-aside class="niuyin-aside">
+  <el-aside class="w-[60px] md:w-64 h-full bg-bg-surface border-r border-border transition-all duration-300 flex flex-col overflow-hidden">
     <!-- logo -->
-    <div class="oh w100"
-         style="overflow:hidden;height: 60px;position:sticky;top: 0;left: 0;z-index: 1;">
-      <router-link class="link-type flex-center wh100"
-                   :to="'/'"
-                   tag="div">
-        <div class="" style="text-align: right;width: 32px">
-          <img style="width: 28px;height: 28px;display: inline-block"
-               src="@/assets/logo/logo-cheese.png">
-        </div>
-        <div class="" style="width: calc(100% - 60px)">
-          <span style="display:inline-block;width: 4px"></span>
-          <span class="dn-phone fw500"
-                style="display:inline-block;line-height: 60px;height: 60px;font-family: DouyinSansBold;font-size: 1.2rem;color: var(--niuyin-text-color)">芝士学爆</span>
-        </div>
+    <div class="h-16 flex items-center justify-center md:justify-start md:px-6 border-b border-border shrink-0">
+      <router-link class="flex items-center gap-3 w-full justify-center md:justify-start" to="/">
+        <img class="w-8 h-8 object-contain" src="@/assets/logo/logo-cheese.png" alt="Logo">
+        <span class="hidden md:block font-bold text-xl text-primary tracking-tight font-sans">ZhiShi</span>
       </router-link>
     </div>
-    <el-scrollbar style="height: calc(100% - 60px)">
+    
+    <el-scrollbar class="flex-1 py-4">
       <!-- tab栏区域 -->
-      <div class="tabs-area">
-        <ul class="tab-top">
-          <li class="tab-top-item"
-              v-for="(item, i) in tabsTopList"
-              :key="i">
-            <router-link class="router-link"
-                         active-class="router-is-focus"
-                         :to="item.link">
-              <div class="tab-item">
-                <div class="round">
-                  <svg class="icon operate-svg" aria-hidden="true">
-                    <use :xlink:href="item.class"></use>
-                  </svg>
-                </div>
-                <span class="dn-phone">{{ item.name }}</span>
+      <div class="px-2">
+        <ul class="space-y-1">
+          <li v-for="(item, i) in tabsTopList" :key="i">
+            <router-link 
+              class="flex items-center gap-4 px-3 py-3 rounded-xl text-text-muted hover:bg-zinc-100 dark:hover:bg-slate-800 hover:text-primary transition-all group relative"
+              active-class="bg-primary-50 dark:bg-primary-900/20 text-primary font-bold shadow-sm"
+              :to="item.link">
+              <div class="w-6 h-6 flex items-center justify-center shrink-0">
+                <svg class="w-5 h-5 fill-current transition-transform group-hover:scale-110" aria-hidden="true">
+                  <use :xlink:href="item.class"></use>
+                </svg>
+              </div>
+              <span class="hidden md:block text-sm font-medium">{{ item.name }}</span>
+              
+              <!-- Tooltip for mobile/collapsed -->
+              <div class="md:hidden absolute left-full ml-2 px-2 py-1 bg-black text-white text-xs rounded opacity-0 group-hover:opacity-100 pointer-events-none whitespace-nowrap z-50">
+                {{ item.name }}
               </div>
             </router-link>
           </li>
         </ul>
-
       </div>
     </el-scrollbar>
   </el-aside>
 </template>
 
 <script>
-import {Message} from "@element-plus/icons-vue";
+import { Message } from "@element-plus/icons-vue";
 
 export default {
   name: "Aside",
@@ -57,21 +49,11 @@ export default {
   data() {
     return {
       tabsTopList: [
-        {id: 0, name: "首页", '--color': "blue", class: "#icon-index", link: "/"},
-        {id: 1, name: "推荐", '--color': "blue", class: "#icon-discover", link: "/discover"},
-        {id: 2, name: "热门", '--color': "blue", class: "#icon-hotVideo", link: "/hotVideo"},
-        {id: 3, name: "关注", '--color': "black", class: "#icon-follow", link: "/follow"},
-        // {id: 4, name: "频道", '--color': "black", class: "#icon-channel", link: "/channel",},
-        {id: 5, name: "我的", '--color': "black", class: "#icon-erciyuan", link: "/user",},
-      ],
-      tabsCenterList: [
-        {id: 1, name: "知识", '--color': "black", class: "#icon-knowledge", link: "/category/12"},
-        {id: 2, name: "游戏", '--color': "red", class: "#icon-game", link: "/category/11"},
-        {id: 3, name: "娱乐", '--color': "red", class: "#icon-entertainment", link: "/category/23"},
-        {id: 4, name: "音乐", '--color': "red", class: "#icon-music", link: "/category/9"},
-        {id: 5, name: "二次元", '--color': "red", class: "#icon-erciyuan", link: "/category/1"},
-        {id: 6, name: "生活", '--color': "red", class: "#icon-food", link: "/category/17"},
-        {id: 7, name: "美食", '--color': "red", class: "#icon-food", link: "/category/18"},
+        {id: 0, name: "Home", class: "#icon-index", link: "/"},
+        {id: 1, name: "Discover", class: "#icon-discover", link: "/discover"},
+        {id: 2, name: "Trending", class: "#icon-hotVideo", link: "/hotVideo"},
+        {id: 3, name: "Following", class: "#icon-follow", link: "/follow"},
+        {id: 5, name: "Profile", class: "#icon-erciyuan", link: "/user",},
       ],
     }
   },
@@ -79,71 +61,11 @@ export default {
   },
   methods: {
     handleSelect(index) {
-      // console.log(this.$router.options.routes)
     },
   }
 }
 </script>
 
-<style>
-.niuyin-aside {
-  width: fit-content;
-}
-
-@media (max-width: 520px) {
-
-}
-
-.tab-top-item {
-  width: 100%;
-  margin: 0.3rem 0;
-  text-align: left;
-  font-size: 0.9rem;
-  border-radius: 0.5rem;
-}
-
-.tab-center-item {
-  width: 100%;
-  margin: 0.3rem 0;
-  text-align: left;
-  font-size: 0.9rem;
-  border-radius: 0.5rem;
-}
-
-.router-link {
-  border-radius: 0.5rem;
-  padding: 0.3rem 0;
-  color: var(--niuyin-text-color);
-  text-decoration: none;
-}
-
-.tab-item {
-  margin: 1px 1rem;
-  display: flex;
-  padding: 0 10px;
-  flex-direction: row;
-  align-items: center;
-  justify-content: start;
-  border-radius: 0.5rem;
-  transition: all .3s ease-in;
-}
-
-.tab-item:hover {
-  background-color: var(--bg-aside-a);
-}
-
-.round {
-  display: inline-block;
-  width: 36px;
-  text-align: center;
-  height: 36px;
-  line-height: 36px;
-}
-
-.round i {
-  border-radius: 50%;
-  padding: 5px;
-  font-size: 20px;
-}
-
+<style scoped>
+/* Remove old styles */
 </style>

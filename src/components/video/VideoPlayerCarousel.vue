@@ -1237,75 +1237,117 @@ export default {
 
     .videoinfo-area {
       position: absolute;
-      bottom: 50px;
-      padding: 10px;
-      width: 60%;
+      bottom: 20px;
+      padding: 20px;
+      width: 70%;
       left: 0;
-      z-index: 1;
+      z-index: 20;
       display: flex;
       flex-direction: column;
       justify-content: flex-end;
-      align-items: self-start;
+      align-items: flex-start;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+      background: linear-gradient(to top, rgba(0,0,0,0.5), transparent);
 
       .video-title {
         max-width: 95%;
+        font-size: 16px;
+        line-height: 1.5;
+        
+        span {
+           font-weight: 600;
+        }
+      }
+      
+      .video-tag {
+         display: inline-block;
+         margin-right: 8px;
+         font-weight: 600;
+         color: #FACC15;
+         font-size: 14px;
+         
+         span { opacity: 0.7; margin-right: 1px; }
       }
     }
 
     .video-operate {
       position: absolute;
-      bottom: 50px;
-      padding-right: 16px;
-      z-index: 1;
+      bottom: 100px;
+      right: 20px;
+      z-index: 20;
       display: flex;
       flex-direction: column;
-      justify-content: flex-end;
       align-items: center;
-      right: 0;
 
       .operate-area {
-        align-items: center;
         display: flex;
-        filter: drop-shadow(0 0 3px rgba(0, 0, 0, .3));
         flex-direction: column;
-        flex-shrink: 0;
-        justify-content: center;
-        position: relative;
+        gap: 24px;
+        align-items: center;
 
         .video-author {
-          vertical-align: bottom;
           position: relative;
-          padding: 10px 0;
+          margin-bottom: 10px;
+          cursor: pointer;
 
           .user-avatar {
+            border: 2px solid white;
+            transition: transform 0.2s;
+            &:hover { transform: scale(1.1); }
           }
 
           .user-att {
             position: absolute;
+            bottom: -8px;
             left: 50%;
-            bottom: 0;
-            transform: translate(-50%, 10%);
+            transform: translateX(-50%);
+            background: #FACC15;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            border: 2px solid white;
+            
+            svg { width: 14px; height: 14px; }
           }
-
         }
 
         .op {
-          vertical-align: bottom;
-          position: relative;
-          padding: 10px;
+          display: flex;
+          flex-direction: column;
+          align-items: center;
           cursor: pointer;
-
-          .video-nums {
-            align-items: center;
-            color: #fff;
-            display: flex;
-            font-size: 15px;
-            font-weight: 500;
-            justify-content: center;
-            line-height: 23px;
-            opacity: .9;
+          
+          .operate-svg {
+            width: 48px;
+            height: 48px;
+            padding: 10px;
+            background: rgba(255, 255, 255, 0.15);
+            backdrop-filter: blur(4px);
+            border-radius: 50%;
+            transition: all 0.2s ease;
+            color: white;
+            margin-bottom: 4px;
+            
+            &:hover {
+              background: rgba(255, 255, 255, 0.3);
+              transform: scale(1.1);
+            }
+            
+            &:active {
+              transform: scale(0.95);
+            }
           }
 
+          .video-nums {
+            font-size: 13px;
+            font-weight: 600;
+            color: white;
+            text-shadow: 0 1px 2px rgba(0,0,0,0.5);
+          }
         }
       }
     }
@@ -1327,7 +1369,20 @@ export default {
 }
 
 .video-sidebar {
-  backdrop-filter: blur(10px);
+  backdrop-filter: blur(20px);
+  background: rgba(15, 23, 42, 0.95) !important;
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  
+  :deep(.el-drawer__header) {
+    margin-bottom: 0;
+    padding: 20px;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+    color: white;
+  }
+  
+  :deep(.el-drawer__body) {
+    padding: 0;
+  }
 }
 
 .user-avatar {
