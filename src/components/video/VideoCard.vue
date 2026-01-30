@@ -38,16 +38,16 @@
         </div>
       </div>
     </div>
+    <el-dialog
+        v-model="userVideoDialogVisible"
+        :modal="false"
+        class="user-video-dialog"
+        fullscreen
+        :destroy-on-close="true"
+        align-center>
+      <VideoPlayDialog :dialog-video="video" @dialogVisible="dialogVisibleEmit"/>
+    </el-dialog>
   </div>
-  <el-dialog
-      v-model="userVideoDialogVisible"
-      :modal="false"
-      class="user-video-dialog"
-      fullscreen
-      :destroy-on-close="true"
-      align-center>
-    <VideoPlayDialog :dialog-video="video" @dialogVisible="dialogVisibleEmit"/>
-  </el-dialog>
 </template>
 
 <script>
@@ -62,6 +62,7 @@ export default {
   props: {
     video: Object,
   },
+  emits: ['click'],
   data() {
     return {
       playVideo: false,

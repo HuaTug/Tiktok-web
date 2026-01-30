@@ -515,6 +515,67 @@ export async function manageVideoHeat(data) {
     })
 }
 
+// ========== 高级功能 API ==========
+
+// 个性化推荐视频（基于推荐引擎）
+export async function getRecommendedVideos(params = {}) {
+    return await request({
+        url: '/v1/recommend/video',
+        method: 'get',
+        params: {
+            count: params.count || 10,
+            categories: params.categories || '',
+            algorithm_type: params.algorithmType || 'default'
+        }
+    })
+}
+
+// 获取热门视频排行榜
+export async function getHotVideoRanking(params = {}) {
+    return await request({
+        url: '/v2/video/hot/ranking',
+        method: 'get',
+        params: {
+            limit: params.limit || 20,
+            time_range: params.timeRange || 'day' // day, week, month
+        }
+    })
+}
+
+// 视频搜索 - ES全文搜索（增强版）
+export async function searchVideosV2(params) {
+    return await request({
+        url: '/v1/video/search',
+        method: 'post',
+        data: {
+            keywords: params.keywords || '',
+            username: params.username || '',
+            page_size: params.pageSize || 20,
+            page_num: params.pageNum || 1,
+            from_date: params.fromDate || 0,
+            to_date: params.toDate || 0
+        }
+    })
+}
+
+// 获取视频详情（包含实时统计数据）
+export async function getVideoDetailV2(videoId) {
+    return await request({
+        url: '/v2/video/detail',
+        method: 'get',
+        params: { video_id: videoId }
+    })
+}
+
+// 批量获取视频统计数据
+export async function batchGetVideoStats(videoIds) {
+    return await request({
+        url: '/v2/video/stats/batch',
+        method: 'post',
+        data: { video_ids: videoIds }
+    })
+}
+
 // 用户配额管理
 export async function manageUserQuota(data) {
     return await request({

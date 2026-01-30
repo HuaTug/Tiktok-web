@@ -272,7 +272,74 @@ export default {
     }
 
     // ========== 核心：分片上传逻辑 ==========
-    const CHUNK_SIZE = 5 * 1024 * 1024 // 5MB
+    
+    // 分片上传配置
+    const UPLOAD_CONFIG = {
+      // 小文件阈值：小于此大小的文件不分片，直接上传
+      SMALL_FILE_THRESHOLD: 10 * 1024 * 1024, // 10MB
+      
+      // 分片大小配置（根据文件大小动态调整）
+      CHUNK_SIZE_SMALL: 2 * 1024 * 1024,   // 2MB - 用于 10-50MB 的文件
+      CHUNK_SIZE_MEDIUM: 5 * 1024 * 1024,  // 5MB - 用于 50-200MB 的文件
+      CHUNK_SIZE_LARGE: 10 * 1024 * 1024,  // 10MB - 用于 200MB-1GB 的文件
+      CHUNK_SIZE_HUGE: 20 * 1024 * 1024,   // 20MB - 用于 1GB 以上的文件
+      
+      // 最大分片数限制（避免分片过多）
+      MAX_CHUNKS: 100,
+      
+      // 最小分片大小（避免最后一个分片太小）
+      MIN_CHUNK_SIZE: 1 * 1024 * 1024, // 1MB
+    }
+
+    // 根据文件大小计算最优分片大小
+    const calculateChunkSize = (fileSize) => {
+      const { SMALL_FILE_THRESHOLD, CHUNK_SIZE_SMALL, CHUNK_SIZE_MEDIUM, CHUNK_SIZE_LARGE, CHUNK_SIZE_HUGE, MAX_CHUNKS } = UPLOAD_CONFIG
+      
+      // 小文件不分片
+      if (fileSize <= SMALL_FILE_THRESHOLD) {
+        return fileSize // 返回文件大小，即只有1个分片
+      }
+      
+      let chunkSize
+      
+      // 根据文件大小选择基础分片大小
+      if (fileSize <= 50 * 1024 * 1024) {
+        // 10-50MB: 使用 2MB 分片
+        chunkSize = CHUNK_SIZE_SMALL
+      } else if (fileSize <= 200 * 1024 * 1024) {
+        // 50-200MB: 使用 5MB 分片
+        chunkSize = CHUNK_SIZE_MEDIUM
+      } else if (fileSize <= 1024 * 1024 * 1024) {
+        // 200MB-1GB: 使用 10MB 分片
+        chunkSize = CHUNK_SIZE_LARGE
+      } else {
+        // >1GB: 使用 20MB 分片
+        chunkSize = CHUNK_SIZE_HUGE
+      }
+      
+      // 检查分片数量是否超过限制
+      let chunks = Math.ceil(fileSize / chunkSize)
+      if (chunks > MAX_CHUNKS) {
+        // 如果分片数超过限制，增大分片大小
+        chunkSize = Math.ceil(fileSize / MAX_CHUNKS)
+      }
+      
+      return chunkSize
+    }
+
+    // 获取分片策略描述
+    const getChunkStrategyInfo = (fileSize, chunkSize) => {
+      const totalChunks = Math.ceil(fileSize / chunkSize)
+      const isSmallFile = fileSize <= UPLOAD_CONFIG.SMALL_FILE_THRESHOLD
+      
+      return {
+        fileSize,
+        chunkSize,
+        totalChunks,
+        isSmallFile,
+        strategy: isSmallFile ? '直接上传（小文件）' : `分片上传（${totalChunks}片 × ${formatSize(chunkSize)}）`
+      }
+    }
 
     const submitUpload = async () => {
       // 表单验证
@@ -291,11 +358,22 @@ export default {
       chunkInfo.value = null
 
       const file = selectedFile.value
-      const totalChunks = Math.ceil(file.size / CHUNK_SIZE)
+      
+      // 动态计算分片大小
+      const chunkSize = calculateChunkSize(file.size)
+      const totalChunks = Math.ceil(file.size / chunkSize)
+      const strategyInfo = getChunkStrategyInfo(file.size, chunkSize)
+      
+      console.log(`📊 上传策略分析:`)
+      console.log(`   文件大小: ${formatSize(file.size)}`)
+      console.log(`   分片大小: ${formatSize(chunkSize)}`)
+      console.log(`   分片数量: ${totalChunks}`)
+      console.log(`   上传策略: ${strategyInfo.strategy}`)
 
       try {
         // Step 1: 开始上传
         stageText.value = '创建上传会话...'
+        console.log(`🚀 调用 /v2/publish/start 创建上传会话...`)
         const startRes = await request({
           url: '/v2/publish/start',
           method: 'post',
@@ -317,15 +395,21 @@ export default {
         if (!uuid) {
           throw new Error('服务器返回的会话ID无效')
         }
+        
+        console.log(`✅ 上传会话创建成功, UUID: ${uuid}`)
         currentUuid.value = uuid
         uploadPercent.value = 5
 
+        console.log(`📦 开始分片上传: 文件大小=${formatSize(file.size)}, 分片大小=${formatSize(chunkSize)}, 总分片数=${totalChunks}`)
+
         // Step 2: 分片上传
-        stageText.value = '上传视频分片...'
+        stageText.value = strategyInfo.isSmallFile ? '上传视频...' : '上传视频分片...'
         for (let i = 0; i < totalChunks; i++) {
-          const start = i * CHUNK_SIZE
-          const end = Math.min(start + CHUNK_SIZE, file.size)
+          const start = i * chunkSize
+          const end = Math.min(start + chunkSize, file.size)
           const chunk = file.slice(start, end)
+
+          console.log(`📤 上传分片 ${i + 1}/${totalChunks}: 起始=${start}, 结束=${end}, 分片大小=${formatSize(chunk.size)}`)
 
           const formData = new FormData()
           formData.append('uuid', uuid)
@@ -346,9 +430,12 @@ export default {
             throw new Error(uploadRes.message || `分片 ${i + 1} 上传失败`)
           }
 
+          console.log(`✅ 分片 ${i + 1}/${totalChunks} 上传成功`)
           chunkInfo.value = { current: i + 1, total: totalChunks }
           uploadPercent.value = Math.round(5 + ((i + 1) / totalChunks) * 85)
         }
+
+        console.log(`🔗 所有分片上传完成，开始合并...`)
 
         // Step 3: 完成上传
         stageText.value = '处理视频中...'

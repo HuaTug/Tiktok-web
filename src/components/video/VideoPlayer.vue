@@ -60,6 +60,7 @@ export default {
         ligthOff: false, //关灯模式
         volume: 0.5, //默认音量大小
         control: this.videoControl, //是否显示控制
+        preload: 'auto', // 预加载策略：auto/metadata/none
         controlBtns: [
           "audioTrack",
           "quality",

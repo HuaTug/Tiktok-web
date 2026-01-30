@@ -675,6 +675,8 @@ export default {
       showVideo: true,
       timeOut: null,
       drawer: false,
+      currentIndex: 0, // 当前视频索引
+      preloadedVideos: new Set(), // 已预加载的视频ID集合
       commentInput: '',
       // 视频评论查询参数
       commentQueryParams: {
@@ -715,6 +717,10 @@ export default {
   },
   emits: ['reloadVideoFeed'],
   mounted() {
+    // 初始化时预加载前几个视频
+    this.$nextTick(() => {
+      this.preloadAdjacentVideos(0)
+    })
   },
   watch: {
     dialogVideo(newVideo) {
@@ -808,9 +814,19 @@ export default {
     },
     keyDown(e) {
       if (e.keyCode === 38) {
-        console.log("方向键--上")
+        // 方向键--上
+        const _that = this;
+        this.drawer = false
+        this.showVideoComment = false
+        if (!_that.timeOut) {
+          _that.timeOut = setTimeout(() => {
+            _that.timeOut = null;
+            _that.$refs.carousel.prev()
+          }, 200);
+        }
       }
       if (e.keyCode === 40) {
+        // 方向键--下
         const _that = this;
         this.drawer = false
         this.showVideoComment = false
@@ -818,7 +834,11 @@ export default {
           _that.timeOut = setTimeout(() => {
             _that.timeOut = null;
             _that.$refs.carousel.next()
-          }, 1000);
+          }, 200);
+        }
+        if (this.waitLoadMore) {
+          this.$emit("reloadVideoFeed", true)
+          this.waitLoadMore = false
         }
       }
       if (e.keyCode === 37) {
@@ -831,15 +851,57 @@ export default {
     // 切换视频暂停视频
     carouselChange(newVal, oldVal) {
       console.log("newVal=>" + newVal + "、oldVal=>" + oldVal + "、videoLength=>" + this.videoList.length)
+      this.currentIndex = newVal
+      
+      // 立即暂停所有视频（不使用延迟）
       const videos = document.getElementsByClassName("d-player-video-main");
       for (let i = 0; i < videos.length; i++) {
-        setTimeout(() => {
-          videos[i].pause();
-        }, 100);
+        videos[i].pause();
       }
+      
+      // 预加载相邻视频
+      this.preloadAdjacentVideos(newVal)
+      
       if (newVal === this.videoList.length - 1) {
         this.waitLoadMore = true
       }
+    },
+    // 预加载相邻视频（前后各2个）
+    preloadAdjacentVideos(currentIndex) {
+      const preloadRange = 2 // 预加载范围
+      const start = Math.max(0, currentIndex - 1)
+      const end = Math.min(this.videoList.length - 1, currentIndex + preloadRange)
+      
+      for (let i = start; i <= end; i++) {
+        const video = this.videoList[i]
+        if (video && video.videoUrl && !this.preloadedVideos.has(video.videoId)) {
+          this.preloadVideo(video)
+        }
+      }
+    },
+    // 预加载单个视频
+    preloadVideo(video) {
+      if (!video.videoUrl || this.preloadedVideos.has(video.videoId)) return
+      
+      // 使用 link preload 预加载视频
+      const existingLink = document.querySelector(`link[href="${video.videoUrl}"]`)
+      if (!existingLink) {
+        const link = document.createElement('link')
+        link.rel = 'preload'
+        link.as = 'video'
+        link.href = video.videoUrl
+        link.crossOrigin = 'anonymous'
+        document.head.appendChild(link)
+      }
+      
+      // 同时预加载封面图
+      if (video.coverImage) {
+        const img = new Image()
+        img.src = video.coverImage
+      }
+      
+      this.preloadedVideos.add(video.videoId)
+      console.log('预加载视频:', video.videoId)
     },
     carouselEnd() {
       console.log("end")
@@ -849,7 +911,7 @@ export default {
       const _that = this;
       // chrome、ie使用的wheelDelta，火狐使用detail
       const scrollVal = event.wheelDelta || event.detail;
-      // 节流
+      // 节流 - 优化为200ms响应更快
       if (!_that.timeOut) {
         this.drawer = false
         this.showVideoComment = false
@@ -858,7 +920,7 @@ export default {
           scrollVal > 0
               ? _that.$refs.carousel.prev()
               : _that.$refs.carousel.next();
-        }, 500);
+        }, 200);
       } else {
       }
       if (this.waitLoadMore) {
@@ -872,7 +934,7 @@ export default {
         this.timeOut = setTimeout(() => {
           this.timeOut = null;
           this.$refs.carousel.prev()
-        }, 500);
+        }, 200);
       }
     },
     // playswitch 下一个
@@ -885,7 +947,7 @@ export default {
         _that.timeOut = setTimeout(() => {
           _that.timeOut = null;
           _that.$refs.carousel.next()
-        }, 500);
+        }, 200);
       }
       if (this.waitLoadMore) {
         this.$emit("reloadVideoFeed", true)
@@ -1138,6 +1200,9 @@ export default {
   flex: 1;
   border-radius: 1rem;
   height: 100%;
+  /* GPU 硬件加速优化 */
+  transform: translateZ(0);
+  will-change: transform;
 }
 
 .video-container * {
@@ -1147,7 +1212,11 @@ export default {
 .video-box {
   height: 100%;
   width: 100%;
-  transition: all 0.5s;
+  transition: all 0.3s ease;
+  /* GPU 硬件加速 */
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
 
   .video-container {
     width: 100%;
@@ -1596,6 +1665,34 @@ $video-sidebar-width: 520px;
   background-color: var(--niuyin-icon-bg0);
   padding: 1rem;
   border-radius: 50%
+}
+
+/* Carousel 过渡动画优化 - 使用GPU加速 */
+:deep(.el-carousel__container) {
+  height: 100%;
+  transform: translateZ(0);
+  will-change: transform;
+}
+
+:deep(.el-carousel__item) {
+  transition: transform 0.3s ease-out !important;
+  transform: translateZ(0);
+  will-change: transform;
+  backface-visibility: hidden;
+}
+
+:deep(.el-carousel__item.is-animating) {
+  transition: transform 0.3s ease-out !important;
+}
+
+/* 视频播放器容器优化 */
+:deep(.d-player-wrap) {
+  transform: translateZ(0);
+  will-change: contents;
+}
+
+:deep(.d-player-video-main) {
+  transform: translateZ(0);
 }
 
 </style>

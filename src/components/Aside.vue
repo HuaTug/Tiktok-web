@@ -39,68 +39,7 @@
             </router-link>
           </li>
         </ul>
-        <!-- 分隔符 -->
-        <div v-if="videoCategoryParentList">
-          <el-divider/>
-          <ul class="tab-center">
-            <li class="tab-center-item"
-                v-for="(item, i) in videoCategoryParentList"
-                :key="i">
-              <router-link class="router-link"
-                           active-class="router-is-focus"
-                           :to="'/category/'+item.id">
-                <div class="tab-item">
-                  <div class="round flex-center">
-                    <!--                    <svg class="icon operate-svg" aria-hidden="true">-->
-                    <!--                      <use :xlink:href="item.class"></use>-->
-                    <!--                    </svg>-->
-                    <img class="wh1point25rem" style="vertical-align: middle;" :src="item.categoryImage"/>
-                  </div>
-                  <span class="dn-phone">{{ item.name }}</span>
-                </div>
-              </router-link>
-            </li>
-          </ul>
-        </div>
-        <!--        <el-divider/>-->
-        <!--        <ul class="tab-center">-->
-        <!--          <li class="tab-center-item"-->
-        <!--              v-for="(item, i) in tabsCenterList"-->
-        <!--              :key="i">-->
-        <!--            <router-link class="router-link"-->
-        <!--                         active-class="router-is-focus"-->
-        <!--                         :to="item.link">-->
-        <!--              <div class="tab-item">-->
-        <!--                <div class="round">-->
-        <!--                  <svg class="icon operate-svg" aria-hidden="true">-->
-        <!--                    <use :xlink:href="item.class"></use>-->
-        <!--                  </svg>-->
-        <!--                </div>-->
-        <!--                <span class="dn-phone">{{ item.name }}</span>-->
-        <!--              </div>-->
-        <!--            </router-link>-->
-        <!--          </li>-->
-        <!--        </ul>-->
-        <!-- 分隔符 -->
-        <el-divider/>
-        <ul class="tab-center">
-          <li class="tab-center-item"
-              v-for="(item, i) in tabsBottomList"
-              :key="i">
-            <router-link class="router-link"
-                         active-class="router-is-focus"
-                         :to="item.link">
-              <div class="tab-item">
-                <div class="round">
-                  <svg class="icon operate-svg" aria-hidden="true">
-                    <use :xlink:href="item.class"></use>
-                  </svg>
-                </div>
-                <span class="dn-phone">{{ item.name }}</span>
-              </div>
-            </router-link>
-          </li>
-        </ul>
+
       </div>
     </el-scrollbar>
   </el-aside>
@@ -108,7 +47,6 @@
 
 <script>
 import {Message} from "@element-plus/icons-vue";
-import {videoCategoryParentList, videoCategoryTree} from "@/api/video.js";
 
 export default {
   name: "Aside",
@@ -135,44 +73,13 @@ export default {
         {id: 6, name: "生活", '--color': "red", class: "#icon-food", link: "/category/17"},
         {id: 7, name: "美食", '--color': "red", class: "#icon-food", link: "/category/18"},
       ],
-      videoCategoryParentList: (() => {
-        try {
-          const stored = localStorage.getItem("videoCategoryParentList");
-          return stored ? JSON.parse(stored) : null;
-        } catch (err) {
-          console.log('Failed to parse videoCategoryParentList from localStorage:', err);
-          return null;
-        }
-      })(),
-      tabsBottomList: [
-        {id: 1, name: "AI", '--color': "red", class: "#icon-deepseek", link: "/ai/chat"},
-        {id: 2, name: "商务合作", '--color': "red", class: "#icon-cooperation", link: "/cooperation"},
-        {id: 3, name: "源码地址", '--color': "red", class: "#icon-github", link: "/niuyinGithub"},
-      ],
     }
   },
   mounted() {
-    this.initVideoCategoryParentList()
   },
   methods: {
     handleSelect(index) {
       // console.log(this.$router.options.routes)
-    },
-    initVideoCategoryParentList() {
-      videoCategoryParentList().then(res => {
-        if (res.code === 200) {
-          if (this.videoCategoryParentList == null) {
-            this.videoCategoryParentList = res.data
-          }
-          localStorage.setItem("videoCategoryParentList", JSON.stringify(res.data))
-        }
-      }).catch(err => {
-        console.log('Video category parent list fetch failed:', err)
-        // 如果API调用失败，使用默认的静态数据
-        if (this.videoCategoryParentList == null) {
-          this.videoCategoryParentList = []
-        }
-      })
     },
   }
 }
