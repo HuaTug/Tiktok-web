@@ -115,6 +115,20 @@ export function deleteVideoComment(commentId) {
     })
 }
 
+// 评论点赞
+// actionType: 1=点赞, 2=取消点赞
+export function likeComment(commentId, actionType = 1) {
+    return request({
+        url: '/v1/action/like',
+        method: 'post',
+        data: { 
+            comment_id: commentId,
+            video_id: 0,
+            action_type: actionType === 1 ? 'like' : 'unlike' 
+        }
+    })
+}
+
 // 我的喜欢数
 export function myLikeCount() {
     return request({

@@ -11,7 +11,7 @@
             </div>
           </div>
           <div class="comment-content">
-            <p class="cw fs8 m mtb5 fw400">{{ item.content }}</p>
+            <p class="fs8 m mtb5 fw400" style="color: #333;">{{ item.content }}</p>
             <div class="flex-between">
               <div class="comment-operate flex-row">
                 <div class="flex-center mr-5r tac cp operate-icon"
@@ -27,15 +27,14 @@
                   </svg>
                   <p class="cg fs7 ml2">分享</p>
                 </div>
-                <div class="flex-center mr-5r tac cp operate-icon">
-                  <!--                todo 判断是否已点赞-->
+                <div class="flex-center mr-5r tac cp operate-icon" @click="handleCommentLike(item)">
                   <svg class="icon1rem" aria-hidden="true">
-                    <use xlink:href="#icon-like-grey"></use>
+                    <use :xlink:href="item.isLiked ? '#icon-like-red' : '#icon-like-grey'"></use>
                   </svg>
-                  <p class="cg fs7 ml2">{{ item.commentId }}</p>
+                  <p class="cg fs7 ml2">{{ item.likeCount || 0 }}</p>
                 </div>
               </div>
-              <div class="flex-center mr-5r tac cp">
+              <div class="flex-center mr-5r tac cp" v-if="item.userId === user.userId">
                 <el-popconfirm
                     confirm-button-text="Y"
                     cancel-button-text="N"
@@ -46,7 +45,7 @@
                     @confirm="handleDelConfirm(item.commentId)"
                     @cancel="handleDelCancel">
                   <template #reference>
-                    <el-icon v-if="item.userId === user.userId" color="red">
+                    <el-icon color="red">
                       <DeleteFilled/>
                     </el-icon>
                   </template>
@@ -70,7 +69,7 @@
                 </div>
               </div>
               <div class="comment-content">
-                <p class="cw fs8 m mtb5 fw400">{{ child.content }}</p>
+                <p class="fs8 m mtb5 fw400" style="color: #333;">{{ child.content }}</p>
                 <div class="flex-between">
                   <div class="comment-operate flex-row">
                     <div class="flex-center mr-5r tac cp operate-icon"
@@ -86,15 +85,14 @@
                       </svg>
                       <p class="cg fs7 ml2">分享</p>
                     </div>
-                    <div class="flex-center mr-5r tac cp">
-                      <!--                todo 判断是否已点赞-->
+                    <div class="flex-center mr-5r tac cp" @click="handleCommentLike(child)">
                       <svg class="icon1rem" aria-hidden="true">
-                        <use xlink:href="#icon-like-grey"></use>
+                        <use :xlink:href="child.isLiked ? '#icon-like-red' : '#icon-like-grey'"></use>
                       </svg>
-                      <p class="cg fs7 ml2">{{ item.commentId }}</p>
+                      <p class="cg fs7 ml2">{{ child.likeCount || 0 }}</p>
                     </div>
                   </div>
-                  <div class="flex-center mr-5r tac cp">
+                  <div class="flex-center mr-5r tac cp" v-if="child.userId === user.userId">
                     <el-popconfirm
                         confirm-button-text="Y"
                         cancel-button-text="N"
@@ -104,7 +102,7 @@
                         @confirm="handleDelConfirm(child.commentId)"
                         @cancel="handleDelCancel">
                       <template #reference>
-                        <el-icon v-if="item.userId === user.userId" color="red">
+                        <el-icon color="red">
                           <DeleteFilled/>
                         </el-icon>
                       </template>
@@ -154,7 +152,7 @@
 </template>
 
 <script>
-import {addVideoComment, videoCommentPageList, deleteVideoComment} from "@/api/behave.js";
+import {addVideoComment, videoCommentPageList, deleteVideoComment, likeComment} from "@/api/behave.js";
 import {ChromeFilled, DeleteFilled, InfoFilled} from "@element-plus/icons-vue";
 import {userInfoX} from "@/store/userInfoX";
 
@@ -226,9 +224,14 @@ export default {
         createTime: comment.created_at || comment.createTime,
         updateTime: comment.updated_at || comment.updateTime,
         replyToCommentId: comment.reply_to_comment_id || comment.replyToCommentId,
-        // User info - may need to be fetched separately or provided by backend
-        avatar: comment.avatar || comment.user_avatar || '/default-avatar.png',
-        nickName: comment.nick_name || comment.nickName || comment.username || '用户' + (comment.user_id || comment.userId || ''),
+        // User info from backend (new fields)
+        avatar: comment.avatar_url || comment.avatar || comment.user_avatar || '/default-avatar.png',
+        nickName: comment.user_name || comment.nick_name || comment.nickName || comment.username || '用户' + (comment.user_id || comment.userId || ''),
+        // Reply to user info
+        replyUserId: comment.reply_to_user_id || comment.replyUserId,
+        replayUserNickName: comment.reply_to_user_name || comment.replayUserNickName || '',
+        // Like status
+        isLiked: comment.is_liked || comment.isLiked || false,
         children: comment.children ? comment.children.map(child => this.transformComment(child)) : []
       }
     },
@@ -298,6 +301,23 @@ export default {
         }
       }).catch(err => {
         this.$message.error('删除失败，请检查网络连接')
+      })
+    },
+    // 评论点赞
+    handleCommentLike(comment) {
+      const actionType = comment.isLiked ? 2 : 1  // 1=点赞, 2=取消点赞
+      likeComment(comment.commentId, actionType).then(res => {
+        if (res.code === 0 || res.code === 200) {
+          // 更新本地状态
+          comment.isLiked = !comment.isLiked
+          comment.likeCount = comment.isLiked 
+            ? (comment.likeCount || 0) + 1 
+            : Math.max(0, (comment.likeCount || 0) - 1)
+        } else {
+          this.$message.error(res.message || res.msg || '操作失败')
+        }
+      }).catch(err => {
+        this.$message.error('点赞失败，请检查网络连接')
       })
     },
     handleDelCancel() {
