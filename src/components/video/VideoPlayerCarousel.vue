@@ -1,5 +1,5 @@
 <template>
-<div class="relative z-[50] flex h-screen w-full bg-[#0f1015] text-white overflow-hidden"
+<div class="relative z-[50] flex h-[calc(100vh-64px)] w-full bg-[#0f1015] text-white overflow-hidden"
        v-loading="loading"
        :element-loading-svg="svg"
        element-loading-svg-view-box="-10, -10, 50, 50">
@@ -11,7 +11,7 @@
          <el-icon :size="24" class="text-white/70 group-hover:text-white transition-colors"><ArrowLeftBold /></el-icon>
       </div>
 
-      <div class="relative w-full h-full max-w-[calc(100vh*9/16)] xl:max-w-full xl:w-full xl:h-full flex justify-center items-center">
+      <div class="relative w-full h-full flex justify-center items-center">
           <el-carousel class="w-full h-full"
                        ref="carousel"
                        direction="vertical"
@@ -23,7 +23,7 @@
             <el-carousel-item v-for="item in videoList" :key="item.videoId" class="flex justify-center items-center bg-black">
                <div class="relative w-full h-full flex justify-center items-center bg-black">
                   <!-- Video Player Component -->
-                  <div class="relative w-full h-full max-w-[calc(100vh*9/16)] xl:max-w-full xl:w-full xl:h-full bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5">
+                  <div class="relative h-full aspect-[9/16] max-h-full bg-black rounded-xl overflow-hidden shadow-2xl border border-white/5">
                       <VideoPlayer v-if="item.publishType==='0'" class="w-full h-full object-contain" :video="item"/>
                       <ImagePlayer v-else :cover-image="item.coverImage" :image-list="item.imageList"/>
                       

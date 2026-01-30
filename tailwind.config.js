@@ -9,17 +9,17 @@ export default {
     extend: {
       colors: {
         primary: {
-          DEFAULT: '#FACC15', // Cheese Yellow
-          50: '#FEFCE8',
-          100: '#FEF9C3',
-          200: '#FEF08A',
-          300: '#FDE047',
-          400: '#FACC15',
-          500: '#EAB308',
-          600: '#CA8A04',
-          700: '#A16207',
-          800: '#854D0E',
-          900: '#713F12',
+          DEFAULT: '#FE2C55', // TikTok Red
+          50: '#FFF1F3',
+          100: '#FFE0E6',
+          200: '#FFC7D1',
+          300: '#FF9EAF',
+          400: '#FF6584',
+          500: '#FE2C55',
+          600: '#ED1443',
+          700: '#C60938',
+          800: '#A50A35',
+          900: '#8C0D33',
         },
         bg: {
           base: 'var(--bg-base)',
@@ -39,7 +39,7 @@ export default {
         sans: ['Inter', 'system-ui', 'sans-serif'],
       },
       boxShadow: {
-        'glow': '0 0 20px -5px rgba(250, 204, 21, 0.3)',
+        'glow': '0 0 20px -5px rgba(254, 44, 85, 0.3)',
       }
     },
   },
