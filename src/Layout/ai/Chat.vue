@@ -97,8 +97,8 @@
                 <div
                     class="message-bubble"
                     :class="msg.type === 'user' ? 'bg-blue-500 text-white' : 'bg-white text-gray-800'"
+                    v-html="formatMessage(msg.content)"
                 >
-                  {{ msg.content }}
                 </div>
               </div>
             </div>
@@ -174,44 +174,74 @@
 </template>
 
 <script setup>
-import {ref, onMounted, nextTick} from "vue";
+import { aiChat, deleteAiSession } from "@/api/ai.js";
+import { getToken } from "@/utils/auth.js";
 import {
-  ChatRound,
-  Setting,
-  Position,
-  VideoPause,
-  Files,
-  Delete,
-  Plus,
+    ChatRound,
+    Delete,
+    Files,
+    Plus,
+    Position,
+    Setting,
+    VideoPause,
 } from "@element-plus/icons-vue";
-import {ElMessage} from "element-plus";
+import { ElMessage } from "element-plus";
+import { nextTick, onMounted, onUnmounted, ref } from "vue";
 
 const showChatList = ref(false);
 const inputMessage = ref("");
 const isTyping = ref(false);
 const isReceiving = ref(false);
-const chatContainer = ref < HTMLElement | null > null;
+const chatContainer = ref(null);
 const userAvatar =
     "https://niuyin-server.oss-cn-shenzhen.aliyuncs.com/member/2024/10/07/4eb4963fa6bb4f85aa0ba1f748978993.jpeg";
 const aiAvatar =
     "https://public.readdy.ai/ai/img_res/ce5e827dc0be17269a8c7efd4050aba6.jpg";
-const currentChatId = ref(1);
-const chatList = ref([
-  {
-    id: 1,
+const currentChatId = ref("");
+let chatIdCounter = 0;
+const chatList = ref([]);
+const messages = ref([]);
+let currentXHR = null; // For aborting SSE requests
+
+// Generate a unique session ID
+const generateSessionId = () => {
+  chatIdCounter++;
+  return `session_${Date.now()}_${chatIdCounter}`;
+};
+
+// Format message content (support markdown-like formatting)
+const formatMessage = (content) => {
+  if (!content) return '';
+  // Basic markdown-like formatting
+  let html = content
+    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
+    .replace(/\n/g, '<br>')
+    .replace(/---/g, '<hr style="margin: 8px 0; border: 0; border-top: 1px solid #e5e7eb;">');
+  return html;
+};
+
+// Initialize with a default chat
+const initDefaultChat = () => {
+  const sessionId = generateSessionId();
+  const defaultChat = {
+    id: sessionId,
     title: "默认会话",
     messages: [
       {
         type: "ai",
-        content: "你好！我是你的AI助手，有什么我可以帮你的吗？",
+        content: "你好！👋 我是你的AI智能助手，我可以帮你：\n\n🔍 **搜索视频** - 告诉我你想找什么内容\n🔥 **查看热门** - 了解当前平台热门话题和趋势\n💡 **创作建议** - 为你提供标题、描述、标签和最佳发布时间建议\n❓ **回答问题** - 关于平台使用的任何问题\n\n有什么我可以帮你的吗？",
       },
     ],
-  },
-]);
-const messages = ref(chatList.value[0].messages);
+  };
+  chatList.value.push(defaultChat);
+  currentChatId.value = sessionId;
+  messages.value = defaultChat.messages;
+};
+
 const createNewChat = () => {
+  const sessionId = generateSessionId();
   const newChat = {
-    id: chatList.value.length + 1,
+    id: sessionId,
     title: `新会话 ${chatList.value.length + 1}`,
     messages: [
       {
@@ -223,6 +253,7 @@ const createNewChat = () => {
   chatList.value.push(newChat);
   switchChat(newChat.id);
 };
+
 const switchChat = (chatId) => {
   currentChatId.value = chatId;
   const chat = chatList.value.find((c) => c.id === chatId);
@@ -233,6 +264,7 @@ const switchChat = (chatId) => {
     });
   }
 };
+
 const deleteChat = (chatId) => {
   if (chatList.value.length === 1) {
     ElMessage.warning("至少保留一个会话");
@@ -240,73 +272,214 @@ const deleteChat = (chatId) => {
   }
   const index = chatList.value.findIndex((c) => c.id === chatId);
   if (index > -1) {
+    // Also delete from backend
+    deleteAiSession(chatId).catch(() => {});
     chatList.value.splice(index, 1);
     if (currentChatId.value === chatId) {
       switchChat(chatList.value[0].id);
     }
   }
 };
+
 const scrollToBottom = async () => {
   await nextTick();
   if (chatContainer.value) {
     chatContainer.value.scrollTop = chatContainer.value.scrollHeight;
   }
 };
-const simulateAIResponse = async () => {
+
+// Send message via SSE streaming
+const sendMessageSSE = async (message) => {
   isTyping.value = true;
   isReceiving.value = true;
-  await new Promise((resolve) => setTimeout(resolve, 1500));
-  isTyping.value = false;
-  const responses = [
-    "我明白你的问题，让我来帮你分析一下。",
-    "这是一个很好的问题，根据我的理解...",
-    "我可以从几个方面为你解答这个问题。",
-    "这个问题比较复杂，让我详细解释一下。",
-  ];
+
   const currentChat = chatList.value.find((c) => c.id === currentChatId.value);
-  if (currentChat) {
+  if (!currentChat) return;
+
+  try {
+    const baseURL = import.meta.env.VITE_API_BASE_URL || '';
+    const token = getToken();
+    
+    // Use XMLHttpRequest for streaming POST request
+    const xhr = new XMLHttpRequest();
+    currentXHR = xhr;
+    
+    xhr.open('POST', `${baseURL}/v1/ai/chat/stream`, true);
+    xhr.setRequestHeader('Content-Type', 'application/json');
+    if (token) {
+      xhr.setRequestHeader('Access-Token', token);
+    }
+    
+    let aiMessageIndex = -1;
+    let receivedText = '';
+    let lastProcessedLength = 0;
+    
+    // Add empty AI message placeholder
     currentChat.messages.push({
       type: "ai",
-      content: responses[Math.floor(Math.random() * responses.length)],
+      content: "",
     });
+    aiMessageIndex = currentChat.messages.length - 1;
+    isTyping.value = false;
+    
+    xhr.onprogress = () => {
+      const newData = xhr.responseText.substring(lastProcessedLength);
+      lastProcessedLength = xhr.responseText.length;
+      
+      // Parse SSE events
+      const lines = newData.split('\n');
+      for (const line of lines) {
+        if (line.startsWith('data: ')) {
+          try {
+            const eventData = JSON.parse(line.substring(6));
+            
+            if (eventData.type === 'content') {
+              receivedText += eventData.content;
+              currentChat.messages[aiMessageIndex].content = receivedText;
+              scrollToBottom();
+            } else if (eventData.type === 'done') {
+              // Update session title if provided
+              if (eventData.title && currentChat.title.startsWith('新会话')) {
+                currentChat.title = eventData.title;
+              }
+            }
+          } catch (e) {
+            // Ignore parse errors for incomplete chunks
+          }
+        }
+      }
+    };
+    
+    xhr.onload = () => {
+      isReceiving.value = false;
+      currentXHR = null;
+      scrollToBottom();
+    };
+    
+    xhr.onerror = () => {
+      console.error('SSE request failed, falling back to non-streaming');
+      isReceiving.value = false;
+      isTyping.value = false;
+      currentXHR = null;
+      
+      // Fallback to non-streaming
+      if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
+        currentChat.messages.splice(aiMessageIndex, 1);
+      }
+      sendMessageNonStreaming(message);
+    };
+    
+    xhr.send(JSON.stringify({
+      session_id: currentChatId.value,
+      message: message
+    }));
+    
+  } catch (error) {
+    console.error('SSE setup failed:', error);
+    isTyping.value = false;
+    isReceiving.value = false;
+    sendMessageNonStreaming(message);
   }
-  isReceiving.value = false;
-  await scrollToBottom();
 };
+
+// Fallback: send message without streaming
+const sendMessageNonStreaming = async (message) => {
+  isTyping.value = true;
+  isReceiving.value = true;
+  
+  const currentChat = chatList.value.find((c) => c.id === currentChatId.value);
+  if (!currentChat) return;
+  
+  try {
+    const res = await aiChat({
+      session_id: currentChatId.value,
+      message: message
+    });
+    
+    isTyping.value = false;
+    
+    if (res.code === 200 && res.data) {
+      currentChat.messages.push({
+        type: "ai",
+        content: res.data.reply || "抱歉，我暂时无法回答你的问题。",
+      });
+      
+      // Update title
+      if (res.data.title && currentChat.title.startsWith('新会话')) {
+        currentChat.title = res.data.title;
+      }
+    } else {
+      currentChat.messages.push({
+        type: "ai",
+        content: "抱歉，服务暂时不可用，请稍后再试。",
+      });
+    }
+  } catch (error) {
+    console.error('Chat request failed:', error);
+    isTyping.value = false;
+    currentChat.messages.push({
+      type: "ai",
+      content: "网络连接失败，请检查网络后重试。",
+    });
+  } finally {
+    isReceiving.value = false;
+    await scrollToBottom();
+  }
+};
+
 const stopReceiving = () => {
-  // 这里添加停止接收SSE数据的逻辑
+  if (currentXHR) {
+    currentXHR.abort();
+    currentXHR = null;
+  }
   isReceiving.value = false;
   isTyping.value = false;
 };
+
 const sendMessage = async () => {
   const message = inputMessage.value.trim();
   if (!message) return;
+  
   const currentChat = chatList.value.find((c) => c.id === currentChatId.value);
   if (currentChat) {
     currentChat.messages.push({
       type: "user",
       content: message,
     });
-    // 更新会话标题
-    if (currentChat.messages.length === 2) {
+    
+    // Auto-name session from first user message
+    const userMsgCount = currentChat.messages.filter(m => m.type === 'user').length;
+    if (userMsgCount === 1) {
       currentChat.title =
           message.slice(0, 20) + (message.length > 20 ? "..." : "");
     }
   }
   inputMessage.value = "";
   await scrollToBottom();
-  await simulateAIResponse();
+  
+  // Try SSE streaming first, fallback to non-streaming
+  await sendMessageSSE(message);
 };
+
 const handleScroll = () => {
   if (!chatContainer.value) return;
   const {scrollTop} = chatContainer.value;
-  // 当滚动到顶部时，可以加载更多历史消息
   if (scrollTop === 0) {
-    // 这里可以添加加载更多历史消息的逻辑
+    // Load more history messages if needed
   }
 };
+
 onMounted(() => {
+  initDefaultChat();
   scrollToBottom();
+});
+
+onUnmounted(() => {
+  // Cleanup
+  if (currentXHR) {
+    currentXHR.abort();
+    currentXHR = null;
+  }
 });
 </script>
 
@@ -319,6 +492,16 @@ onMounted(() => {
   word-break: break-word;
 }
 
+.message-bubble :deep(strong) {
+  font-weight: 600;
+}
+
+.message-bubble :deep(hr) {
+  margin: 8px 0;
+  border: 0;
+  border-top: 1px solid #e5e7eb;
+}
+
 .typing-indicator {
   display: flex;
   gap: 4px;
@@ -329,6 +512,7 @@ onMounted(() => {
   width: 8px;
   height: 8px;
   border-radius: 50%;
+  background-color: #94a3b8;
   animation: typing 1s infinite ease-in-out;
 }
 
@@ -354,4 +538,3 @@ onMounted(() => {
   }
 }
 </style>
-

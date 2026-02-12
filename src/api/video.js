@@ -321,7 +321,15 @@ export async function publishVideo(data) {
     })
 }
 
-// 视频分类列表
+// Get video categories from backend
+export async function getVideoCategories() {
+    return await request({
+        url: '/v1/video/categories',
+        method: 'get',
+    })
+}
+
+// 视频分类列表 (legacy)
 export async function videoCategory(data) {
     return await request({
         url: '/v1/video/list',

@@ -73,6 +73,18 @@
 
           <el-row :gutter="20">
             <el-col :span="12">
+              <el-form-item label="视频分类">
+                <el-select v-model="form.category" placeholder="请选择视频分类" style="width: 100%;" :loading="categoryLoading">
+                  <el-option
+                    v-for="cat in categoryList"
+                    :key="cat.id"
+                    :label="`${cat.icon} ${cat.name}`"
+                    :value="cat.name"
+                  />
+                </el-select>
+              </el-form-item>
+            </el-col>
+            <el-col :span="12">
               <el-form-item label="视频标签">
                 <div class="tags-container">
                   <el-tag 
@@ -143,9 +155,10 @@
 </template>
 
 <script>
-import { ref, reactive, nextTick, onUnmounted } from 'vue'
-import { ElMessage } from 'element-plus'
-import request from '@/utils/request'
+import { getVideoCategories } from '@/api/video';
+import request from '@/utils/request';
+import { ElMessage } from 'element-plus';
+import { onUnmounted, reactive, ref } from 'vue';
 
 export default {
   name: 'VideoUpload',
@@ -170,6 +183,7 @@ export default {
       title: '',
       description: '',
       tags: [],
+      category: '',
       open: 1
     })
     const rules = {
@@ -187,6 +201,39 @@ export default {
     // 上传结果
     const showResult = ref(false)
     const uploadResult = ref(null)
+
+    // Category
+    const categoryList = ref([])
+    const categoryLoading = ref(false)
+
+    // Load categories from backend
+    const loadCategories = async () => {
+      categoryLoading.value = true
+      try {
+        const res = await getVideoCategories()
+        if (res.code === 200 && res.data?.categories) {
+          categoryList.value = res.data.categories
+        }
+      } catch (e) {
+        console.error('Failed to load categories:', e)
+        // Fallback categories
+        categoryList.value = [
+          { id: 1, name: '娱乐', icon: '🎬' },
+          { id: 2, name: '音乐', icon: '🎵' },
+          { id: 3, name: '游戏', icon: '🎮' },
+          { id: 4, name: '知识', icon: '📚' },
+          { id: 5, name: '美食', icon: '🍜' },
+          { id: 6, name: '运动', icon: '⚽' },
+          { id: 7, name: '时尚', icon: '👗' },
+          { id: 8, name: '旅行', icon: '✈️' },
+          { id: 9, name: '科技', icon: '💻' },
+          { id: 10, name: '生活', icon: '🏠' },
+          { id: 11, name: '其他', icon: '📌' },
+        ]
+      } finally {
+        categoryLoading.value = false
+      }
+    }
 
     // 格式化文件大小
     const formatSize = (bytes) => {
@@ -381,7 +428,7 @@ export default {
             title: form.title,
             description: form.description,
             lab_name: form.tags.join(','),
-            category: '',
+            category: form.category,
             open: form.open,
             chunk_total_number: totalChunks
           }
@@ -518,6 +565,7 @@ export default {
       form.title = ''
       form.description = ''
       form.tags = []
+      form.category = ''
       form.open = 1
       uploadPercent.value = 0
       uploadStatus.value = ''
@@ -539,6 +587,9 @@ export default {
       }
     })
 
+    // Load categories on mount
+    loadCategories()
+
     return {
       // 文件
       fileInput,
@@ -555,6 +606,9 @@ export default {
       formRef,
       form,
       rules,
+      // Category
+      categoryList,
+      categoryLoading,
       // 标签
       showTagInput,
       newTag,

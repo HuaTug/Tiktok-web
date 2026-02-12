@@ -41,7 +41,7 @@
                         type="info"
                         closable
                         @click="handleSearchHistorySelect(item.keyword)"
-                        @close="handleSearchHistoryClose(item.id)">
+                        @close="handleSearchHistoryClose(item.keyword)">
                   {{ item.keyword }}
                 </el-tag>
               </div>
@@ -95,7 +95,7 @@
 </template>
 
 <script>
-import { delSearchHistory, searchHistoryLoad, searchHotLoad } from "@/api/search.js";
+import { addSearchHistory, delSearchHistory, getSearchSuggestions, searchHistoryLoad, searchHotLoad } from "@/api/search.js";
 import { themeX } from "@/store/themeX";
 import { userInfoX } from "@/store/userInfoX";
 import {
@@ -146,16 +146,26 @@ export default {
     getSearchHistory() {
       searchHistoryLoad().then(res => {
         if (res.code === 200) {
-          if (res.data.length > 0) {
-            this.searchHistory = res.data
+          const history = res.data?.history || res.data || []
+          if (history.length > 0) {
+            this.searchHistory = history
+          } else {
+            this.searchHistory = null
           }
         }
+      }).catch(() => {
+        this.searchHistory = null
       })
     },
     getSearchDiscover() {
-      // todo
-      this.searchDiscover.push({id: 1, keyword: "你好"})
-      this.searchDiscover = this.searchDiscover.slice(0, 10)
+      getSearchSuggestions().then(res => {
+        if (res.code === 200) {
+          const suggestions = res.data?.suggestions || []
+          this.searchDiscover = suggestions.map((kw, idx) => ({ id: idx + 1, keyword: kw }))
+        }
+      }).catch(() => {
+        this.searchDiscover = []
+      })
     },
     //分页获取热搜列表
     getHotSearch(pageDto) {
@@ -189,6 +199,8 @@ export default {
       if (this.searchData === "") {
         this.searchData = this.searchDefaults;
       }
+      // Record search history to backend
+      addSearchHistory(this.searchData).catch(() => {})
       this.routerJump();
       this.getSearchHistory()
     },
@@ -198,12 +210,12 @@ export default {
       this.$router.push(`/search/video?keyword=${this.searchData}`);
     },
     // 删除搜索历史记录
-    handleSearchHistoryClose(id) {
-      delSearchHistory(id).then(res => {
+    handleSearchHistoryClose(keyword) {
+      delSearchHistory(keyword).then(res => {
         if (res.code === 200) {
           this.getSearchHistory()
         }
-      })
+      }).catch(() => {})
     },
     // 搜索框pop展示
     searchPopoverShow() {

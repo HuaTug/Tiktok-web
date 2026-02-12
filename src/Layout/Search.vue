@@ -78,10 +78,10 @@
 </template>
 
 <script>
-import {videoSearchSuggest} from "@/api/search.js";
-import {Filter, Search} from "@element-plus/icons-vue";
+import { videoSearchSuggest } from "@/api/search.js";
 import VideoSearchOneCard from "@/components/video/card/VideoSearchOneCard.vue";
-import {removeHtmlTags} from "@/utils/roydon.js";
+import { removeHtmlTags } from "@/utils/roydon.js";
+import { Filter, Search } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoSearch",
@@ -200,26 +200,21 @@ export default {
       // this.$router.push(route)
     },
     handleSearchSortFilter(item) {
-      // console.log(item)
       this.filterSort = item.id
-      this.loading = true
-      // searchVideo(this.searchFrom).then(res => {
-      //   if (res.code === 200) {
-      //     this.videoSearchList = res.data
-      //     this.loading = false
-      //   }
-      // })
+      // Pass sort filter to child route via query params
+      this.$router.replace({
+        path: this.$route.path,
+        query: { ...this.$route.query, sort: item.id }
+      })
     },
     handleSearchTimeFilter(item) {
       this.filterTime = item.id
       this.searchFrom.publishTimeLimit = this.filterTime
-      this.loading = true
-      // searchVideo(this.searchFrom).then(res => {
-      //   if (res.code === 200) {
-      //     this.videoSearchList = res.data
-      //     this.loading = false
-      //   }
-      // })
+      // Pass time filter to child route via query params
+      this.$router.replace({
+        path: this.$route.path,
+        query: { ...this.$route.query, time: item.id }
+      })
     },
     // 点击标签
     handleClickTag(tag) {

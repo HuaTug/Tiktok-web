@@ -1,6 +1,6 @@
 import request from '@/utils/request'
 
-// 视频搜索
+// Video search
 export function searchVideo(data) {
     return request({
         url: '/v1/video/search',
@@ -9,7 +9,7 @@ export function searchVideo(data) {
     })
 }
 
-// 用户搜索
+// User search
 export function searchUser(data) {
     return request({
         url: '/v1/user/query/',
@@ -18,23 +18,56 @@ export function searchUser(data) {
     })
 }
 
-// 搜索记录 (暂时不支持，返回空)
+// ========== Search History ==========
+
+// Get search history
 export function searchHistoryLoad() {
     return request({
-        url: '/v1/video/list',
+        url: '/v1/search/history',
         method: 'get',
     })
 }
 
-// 删除搜索记录 (暂时不支持)
-export function delSearchHistory(id) {
+// Add search history
+export function addSearchHistory(keyword) {
     return request({
-        url: '/v1/video/list',
+        url: '/v1/search/history',
+        method: 'post',
+        data: { keyword }
+    })
+}
+
+// Delete a specific search history item or all
+export function delSearchHistory(keyword) {
+    return request({
+        url: '/v1/search/history',
+        method: 'delete',
+        params: { keyword }
+    })
+}
+
+// Clear all search history
+export function clearAllSearchHistory() {
+    return request({
+        url: '/v1/search/history',
+        method: 'delete',
+        params: { all: 'true' }
+    })
+}
+
+// ========== Search Suggestions (猜你想搜) ==========
+
+// Get personalized search suggestions
+export function getSearchSuggestions() {
+    return request({
+        url: '/v1/search/suggestions',
         method: 'get',
     })
 }
 
-// 热门搜索
+// ========== Hot Search ==========
+
+// Get hot search
 export async function searchHotLoad(data) {
     return await request({
         url: '/v1/popular/',
@@ -43,8 +76,10 @@ export async function searchHotLoad(data) {
     })
 }
 
+// ========== Video Search Suggest (Related Search) ==========
+
 /**
- * 视频搜索建议
+ * Video search suggestions (for the right panel on search page)
  * @param data
  * @returns {*}
  */

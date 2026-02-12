@@ -1,15 +1,15 @@
 <script setup>
-import {ref, onMounted, watch} from 'vue'
-import {useRoute} from 'vue-router'
+import { onMounted, ref, watch } from 'vue';
+import { useRoute } from 'vue-router';
 
 const route = useRoute()
 
-import {removeHtmlTags, smartDateFormat} from "@/utils/roydon.js";
-import {searchVideo, videoSearchSuggest} from "@/api/search.js";
-import {UserFilled} from "@element-plus/icons-vue";
+import { searchVideo } from "@/api/search.js";
+import { removeHtmlTags, smartDateFormat } from "@/utils/roydon.js";
+import { UserFilled } from "@element-plus/icons-vue";
 
-import VideoSearchOneCard from "@/components/video/card/VideoSearchOneCard.vue";
 import LoadingVideoSearch from "@/components/loading/LoadingVideoSearch.vue";
+import VideoSearchOneCard from "@/components/video/card/VideoSearchOneCard.vue";
 
 const loadingNew = ref(true)
 const loadingMore = ref(false)
@@ -19,7 +19,35 @@ const searchFrom = ref({
   pageNum: 1,
   pageSize: 10,
   publishTimeLimit: 0,
+  sort_by: 'relevance', // relevance, latest, likes
+  from_date: '',
+  to_date: '',
 })
+
+// Helper: convert sort id to sort_by string
+const getSortBy = (sortId) => {
+  const sortMap = { 0: 'relevance', 1: 'latest', 2: 'likes' }
+  return sortMap[sortId] || 'relevance'
+}
+
+// Helper: calculate from_date based on time filter
+const getFromDate = (timeId) => {
+  if (!timeId || timeId === 0) return ''
+  const now = new Date()
+  switch (timeId) {
+    case 1: // Within a day
+      now.setDate(now.getDate() - 1)
+      return now.toISOString().split('T')[0]
+    case 2: // Within a week
+      now.setDate(now.getDate() - 7)
+      return now.toISOString().split('T')[0]
+    case 3: // Within a month
+      now.setMonth(now.getMonth() - 1)
+      return now.toISOString().split('T')[0]
+    default:
+      return ''
+  }
+}
 
 const loadVideoSearch = async (dto) => {
   const res = await searchVideo(dto)
@@ -89,13 +117,29 @@ const handleClickTag = (tag) => {
 //   // 这里可以添加处理逻辑，比如重新获取数据等
 // })
 
-// 监听路由变化，更新 keyword 参数
+// 监听路由变化，更新 keyword/sort/time 参数
 watch(() => route.query, (newQuery) => {
+  const keywordChanged = searchFrom.value.keyword !== newQuery.keyword
+  const sortChanged = searchFrom.value.sort_by !== getSortBy(Number(newQuery.sort || 0))
+  const timeChanged = searchFrom.value.from_date !== getFromDate(Number(newQuery.time || 0))
+  
   searchFrom.value.keyword = newQuery.keyword
+  searchFrom.value.sort_by = getSortBy(Number(newQuery.sort || 0))
+  searchFrom.value.from_date = getFromDate(Number(newQuery.time || 0))
+  
+  if (keywordChanged || sortChanged || timeChanged) {
+    // Reset and reload
+    videoSearchList.value = []
+    searchFrom.value.pageNum = 1
+    loadingNew.value = true
+    loadVideoSearch(searchFrom.value)
+  }
 })
 
 onMounted(() => {
   searchFrom.value.keyword = route.query.keyword
+  searchFrom.value.sort_by = getSortBy(Number(route.query.sort || 0))
+  searchFrom.value.from_date = getFromDate(Number(route.query.time || 0))
   loadVideoSearch(searchFrom.value)
 })
 </script>

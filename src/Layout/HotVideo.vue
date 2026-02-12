@@ -51,6 +51,38 @@
                   </el-tabs>
                 </div>
               </div>
+              <!--              热搜词云面板-->
+              <div style="min-height: 280px; width: 100%; max-width: 600px;" class="hotVideo-item">
+                <div class="hotVideo-card" style="padding: 20px; border-radius: 12px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
+                  <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                    🔥 热搜词云
+                  </h3>
+                  <div class="word-cloud-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
+                    <span
+                      v-for="(word, index) in hotWordCloud"
+                      :key="index"
+                      class="word-cloud-tag cp"
+                      :style="{
+                        fontSize: getWordSize(index) + 'px',
+                        color: getWordColor(index),
+                        fontWeight: index < 3 ? '700' : index < 6 ? '600' : '400',
+                        padding: '4px 12px',
+                        borderRadius: '20px',
+                        background: getWordBg(index),
+                        transition: 'all 0.3s ease',
+                        display: 'inline-block',
+                        lineHeight: '1.8',
+                      }"
+                      @click="handleClickHotTable(word)"
+                      @mouseenter="$event.target.style.transform = 'scale(1.1)'"
+                      @mouseleave="$event.target.style.transform = 'scale(1)'"
+                    >
+                      {{ word }}
+                    </span>
+                    <p v-if="hotWordCloud.length === 0" style="color: #999; font-size: 14px;">暂无热搜数据</p>
+                  </div>
+                </div>
+              </div>
               <!--              热门视频-->
               <div v-for='(item,index) in hotVideoList'
                    :key="item.videoId"
@@ -96,15 +128,15 @@
 </template>
 
 <script>
+import { batchFavoriteStatus, batchLikeStatus } from "@/api/behave.js";
 import { searchHotLoad } from "@/api/search.js";
 import { followAndFans } from "@/api/social.js";
 import { getVideoVOById, hotVideoPage, userLikeNums } from "@/api/video";
-import { batchFavoriteStatus, batchLikeStatus } from "@/api/behave.js";
 import Loading from "@/components/Loading.vue";
-import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import VideoDiscoverCard from "@/components/video/card/VideoDiscoverCard.vue";
 import VideoHotCard from "@/components/video/card/VideoHotCard.vue";
 import HotVideoRanking from "@/components/video/HotVideoRanking.vue";
+import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import { userInfoX } from "@/store/userInfoX";
 import { encodeData } from "@/utils/roydon.js";
 import { Close, UserFilled } from "@element-plus/icons-vue";
@@ -153,10 +185,12 @@ export default {
       hotMsg: [],
       playVideoUrl: "",//hover之后播放的video
       userVideoDialogVisible: false,
+      hotWordCloud: [], // Hot word cloud data
     };
   },
   created() {
     this.getHotVideoPage()
+    this.loadHotWordCloud()
     // this.getHotSearchPage()
   },
   mounted() {
@@ -460,6 +494,47 @@ export default {
     },
     dialogVisibleEmit(flag) {
       this.userVideoDialogVisible = flag
+    },
+    // Load hot word cloud data
+    loadHotWordCloud() {
+      searchHotLoad({ pageNum: 1, pageSize: 20 }).then(res => {
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          const popularData = res.data?.Popular || res.Popular || res.data || []
+          if (Array.isArray(popularData) && popularData.length > 0) {
+            if (typeof popularData[0] === 'object') {
+              this.hotWordCloud = popularData
+                .map(item => item.title || item.video_title || item.videoTitle)
+                .filter(title => title)
+                .slice(0, 20)
+            } else {
+              this.hotWordCloud = popularData.slice(0, 20)
+            }
+          }
+        }
+      }).catch(() => {
+        this.hotWordCloud = []
+      })
+    },
+    // Word cloud helper: font size based on rank
+    getWordSize(index) {
+      if (index < 3) return 20
+      if (index < 6) return 16
+      if (index < 10) return 14
+      return 12
+    },
+    // Word cloud helper: color based on rank
+    getWordColor(index) {
+      const colors = ['#e74c3c', '#e67e22', '#f1c40f', '#2ecc71', '#3498db', '#9b59b6', '#1abc9c', '#e84393', '#6c5ce7', '#00b894']
+      return colors[index % colors.length]
+    },
+    // Word cloud helper: background color
+    getWordBg(index) {
+      const bgs = [
+        'rgba(231,76,60,0.1)', 'rgba(230,126,34,0.1)', 'rgba(241,196,15,0.1)',
+        'rgba(46,204,113,0.1)', 'rgba(52,152,219,0.1)', 'rgba(155,89,182,0.1)',
+        'rgba(26,188,156,0.1)', 'rgba(232,67,147,0.1)', 'rgba(108,92,231,0.1)', 'rgba(0,184,148,0.1)'
+      ]
+      return bgs[index % bgs.length]
     }
   }
 };
