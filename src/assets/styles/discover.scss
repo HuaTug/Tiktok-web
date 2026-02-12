@@ -3,6 +3,7 @@
   height: 100%;
   padding: 16px;
   box-sizing: border-box;
+  background: var(--bg-base);
 }
 
 .loading-container {
@@ -33,6 +34,7 @@
 
 .hotVideo-list {
   width: 100%;
+  padding: 0 8px;
   
   .hotVideos {
     display: flex;
@@ -49,14 +51,15 @@
   .discover-card {
     display: flex;
     flex-direction: column;
-    border-radius: 16px;
+    border-radius: var(--card-radius);
     overflow: hidden;
-    background-color: var(--bg-surface);
-    transition: transform 0.2s, box-shadow 0.2s;
+    background-color: var(--bg-elevated);
+    border: 1px solid var(--border-color-light);
+    transition: transform var(--transition-normal), box-shadow var(--transition-normal);
 
     &:hover {
-      transform: translateY(-4px);
-      box-shadow: 0 10px 20px rgba(0, 0, 0, 0.2);
+      transform: translateY(-3px);
+      box-shadow: var(--shadow-md);
     }
 
     .user-info {
@@ -64,6 +67,7 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
+      color: var(--text-secondary);
     }
   }
 }
@@ -85,5 +89,3 @@
     width: 50%;
   }
 }
-
-

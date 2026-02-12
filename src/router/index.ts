@@ -73,13 +73,7 @@ const router = createRouter({
                 },
                 {path: "cooperation", component: () => import("@/Layout/Cooperation.vue")},
                 {path: "niuyinGithub", component: () => import("@/Layout/NiuyinGithub.vue")},
-                {
-                    path: "ai", component: () => import("@/Layout/ai/Chat.vue"),
-                    children: [
-                        {path: "/ai/chat", component: () => import("@/Layout/ai/Chat.vue")},
-                        {path: "/ai/image", component: () => import("@/Layout/ai/Image.vue")},
-                    ]
-                },
+                {path: "ai", name: "ai-chat", component: () => import("@/Layout/ai/Chat.vue")},
             ],
         },
         {

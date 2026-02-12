@@ -230,12 +230,14 @@ onUnmounted(() => {
 .notification-trigger {
   cursor: pointer;
   padding: 8px;
-  border-radius: 8px;
-  transition: background-color 0.3s;
+  border-radius: 10px;
+  transition: background-color var(--transition-fast);
+  color: var(--text-muted);
 }
 
 .notification-trigger:hover {
-  background-color: rgba(0, 0, 0, 0.04);
+  background-color: var(--hover-bg);
+  color: var(--niuyin-primary-color);
 }
 
 .notification-panel {
@@ -249,12 +251,13 @@ onUnmounted(() => {
   justify-content: space-between;
   align-items: center;
   padding-bottom: 12px;
-  border-bottom: 1px solid #f0f0f0;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .panel-header .title {
   font-size: 16px;
-  font-weight: 600;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .notification-list {
@@ -267,26 +270,28 @@ onUnmounted(() => {
 .notification-item {
   display: flex;
   align-items: flex-start;
-  padding: 12px 0;
+  padding: 12px 4px;
   cursor: pointer;
-  border-bottom: 1px solid #f5f5f5;
-  transition: background-color 0.2s;
+  border-bottom: 1px solid var(--border-color-light);
+  transition: all var(--transition-fast);
   position: relative;
+  border-radius: 8px;
+  margin: 2px 0;
 }
 
 .notification-item:hover {
-  background-color: #fafafa;
+  background-color: var(--hover-bg);
 }
 
 .notification-item.is-unread {
-  background-color: #f0f7ff;
+  background-color: var(--active-bg);
 }
 
 .item-icon {
   width: 36px;
   height: 36px;
   border-radius: 50%;
-  background-color: #f5f5f5;
+  background-color: var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
@@ -302,13 +307,13 @@ onUnmounted(() => {
 .item-title {
   font-size: 14px;
   font-weight: 500;
-  color: #333;
-  margin-bottom: 4px;
+  color: var(--text-main);
+  margin-bottom: 3px;
 }
 
 .item-desc {
   font-size: 13px;
-  color: #666;
+  color: var(--text-secondary);
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
@@ -316,17 +321,17 @@ onUnmounted(() => {
 
 .item-time {
   font-size: 12px;
-  color: #999;
-  margin-top: 4px;
+  color: var(--text-muted);
+  margin-top: 3px;
 }
 
 .unread-dot {
   width: 8px;
   height: 8px;
   border-radius: 50%;
-  background-color: #ff4d4f;
+  background-color: var(--niuyin-primary-color);
   position: absolute;
-  right: 0;
+  right: 4px;
   top: 50%;
   transform: translateY(-50%);
 }
@@ -334,7 +339,7 @@ onUnmounted(() => {
 .panel-footer {
   padding-top: 12px;
   text-align: center;
-  border-top: 1px solid #f0f0f0;
+  border-top: 1px solid var(--border-color);
 }
 
 :deep(.el-tabs__header) {

@@ -211,10 +211,9 @@ onMounted(() => {
 
 <style scoped lang="scss">
 .hot-ranking-container {
-  background: var(--bg-video-card, #fff);
-  border-radius: 16px;
-  padding: 20px;
-  box-shadow: 0 2px 12px rgba(0, 0, 0, 0.08);
+  background: var(--bg-surface);
+  border-radius: var(--card-radius);
+  padding: 24px;
   max-width: 600px;
   margin: 0 auto;
 }
@@ -224,16 +223,16 @@ onMounted(() => {
   align-items: center;
   justify-content: space-between;
   margin-bottom: 20px;
-  padding-bottom: 12px;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+  padding-bottom: 14px;
+  border-bottom: 1px solid var(--border-color);
   
   .ranking-title {
     display: flex;
     align-items: center;
     font-size: 18px;
-    font-weight: 600;
+    font-weight: 700;
     margin: 0;
-    color: var(--text-color, #333);
+    color: var(--text-main);
     
     .icon-fire {
       width: 24px;
@@ -245,7 +244,7 @@ onMounted(() => {
   
   .ranking-subtitle {
     font-size: 12px;
-    color: #999;
+    color: var(--text-muted);
   }
 }
 
@@ -253,69 +252,69 @@ onMounted(() => {
   display: flex;
   align-items: center;
   padding: 12px 0;
-  border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+  border-bottom: 1px solid var(--border-color-light);
 }
 
 .ranking-list {
   .ranking-item {
     display: flex;
     align-items: center;
-    padding: 12px 8px;
-    border-radius: 12px;
+    padding: 10px 8px;
+    border-radius: 10px;
     cursor: pointer;
-    transition: all 0.3s ease;
-    margin-bottom: 4px;
+    transition: all 0.2s ease;
+    margin-bottom: 2px;
     
     &:hover {
-      background: rgba(0, 0, 0, 0.03);
-      transform: translateX(4px);
+      background: var(--hover-bg);
+      transform: translateX(3px);
     }
     
     &.top-three {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.05) 0%, rgba(255, 107, 107, 0) 100%);
+      background: linear-gradient(135deg, rgba(255, 107, 107, 0.06) 0%, transparent 100%);
     }
   }
 }
 
 .rank-number {
-  width: 28px;
-  height: 28px;
+  width: 26px;
+  height: 26px;
   display: flex;
   align-items: center;
   justify-content: center;
   font-weight: 700;
-  font-size: 14px;
+  font-size: 13px;
   border-radius: 8px;
   margin-right: 12px;
   flex-shrink: 0;
   
   &.rank-first {
-    background: linear-gradient(135deg, #FFD700 0%, #FFA500 100%);
+    background: linear-gradient(135deg, #FFD700, #FFA500);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.4);
+    box-shadow: 0 2px 8px rgba(255, 215, 0, 0.3);
   }
   
   &.rank-second {
-    background: linear-gradient(135deg, #C0C0C0 0%, #A0A0A0 100%);
+    background: linear-gradient(135deg, #C0C0C0, #A0A0A0);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(192, 192, 192, 0.4);
+    box-shadow: 0 2px 8px rgba(192, 192, 192, 0.3);
   }
   
   &.rank-third {
-    background: linear-gradient(135deg, #CD7F32 0%, #B8860B 100%);
+    background: linear-gradient(135deg, #CD7F32, #B8860B);
     color: #fff;
-    box-shadow: 0 2px 8px rgba(205, 127, 50, 0.4);
+    box-shadow: 0 2px 8px rgba(205, 127, 50, 0.3);
   }
   
   &.rank-normal {
-    background: rgba(0, 0, 0, 0.04);
-    color: #999;
+    background: var(--hover-bg);
+    color: var(--text-muted);
   }
 }
 
 .video-cover {
-  width: 80px;
-  height: 60px;
+  width: 76px;
+  height: 56px;
   border-radius: 8px;
   overflow: hidden;
   margin-right: 12px;
@@ -333,18 +332,18 @@ onMounted(() => {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: #f5f5f5;
-    color: #ccc;
+    background: var(--bg-elevated);
+    color: var(--text-muted);
   }
   
   .play-count {
     position: absolute;
     bottom: 2px;
     right: 2px;
-    background: rgba(0, 0, 0, 0.6);
+    background: rgba(0, 0, 0, 0.65);
     color: #fff;
     font-size: 10px;
-    padding: 2px 4px;
+    padding: 2px 5px;
     border-radius: 4px;
     display: flex;
     align-items: center;
@@ -363,8 +362,8 @@ onMounted(() => {
   .video-title {
     font-size: 14px;
     font-weight: 500;
-    color: var(--text-color, #333);
-    margin: 0 0 6px 0;
+    color: var(--text-main);
+    margin: 0 0 5px 0;
     overflow: hidden;
     text-overflow: ellipsis;
     white-space: nowrap;
@@ -376,7 +375,7 @@ onMounted(() => {
     align-items: center;
     justify-content: space-between;
     font-size: 12px;
-    color: #999;
+    color: var(--text-muted);
     
     .author {
       overflow: hidden;
@@ -394,7 +393,7 @@ onMounted(() => {
         display: flex;
         align-items: center;
         gap: 2px;
-        color: #ff6b6b;
+        color: var(--niuyin-primary-color);
         
         .el-icon {
           font-size: 12px;
@@ -410,59 +409,25 @@ onMounted(() => {
   
   .heat-tag {
     font-size: 10px;
-    padding: 2px 6px;
-    border-radius: 4px;
-    font-weight: 500;
+    padding: 2px 8px;
+    border-radius: 10px;
+    font-weight: 600;
+    letter-spacing: 0.3px;
     
     &.heat-hot {
-      background: linear-gradient(135deg, #ff6b6b 0%, #ff8e8e 100%);
+      background: linear-gradient(135deg, #FE2C55, #ff6b81);
       color: #fff;
     }
     
     &.heat-warm {
-      background: linear-gradient(135deg, #ffa726 0%, #ffb74d 100%);
+      background: linear-gradient(135deg, #ffa726, #ffb74d);
       color: #fff;
     }
     
     &.heat-rising {
-      background: linear-gradient(135deg, #66bb6a 0%, #81c784 100%);
+      background: linear-gradient(135deg, #26c6da, #4dd0e1);
       color: #fff;
     }
-  }
-}
-
-// 暗色主题适配
-:root[data-theme="dark"] {
-  .hot-ranking-container {
-    background: #1a1a1a;
-    box-shadow: 0 2px 12px rgba(0, 0, 0, 0.3);
-  }
-  
-  .ranking-header {
-    border-bottom-color: rgba(255, 255, 255, 0.1);
-    
-    .ranking-title {
-      color: #fff;
-    }
-  }
-  
-  .ranking-list .ranking-item {
-    &:hover {
-      background: rgba(255, 255, 255, 0.05);
-    }
-    
-    &.top-three {
-      background: linear-gradient(135deg, rgba(255, 107, 107, 0.1) 0%, rgba(255, 107, 107, 0) 100%);
-    }
-  }
-  
-  .rank-number.rank-normal {
-    background: rgba(255, 255, 255, 0.1);
-    color: #666;
-  }
-  
-  .video-info .video-title {
-    color: #fff;
   }
 }
 </style>

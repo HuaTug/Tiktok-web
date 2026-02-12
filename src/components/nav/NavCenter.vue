@@ -1,8 +1,7 @@
 <template>
   <div class="nav-center">
     <div class="nav-center-search"
-         ref="NavSearch"
-         style="border: 1px solid #666 !important; background-color: #2a2a2a !important;">
+         ref="NavSearch">
       <!-- 输入框 -->
       <el-popover popper-class="search-popover"
                   :width="480"
@@ -232,25 +231,24 @@ export default {
 <style scoped>
 .nav-center {
   width: 100%;
-  max-width: 400px;
+  max-width: 460px;
 }
 
 .nav-center-search {
   display: flex;
   align-items: center;
-  border-radius: 9999px;
-  background: rgba(255, 255, 255, 0.12);
-  backdrop-filter: blur(20px);
-  -webkit-backdrop-filter: blur(20px);
-  border: 1px solid rgba(255, 255, 255, 0.4);
-  transition: all 0.2s ease;
+  border-radius: 22px;
+  background: var(--hover-bg);
+  border: 1.5px solid var(--border-color);
+  transition: all var(--transition-fast);
   overflow: hidden;
 }
 
 .nav-center-search:hover,
 .nav-center-search:focus-within {
-  background: rgba(255, 255, 255, 0.18);
-  border-color: rgba(255, 255, 255, 0.6);
+  border-color: var(--niuyin-primary-color);
+  background: var(--hover-bg);
+  box-shadow: 0 0 0 3px rgba(254, 44, 85, 0.08);
 }
 
 .search-input {
@@ -264,13 +262,13 @@ export default {
 }
 
 :deep(.search-input .el-input__inner) {
-  color: rgba(255, 255, 255, 0.9);
+  color: var(--text-main);
   font-size: 14px;
   height: 36px;
 }
 
 :deep(.search-input .el-input__inner::placeholder) {
-  color: rgba(255, 255, 255, 0.6);
+  color: var(--text-muted);
 }
 
 .search-btn {
@@ -279,55 +277,27 @@ export default {
   width: 44px;
   border: none !important;
   background: transparent !important;
-  border-radius: 0 !important;
+  border-radius: 0 20px 20px 0 !important;
   margin: 0 !important;
   padding: 0 !important;
   display: flex;
   align-items: center;
   justify-content: center;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
 }
 
 .search-btn:hover {
-  background: rgba(255, 255, 255, 0.15) !important;
+  background: var(--active-bg) !important;
 }
 
 .search-btn .icon {
   width: 18px;
   height: 18px;
-  fill: rgba(255, 255, 255, 0.7);
-  transition: fill 0.2s ease;
+  fill: var(--text-muted);
+  transition: fill var(--transition-fast);
 }
 
 .search-btn:hover .icon {
-  fill: rgba(255, 255, 255, 1);
-}
-
-/* 亮色主题适配 */
-:root:not(.dark) .nav-center-search {
-  background: rgba(0, 0, 0, 0.06);
-  border-color: rgba(0, 0, 0, 0.08);
-}
-
-:root:not(.dark) .nav-center-search:hover,
-:root:not(.dark) .nav-center-search:focus-within {
-  background: rgba(0, 0, 0, 0.1);
-  border-color: rgba(0, 0, 0, 0.12);
-}
-
-:root:not(.dark) :deep(.search-input .el-input__inner) {
-  color: #161823;
-}
-
-:root:not(.dark) :deep(.search-input .el-input__inner::placeholder) {
-  color: rgba(22, 24, 35, 0.5);
-}
-
-:root:not(.dark) .search-btn .icon {
-  fill: rgba(22, 24, 35, 0.6);
-}
-
-:root:not(.dark) .search-btn:hover .icon {
-  fill: rgba(22, 24, 35, 0.9);
+  fill: var(--niuyin-primary-color);
 }
 </style>

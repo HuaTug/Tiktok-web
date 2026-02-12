@@ -53,8 +53,8 @@
               </div>
               <!--              热搜词云面板-->
               <div style="min-height: 280px; width: 100%; max-width: 600px;" class="hotVideo-item">
-                <div class="hotVideo-card" style="padding: 20px; border-radius: 12px; background: #fff; box-shadow: 0 2px 12px rgba(0,0,0,0.08);">
-                  <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px;">
+                <div class="hotVideo-card" style="padding: 20px; border-radius: var(--card-radius); background: var(--bg-surface);">
+                  <h3 style="margin-bottom: 16px; font-size: 16px; font-weight: 600; display: flex; align-items: center; gap: 8px; color: var(--text-main);">
                     🔥 热搜词云
                   </h3>
                   <div class="word-cloud-container" style="display: flex; flex-wrap: wrap; gap: 10px; align-items: center;">
@@ -66,20 +66,20 @@
                         fontSize: getWordSize(index) + 'px',
                         color: getWordColor(index),
                         fontWeight: index < 3 ? '700' : index < 6 ? '600' : '400',
-                        padding: '4px 12px',
+                        padding: '6px 14px',
                         borderRadius: '20px',
                         background: getWordBg(index),
-                        transition: 'all 0.3s ease',
+                        transition: 'all 0.25s ease',
                         display: 'inline-block',
                         lineHeight: '1.8',
                       }"
                       @click="handleClickHotTable(word)"
-                      @mouseenter="$event.target.style.transform = 'scale(1.1)'"
+                      @mouseenter="$event.target.style.transform = 'scale(1.08)'"
                       @mouseleave="$event.target.style.transform = 'scale(1)'"
                     >
                       {{ word }}
                     </span>
-                    <p v-if="hotWordCloud.length === 0" style="color: #999; font-size: 14px;">暂无热搜数据</p>
+                    <p v-if="hotWordCloud.length === 0" style="color: var(--text-muted); font-size: 14px;">暂无热搜数据</p>
                   </div>
                 </div>
               </div>

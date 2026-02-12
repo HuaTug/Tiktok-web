@@ -70,7 +70,7 @@ export default {
   overflow: hidden;
   background-color: var(--bg-base);
   color: var(--text-main);
-  transition: background-color 0.3s, color 0.3s;
+  transition: background-color var(--transition-normal), color var(--transition-normal);
 }
 
 .bg-mask {
@@ -88,13 +88,15 @@ export default {
 
 .sidebar-container {
   flex-shrink: 0;
-  width: 240px;
+  width: 220px;
   height: 100%;
-  background-color: #121212; /* 深灰色，比纯黑稍亮 */
-  transition: width 0.3s;
+  background-color: var(--sidebar-bg);
+  border-right: 1px solid var(--border-color);
+  transition: width 0.3s ease, background-color var(--transition-normal);
+  z-index: 200;
   
   @media (max-width: 768px) {
-    width: 60px;
+    width: 64px;
   }
 }
 
@@ -102,16 +104,18 @@ export default {
   display: flex;
   flex-direction: column;
   flex: 1;
-  min-width: 0; // 防止flex子元素溢出
+  min-width: 0;
   height: 100%;
   overflow: hidden;
 }
 
 .header-container {
   flex-shrink: 0;
-  height: 60px;
-  background-color: #121212; /* 深灰色，比纯黑稍亮 */
+  height: 56px;
+  background-color: var(--header-bg);
+  border-bottom: 1px solid var(--header-border);
   z-index: 100;
+  transition: background-color var(--transition-normal);
 }
 
 .main-container {
@@ -119,5 +123,6 @@ export default {
   overflow-x: hidden;
   overflow-y: auto;
   padding: 0;
+  background-color: var(--bg-base);
 }
 </style>

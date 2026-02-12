@@ -245,8 +245,24 @@ export default {
 </script>
 
 <style scoped>
+.notice-container {
+  max-height: 70vh;
+}
+
+.notice-head {
+  border-radius: var(--card-radius) var(--card-radius) 0 0;
+  background-color: var(--bg-surface) !important;
+  padding: 10px 16px;
+}
+
+.notice-head h4 {
+  font-weight: 700;
+  color: var(--text-main);
+}
+
 .el-select:deep(.el-input__wrapper) {
   box-shadow: none !important;
+  background-color: transparent !important;
 }
 
 .el-input:deep(.el-input__wrapper.is-focus) {
@@ -254,8 +270,13 @@ export default {
 }
 
 .el-select:deep(.el-input.is-focus .el-input__wrapper) {
-  border-color: #000000;
   box-shadow: none !important;
+}
+
+.notice-list {
+  height: 60vh;
+  overflow-y: auto !important;
+  padding: 0 10px 10px;
 }
 
 .infinite-list {
@@ -263,9 +284,24 @@ export default {
 }
 
 .notice-item {
+  display: flex;
+  align-items: flex-start;
+  background-color: var(--bg-surface) !important;
+  border-radius: 12px;
+  padding: 10px 12px;
+  margin: 6px 0;
+  transition: all var(--transition-fast);
+  cursor: pointer;
+  position: relative;
+  gap: 10px;
+
+  &:hover {
+    background-color: var(--hover-bg) !important;
+    transform: translateX(2px);
+  }
 
   .notice-op {
-    transition: all 0.3s ease;
+    transition: all 0.2s ease;
 
     &:hover {
       color: var(--niuyin-primary-color);
@@ -277,4 +313,20 @@ export default {
   }
 }
 
+.notice-info {
+  flex: 1;
+  min-width: 0;
+}
+
+.notice-info p {
+  color: var(--text-main);
+}
+
+.notice-info .cg {
+  color: var(--text-muted) !important;
+}
+
+.notice-origin {
+  flex-shrink: 0;
+}
 </style>

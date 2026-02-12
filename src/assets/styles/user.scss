@@ -1,5 +1,5 @@
 .main-container {
-  border-radius: 1rem;
+  border-radius: var(--card-radius);
   height: 100%;
   margin-right: 1rem;
 }
@@ -10,12 +10,13 @@
   max-width: 1408px;
   position: relative;
   width: 100%;
-  border-radius: .5rem;
+  border-radius: 12px;
   padding: 2rem;
   z-index: 10;
   background-position: center;
   background-size: cover;
   background-repeat: no-repeat;
+  background-color: var(--bg-elevated);
 
   .avatar-area {
     flex: none;
@@ -27,18 +28,12 @@
       height: 112px;
       border-radius: 50%;
       cursor: pointer;
-      -webkit-transition: filter 500ms ease-in 1s, -webkit-transform 1s;
-      -moz-transition: filter 500ms ease-in 1s, -moz-transform 1s;
-      -o-transition: filter 500ms ease-in 1s, -o-transform 1s;
-      -ms-transition: filter 500ms ease-in 1s, -ms-transform 1s;
+      border: 3px solid var(--border-color);
       transition: filter 500ms ease-in 1s, transform 1s;
 
       &:hover {
-        -webkit-transform: rotate(360deg);
-        -moz-transform: rotate(360deg);
-        -o-transform: rotate(360deg);
-        -ms-transform: rotate(360deg);
         transform: rotate(360deg);
+        border-color: var(--niuyin-primary-color);
       }
     }
   }
@@ -57,12 +52,13 @@
       position: relative;
       width: 100%;
       font-size: 20px;
-      font-weight: 500;
+      font-weight: 700;
       line-height: 28px;
       max-width: 300px;
       overflow: hidden;
       text-overflow: ellipsis;
       white-space: nowrap;
+      color: var(--text-main);
     }
 
     .follow-fans-like {
@@ -71,15 +67,13 @@
       width: 100%;
       cursor: pointer;
 
-
       .follow-right:after {
-        border-left: 2px solid var(--niuyin-text-color);
+        border-left: 2px solid var(--text-muted);
         content: "";
         height: 16px;
         margin: 0 16px;
         width: 0;
       }
-
     }
 
     .user-profile {
@@ -92,14 +86,14 @@
         font-size: 12px;
         line-height: 20px;
         margin-right: 20px;
-        color: grey;
+        color: var(--text-muted);
       }
 
       .gender-age {
         align-items: center;
-        background: var(--bg_secondly_mask);
+        background: var(--hover-bg);
         border-radius: 4px;
-        color: var(--color-text-t2);
+        color: var(--text-secondary);
         display: flex;
         font-size: 12px;
         height: 20px;
@@ -110,9 +104,9 @@
 
       .city {
         align-items: center;
-        background: var(--bg_secondly_mask);
+        background: var(--hover-bg);
         border-radius: 4px;
-        color: var(--color-text-t2);
+        color: var(--text-secondary);
         display: flex;
         font-size: 12px;
         height: 20px;
@@ -123,9 +117,9 @@
 
       .school {
         align-items: center;
-        background: var(--bg_secondly_mask);
+        background: var(--hover-bg);
         border-radius: 4px;
-        color: var(--color-text-t2);
+        color: var(--text-secondary);
         display: flex;
         font-size: 12px;
         height: 20px;
@@ -156,7 +150,7 @@
     .trust-login-switch-title {
       font-size: 12px;
       font-style: normal;
-      color: grey;
+      color: var(--text-muted);
       font-weight: 400;
       height: 22px;
       letter-spacing: .6px;
@@ -168,6 +162,7 @@
 
   .user-edit {
     display: flex;
+    gap: 8px;
   }
 }
 
@@ -188,7 +183,7 @@
     width: 108px;
     height: 108px;
     border-radius: 50%;
-    background: aliceblue;
+    background: var(--hover-bg);
 
     .el-upload {
       height: 100%;
@@ -205,6 +200,7 @@
   .I5fCASKY {
     margin: 10px auto;
     font-size: 0.7rem;
+    color: var(--text-muted);
   }
 }
 
@@ -232,6 +228,7 @@
 .N3OJZMVX {
   margin-bottom: 10px;
   text-align: left;
+  color: var(--text-main);
 }
 
 .edit-info-dialog {
@@ -245,6 +242,15 @@
   .back-image {
     max-height: 120px;
     max-width: 100%;
+    border-radius: 8px;
+  }
+
+  .back-image-placeholder {
+    color: var(--text-muted);
+    padding: 20px;
+    text-align: center;
+    background: var(--hover-bg);
+    border-radius: 8px;
   }
 }
 
@@ -283,11 +289,15 @@
 .image-dot {
   width: 24px;
   height: 24px;
-  background: var(--niuyin-online-color);
+  background: #67c23a;
   position: absolute;
   border-radius: 50%;
-  border: 4px solid var(--niuyin-bg-color);
+  border: 4px solid var(--bg-elevated);
   top: 50%;
   left: 50%;
   transform: translate(25px, 30px);
+}
+
+.scrollbar {
+  background: var(--bg-base);
 }

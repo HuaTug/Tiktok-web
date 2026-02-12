@@ -636,75 +636,80 @@ export default {
 <style scoped>
 .upload-page {
   min-height: 100vh;
-  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-  padding: 40px 20px;
+  background: var(--bg-base);
+  padding: 32px 20px;
 }
 
 .upload-container {
-  max-width: 800px;
+  max-width: 720px;
   margin: 0 auto;
-  background: #fff;
-  border-radius: 16px;
-  padding: 40px;
-  box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+  background: var(--bg-elevated);
+  border-radius: var(--card-radius);
+  padding: 36px 40px;
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-lg);
 }
 
 .page-title {
   text-align: center;
-  font-size: 28px;
-  color: #333;
-  margin-bottom: 30px;
-  font-weight: 600;
+  font-size: 24px;
+  color: var(--text-main);
+  margin-bottom: 28px;
+  font-weight: 700;
+  letter-spacing: 0.5px;
 }
 
 .upload-section {
-  margin-bottom: 30px;
+  margin-bottom: 28px;
 }
 
 .upload-area {
-  border: 3px dashed #ddd;
+  border: 2px dashed var(--border-color);
   border-radius: 12px;
   padding: 40px;
   text-align: center;
   cursor: pointer;
-  transition: all 0.3s ease;
-  min-height: 250px;
+  transition: all var(--transition-normal);
+  min-height: 220px;
   display: flex;
   align-items: center;
   justify-content: center;
+  background: var(--hover-bg);
 }
 
 .upload-area:hover,
 .upload-area.is-dragover {
-  border-color: #667eea;
-  background: #f8f9ff;
+  border-color: var(--niuyin-primary-color);
+  background: var(--active-bg);
 }
 
 .upload-area.has-file {
   border-style: solid;
   border-color: #67c23a;
+  background: transparent;
   cursor: default;
 }
 
 .upload-placeholder {
-  color: #666;
+  color: var(--text-muted);
 }
 
 .upload-icon {
-  font-size: 64px;
+  font-size: 56px;
   display: block;
-  margin-bottom: 20px;
+  margin-bottom: 16px;
 }
 
 .upload-title {
-  font-size: 18px;
-  margin-bottom: 10px;
-  color: #333;
+  font-size: 17px;
+  margin-bottom: 8px;
+  color: var(--text-main);
+  font-weight: 500;
 }
 
 .upload-hint {
-  font-size: 14px;
-  color: #999;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .file-preview {
@@ -714,8 +719,9 @@ export default {
 .preview-video {
   max-width: 100%;
   max-height: 300px;
-  border-radius: 8px;
-  margin-bottom: 15px;
+  border-radius: 10px;
+  margin-bottom: 14px;
+  background: #000;
 }
 
 .file-info {
@@ -723,15 +729,16 @@ export default {
 }
 
 .file-name {
-  font-size: 16px;
-  color: #333;
-  margin-bottom: 5px;
+  font-size: 15px;
+  color: var(--text-main);
+  margin-bottom: 4px;
   word-break: break-all;
+  font-weight: 500;
 }
 
 .file-size {
-  font-size: 14px;
-  color: #999;
+  font-size: 13px;
+  color: var(--text-muted);
   margin-bottom: 10px;
 }
 
@@ -740,25 +747,31 @@ export default {
 }
 
 .stage-text {
-  margin-top: 15px;
-  font-size: 16px;
-  color: #666;
+  margin-top: 14px;
+  font-size: 15px;
+  color: var(--text-secondary);
 }
 
 .chunk-text {
-  margin-top: 8px;
-  font-size: 14px;
-  color: #999;
+  margin-top: 6px;
+  font-size: 13px;
+  color: var(--text-muted);
 }
 
 .form-section {
-  margin-top: 30px;
+  margin-top: 28px;
+}
+
+.form-section :deep(.el-form-item__label) {
+  color: var(--text-main);
+  font-weight: 500;
 }
 
 .tags-container {
   display: flex;
   flex-wrap: wrap;
   align-items: center;
+  gap: 4px;
 }
 
 .result-content {
@@ -767,13 +780,13 @@ export default {
 }
 
 .result-icon {
-  font-size: 64px;
+  font-size: 56px;
   display: block;
-  margin-bottom: 15px;
+  margin-bottom: 12px;
 }
 
 .result-info {
-  color: #999;
-  font-size: 14px;
+  color: var(--text-muted);
+  font-size: 13px;
 }
 </style>

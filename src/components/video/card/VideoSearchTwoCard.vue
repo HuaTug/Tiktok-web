@@ -66,16 +66,17 @@ export default {
 
 <style scoped>
 .video-card {
-  background-color: var(--el-bg-color-page);
-  border-radius: 1rem;
+  background-color: var(--bg-video-card);
+  border-radius: var(--card-radius);
   width: 19%;
-  box-shadow: var(--video-card-box-shadow);
-  transition: all 0.3s ease;
+  border: 1px solid var(--border-color-light);
+  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
   height: 400px;
   margin-bottom: 1rem;
 
   &:hover {
-    box-shadow: 0 4px 10px 0 rgba(0, 0, 0, .12);
+    transform: translateY(-3px);
+    box-shadow: var(--shadow-md);
   }
 
   .video-cover-image {

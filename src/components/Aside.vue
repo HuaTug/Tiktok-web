@@ -53,6 +53,7 @@ export default {
         {id: 1, name: "发现", class: "#icon-discover", link: "/discover"},
         {id: 2, name: "热门", class: "#icon-hotVideo", link: "/hotVideo"},
         {id: 3, name: "关注", class: "#icon-follow", link: "/follow"},
+        {id: 4, name: "AI 助手", class: "#icon-ai", link: "/ai"},
         {id: 5, name: "我的", class: "#icon-erciyuan", link: "/user",},
       ],
     }
@@ -73,12 +74,13 @@ export default {
   width: 100%;
   height: 100%;
   overflow: hidden;
-  background-color: #121212; /* 深灰色，比纯黑稍亮 */
+  background-color: var(--sidebar-bg);
+  transition: background-color var(--transition-normal);
 }
 
 .logo-container {
   flex-shrink: 0;
-  height: 60px;
+  height: 56px;
   display: flex;
   align-items: center;
   justify-content: center;
@@ -86,14 +88,14 @@ export default {
   
   @media (min-width: 769px) {
     justify-content: flex-start;
-    padding: 0 24px;
+    padding: 0 20px;
   }
 }
 
 .logo-link {
   display: flex;
   align-items: center;
-  gap: 12px;
+  gap: 10px;
   text-decoration: none;
   width: 100%;
   justify-content: center;
@@ -104,17 +106,25 @@ export default {
 }
 
 .logo-img {
-  width: 32px;
-  height: 32px;
+  width: 30px;
+  height: 30px;
   object-fit: contain;
+  transition: transform 0.3s ease;
+  
+  &:hover {
+    transform: rotate(-8deg) scale(1.05);
+  }
 }
 
 .logo-text {
   display: none;
-  font-weight: 700;
-  font-size: 20px;
-  color: #FE2C55;
-  letter-spacing: -0.5px;
+  font-weight: 800;
+  font-size: 18px;
+  background: linear-gradient(135deg, #FE2C55, #ff6b81);
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+  background-clip: text;
+  letter-spacing: -0.3px;
   
   @media (min-width: 769px) {
     display: block;
@@ -125,11 +135,15 @@ export default {
   flex: 1;
   overflow-y: auto;
   overflow-x: hidden;
-  padding: 16px 0;
+  padding: 12px 0;
+  
+  &::-webkit-scrollbar {
+    width: 0;
+  }
 }
 
 .nav-menu {
-  padding: 0 8px;
+  padding: 0 10px;
 }
 
 .menu-list {
@@ -139,61 +153,74 @@ export default {
 }
 
 .menu-item {
-  margin-bottom: 4px;
+  margin-bottom: 2px;
 }
 
 .menu-link {
   position: relative;
   display: flex;
   align-items: center;
-  gap: 16px;
-  padding: 12px;
-  border-radius: 12px;
+  gap: 14px;
+  padding: 10px 14px;
+  border-radius: 10px;
   color: var(--text-muted);
   text-decoration: none;
-  transition: all 0.2s ease;
+  transition: all var(--transition-fast);
   
   &:hover {
-    background-color: rgba(255, 255, 255, 0.05);
+    background-color: var(--hover-bg);
     color: var(--text-main);
     
     .icon-svg {
-      transform: scale(1.1);
+      transform: scale(1.08);
     }
   }
 }
 
 .menu-link-active {
-  color: #FE2C55 !important;
-  font-weight: 700;
-  background-color: rgba(254, 44, 85, 0.1);
+  color: var(--niuyin-primary-color) !important;
+  font-weight: 600;
+  background-color: var(--active-bg);
   
   .icon-svg {
-    color: #FE2C55;
+    color: var(--niuyin-primary-color);
+  }
+  
+  &::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 50%;
+    transform: translateY(-50%);
+    width: 3px;
+    height: 20px;
+    background: var(--niuyin-primary-color);
+    border-radius: 0 3px 3px 0;
   }
 }
 
 .menu-icon {
   flex-shrink: 0;
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   display: flex;
   align-items: center;
   justify-content: center;
 }
 
 .icon-svg {
-  width: 24px;
-  height: 24px;
+  width: 22px;
+  height: 22px;
   fill: currentColor;
-  transition: transform 0.2s ease;
+  transition: transform var(--transition-fast);
 }
 
 .menu-text {
   display: none;
-  font-size: 15px;
+  font-size: 14px;
   font-weight: 500;
   white-space: nowrap;
+  letter-spacing: 0.2px;
   
   @media (min-width: 769px) {
     display: block;
@@ -206,15 +233,16 @@ export default {
   left: 100%;
   margin-left: 8px;
   padding: 6px 12px;
-  background-color: #1a1a1a;
-  color: #fff;
+  background-color: var(--bg-elevated);
+  color: var(--text-main);
   font-size: 12px;
-  border-radius: 6px;
+  border-radius: 8px;
   white-space: nowrap;
   z-index: 100;
   pointer-events: none;
   opacity: 0;
-  transition: opacity 0.2s ease;
+  box-shadow: var(--shadow-md);
+  transition: opacity var(--transition-fast);
   
   @media (max-width: 768px) {
     .menu-link:hover & {

@@ -238,8 +238,9 @@ export default {
 </script>
 <style scoped>
 .search-container {
-  border-radius: 1rem;
+  border-radius: var(--card-radius);
   margin: 0 auto;
+  background: var(--bg-base);
 
   .search-left {
     z-index: 9999;
@@ -248,6 +249,8 @@ export default {
       position: sticky;
       top: 0;
       z-index: 10;
+      background: var(--bg-base);
+      padding: 4px 0;
     }
   }
 
@@ -256,23 +259,39 @@ export default {
     position: sticky;
     top: 0;
     z-index: 10;
+    padding: 16px;
+    background: var(--bg-elevated);
+    border-radius: var(--card-radius);
+    border: 1px solid var(--border-color-light);
+
+    h4 {
+      color: var(--text-main);
+    }
   }
 }
 
 .search-suggest-hover-item {
   line-height: 1;
   border-radius: 8px;
-  padding: 8px;
+  padding: 10px 8px;
   display: flex;
-  transition: all .3s ease-in;
+  color: var(--text-secondary);
+  transition: all var(--transition-fast);
 
   &:hover {
-    background-color: rgba(211, 211, 211, 0.5)
+    background-color: var(--hover-bg);
+    color: var(--niuyin-primary-color);
   }
 }
 
 :deep(.el-tabs__item) {
   font-size: 1rem;
+  color: var(--text-secondary);
+}
+
+:deep(.el-tabs__item.is-active) {
+  color: var(--niuyin-primary-color);
+  font-weight: 600;
 }
 
 :deep(.bg-mask) {

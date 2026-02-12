@@ -83,22 +83,23 @@ export default {
   justify-content: space-between;
   width: 100%;
   height: 100%;
-  padding: 0 24px;
+  padding: 0 20px 0 16px;
   box-sizing: border-box;
   background: transparent;
+  gap: 16px;
 }
 
 .header-left {
   flex-shrink: 0;
-  width: 80px;
+  width: 40px;
 }
 
 .header-center {
   flex: 1;
   display: flex;
   justify-content: center;
-  max-width: 400px;
-  margin: 0 24px;
+  max-width: 460px;
+  margin: 0 auto;
 }
 
 .header-right {
@@ -106,5 +107,6 @@ export default {
   display: flex;
   align-items: center;
   justify-content: flex-end;
+  gap: 4px;
 }
 </style>

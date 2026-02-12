@@ -290,10 +290,91 @@ export default {
 </script>
 
 <style scoped>
+.nav-right {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
 .link-div {
   display: flex;
   flex-flow: column;
   align-items: center;
   justify-content: center;
+  padding: 6px 10px;
+  border-radius: 10px;
+  transition: all var(--transition-fast);
+  color: var(--text-muted);
+}
+
+.link-div:hover {
+  background-color: var(--hover-bg);
+  color: var(--text-main);
+}
+
+.link-div .icon {
+  fill: var(--text-muted);
+  transition: fill var(--transition-fast);
+}
+
+.link-div:hover .icon {
+  fill: var(--niuyin-primary-color);
+}
+
+.link-div p span {
+  font-size: 11px;
+  color: var(--text-muted);
+  transition: color var(--transition-fast);
+}
+
+.link-div:hover p span {
+  color: var(--text-main);
+}
+
+.link-type {
+  text-decoration: none;
+}
+
+.user-container {
+  display: flex;
+  align-items: center;
+  margin-left: 8px;
+  text-decoration: none;
+}
+
+.user-container :deep(.el-avatar) {
+  width: 32px;
+  height: 32px;
+  border: 2px solid var(--border-color);
+  transition: all var(--transition-fast);
+  cursor: pointer;
+}
+
+.user-container:hover :deep(.el-avatar) {
+  border-color: var(--niuyin-primary-color);
+  transform: scale(1.05);
+}
+
+.userinfo-area .userinfo-header {
+  margin-bottom: 12px;
+}
+
+.userinfo-area .userinfo-center {
+  margin: 12px 0;
+}
+
+.userinfo-area .userinfo-footer {
+  padding-top: 8px;
+  font-size: 13px;
+}
+
+.switch-theme {
+  padding: 4px 8px;
+  border-radius: 6px;
+  transition: background-color var(--transition-fast);
+}
+
+.switch-theme:hover {
+  background-color: var(--hover-bg);
 }
 </style>

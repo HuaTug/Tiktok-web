@@ -136,26 +136,27 @@ export default {
   height: 100%;
   display: flex;
   justify-content: center;
-  padding: 1rem;
+  padding: 24px;
 }
 
 .follow-page {
   width: 100%;
-  max-width: 600px;
+  max-width: 640px;
   display: flex;
   flex-direction: column;
   height: 100%;
 }
 
 .follow-header {
-  padding: 1rem;
-  border-bottom: 1px solid var(--el-border-color-light);
+  padding: 8px 16px 16px;
+  border-bottom: 1px solid var(--border-color);
 }
 
 .follow-title {
   margin: 0;
-  font-size: 1.25rem;
-  font-weight: 600;
+  font-size: 1.3rem;
+  font-weight: 700;
+  color: var(--text-main);
 }
 
 .follow-list-scroll {
@@ -170,15 +171,17 @@ export default {
 .user-card {
   display: flex;
   align-items: center;
-  padding: 1rem;
+  padding: 14px 16px;
   cursor: pointer;
-  transition: background-color .2s ease;
-  gap: 1rem;
-  border-bottom: 1px solid var(--el-border-color-lighter);
+  transition: background-color var(--transition-fast);
+  gap: 14px;
+  border-bottom: 1px solid var(--border-color-light);
+  border-radius: 10px;
+  margin: 2px 0;
 }
 
 .user-card:hover {
-  background-color: var(--el-fill-color-light);
+  background-color: var(--hover-bg);
 }
 
 .user-avatar-wrapper {
@@ -186,7 +189,12 @@ export default {
 }
 
 .user-avatar {
-  border: 2px solid var(--el-border-color-light);
+  border: 2px solid var(--border-color);
+  transition: border-color var(--transition-fast);
+}
+
+.user-card:hover .user-avatar {
+  border-color: var(--niuyin-primary-color);
 }
 
 .user-info-detail {
@@ -196,18 +204,18 @@ export default {
 }
 
 .user-info-detail .nickname {
-  font-size: 1rem;
+  font-size: 15px;
   font-weight: 600;
-  color: var(--el-text-color-primary);
-  margin: 0 0 4px 0;
+  color: var(--text-main);
+  margin: 0 0 3px 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
 }
 
 .user-info-detail .user-id {
-  font-size: 0.8rem;
-  color: var(--el-text-color-secondary);
+  font-size: 12px;
+  color: var(--text-muted);
   margin: 0;
 }
 
