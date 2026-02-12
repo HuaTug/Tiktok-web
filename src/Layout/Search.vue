@@ -161,9 +161,30 @@ export default {
         "keyword": this.searchFrom.keyword
       }
       videoSearchSuggest(params).then(res => {
-        if (res.code === 200) {
-          this.videoSearchSuggestList = res.data
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          // 获取搜索建议数据
+          let data = []
+          if (Array.isArray(res.data)) {
+            data = res.data
+          } else if (res.data?.suggestions && res.data.suggestions.length > 0) {
+            data = res.data.suggestions
+          } else if (res.data?.video_search) {
+            // 如果返回的是视频列表，提取标题作为搜索建议
+            data = res.data.video_search.map(item => item.title || item.video_title || item.videoTitle).filter(t => t)
+          }
+          
+          // 确保数据是字符串数组
+          this.videoSearchSuggestList = data.map(item => {
+            if (typeof item === 'object') {
+              return item.title || item.video_title || item.videoTitle || item.keyword || JSON.stringify(item)
+            }
+            return item
+          }).filter(item => item && typeof item === 'string')
         }
+      }).catch(error => {
+        console.error('获取搜索建议失败:', error)
+        this.videoSearchSuggestList = []
       })
     },
     handleClick(tab, event) {

@@ -474,10 +474,10 @@ export default {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.editDialogVisible = false
-          this.$message.success(res.message || res.msg || '更新成功')
+          this.$message.success('更新成功')
           this.getUserInfo()
         } else {
-          this.$message.error(res.message || res.msg || '更新失败')
+          this.$message.error('更新失败')
         }
       }).catch(err => {
         this.$message.error('更新失败，请检查网络连接')
@@ -507,10 +507,10 @@ export default {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.editInfoDialogVisible = false
-          this.$message.success(res.message || res.msg || '更新成功')
+          this.$message.success('更新成功')
           this.getUserInfo()
         } else {
-          this.$message.error(res.message || res.msg || '更新失败')
+          this.$message.error('更新失败')
         }
       }).catch(err => {
         this.$message.error('更新失败，请检查网络连接')

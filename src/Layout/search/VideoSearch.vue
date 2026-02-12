@@ -6,6 +6,7 @@ const route = useRoute()
 
 import {removeHtmlTags, smartDateFormat} from "@/utils/roydon.js";
 import {searchVideo, videoSearchSuggest} from "@/api/search.js";
+import {UserFilled} from "@element-plus/icons-vue";
 
 import VideoSearchOneCard from "@/components/video/card/VideoSearchOneCard.vue";
 import LoadingVideoSearch from "@/components/loading/LoadingVideoSearch.vue";
@@ -22,13 +23,55 @@ const searchFrom = ref({
 
 const loadVideoSearch = async (dto) => {
   const res = await searchVideo(dto)
-  // Refactored-TikTok backend uses code 0 for success
-  if ((res.code !== 0 && res.code !== 200) || res.data === null) {
+  // Refactored-TikTok backend uses code 10000 for success
+  if ((res.code !== 10000 && res.code !== 0 && res.code !== 200) || res.data === null) {
     loadingNew.value = false
     return
   }
-  const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
-  videoSearchList.value = [...videoSearchList.value, ...data]
+  // 后端返回的数据在 res.data.video_search 中
+  let data = []
+  if (Array.isArray(res.data)) {
+    data = res.data
+  } else if (res.data?.video_search) {
+    data = res.data.video_search
+  } else if (res.data?.list) {
+    data = res.data.list
+  }
+  
+  // 格式化视频数据，将后端字段映射到前端组件需要的字段
+  const formattedData = data.map(item => {
+    const videoId = item.video_id ?? item.videoId
+    const userId = item.user_id ?? item.userId
+    
+    let videoUrl = item.video_url || item.videoUrl
+    if (!videoUrl || videoUrl.includes('localhost:9002')) {
+      videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+    }
+    
+    let coverImage = item.cover_url || item.coverUrl || item.coverImage
+    if (!coverImage || coverImage.includes('localhost:9002')) {
+      coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+    }
+    
+    return {
+      videoId: videoId,
+      userId: userId,
+      videoTitle: item.title || item.video_title || item.videoTitle || '未命名视频',
+      videoUrl: videoUrl,
+      coverImage: coverImage,
+      userAvatar: item.user_avatar || item.userAvatar || item.avatar || '',
+      userNickName: item.user_name || item.userName || item.userNickName || '用户',
+      publishTime: item.created_at || item.createTime || item.publishTime,
+      likeNum: item.likes_count ?? item.likeNum ?? 0,
+      commentNum: item.comment_count ?? item.commentNum ?? 0,
+      visitCount: item.visit_count ?? item.visitCount ?? 0,
+      tags: item.label_names ? item.label_names.split(',').filter(t => t) : (item.tags || []),
+      publishType: item.publish_type ?? item.publishType ?? '0',
+      ...item
+    }
+  })
+  
+  videoSearchList.value = [...videoSearchList.value, ...formattedData]
   loadingNew.value = false
 }
 
@@ -62,7 +105,8 @@ onMounted(() => {
     <LoadingVideoSearch :loading="loadingNew"/>
     <div class="" v-for="item in videoSearchList" :key="item.videoId">
       <div class="user-container">
-        <img class="user-avatar" :src="item.userAvatar">
+        <el-avatar v-if="item.userAvatar" class="user-avatar" :src="item.userAvatar" :size="50" />
+        <el-avatar v-else class="user-avatar" :size="50" :icon="UserFilled" />
         <span class="username" v-html="item.userNickName"></span>
         <span class="publish-time cg fs9"> · {{ smartDateFormat(item.publishTime) }}</span>
       </div>

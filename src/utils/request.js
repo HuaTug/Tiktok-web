@@ -89,19 +89,26 @@ instance.interceptors.response.use(res => {
         if (code === 10001 && msg && msg.includes('panic: [happened in biz handler')) {
             console.error('⚠️ [RESPONSE] 检测到后端服务异常，原始错误:', msg)
             userMsg = '视频服务暂时不可用，请稍后重试'
+            ElMessage.error(userMsg)
+            return Promise.reject(new Error(userMsg))
         } else if (msg && msg.includes('runtime error: invalid memory address')) {
             console.error('⚠️ [RESPONSE] 检测到后端空指针错误，原始错误:', msg)
             userMsg = '系统内部错误，工程师正在紧急修复中'
+            ElMessage.error(userMsg)
+            return Promise.reject(new Error(userMsg))
         }
         
-        ElMessage.error(userMsg)
-        return Promise.reject('error')
+        // 对于普通业务错误（如 "already exists"、"not found" 等），返回响应让调用方处理
+        // 不显示全局错误提示，让调用方决定如何处理
+        return { ...res.data, code: code }
     } else {
         // 成功时统一将 code 转换为 200 以兼容前端判断逻辑
         // Refactored-TikTok 后端返回 10000 表示成功
         console.log('✅ [RESPONSE] 请求成功! code:', code)
         const result = { ...res.data, code: 200 }  // 统一设置 code 为 200
         console.log('🔄 [RESPONSE] 将code从', code, '转换为 200')
+        console.log('🔄 [RESPONSE] 返回的result对象:', JSON.stringify(result))
+        console.log('🔄 [RESPONSE] result.code:', result.code, 'typeof:', typeof result.code)
         return result
     }
 }, function (error) {

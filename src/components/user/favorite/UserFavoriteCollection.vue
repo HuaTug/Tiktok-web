@@ -13,7 +13,7 @@
           </div>
         </template>
         <template #default>
-          <div class="collection-edge cp" v-for="(item,index) in collectionList">
+          <div class="collection-edge cp" v-for="(item,index) in collectionList" @click="handleCollectionClick(item)">
             <div class="collection-container">
               <div class="collection-head flex-between">
                 <div class="coll-title fs9 fw600">{{ item.title }}</div>
@@ -42,11 +42,19 @@
               <div class="collection-info flex-start">
                 <p class="cg fs7 ptb10px">共 {{ item.videoCount }} 件作品</p>
               </div>
-              <div class="collection-video flex-between">
+              <!-- 有视频时显示封面列表 -->
+              <div v-if="item.videoCount > 0" class="collection-video flex-between">
                 <div class="video-cover-list flex-center"
                      v-for="(cover,index) in item.videoCoverList">
                   <el-image v-if="cover" class="video-cover eli-ofc" lazy :src="cover"/>
                   <el-avatar v-else class="video-cover eli-ofc" :icon="Film"/>
+                </div>
+              </div>
+              <!-- 没有视频时显示空状态 -->
+              <div v-else class="collection-empty flex-center">
+                <div class="empty-content">
+                  <el-icon :size="32" color="#c0c4cc"><Film /></el-icon>
+                  <p class="cg fs7 mt5px">暂无收藏视频</p>
                 </div>
               </div>
             </div>
@@ -136,6 +144,7 @@ import {Close, Film, InfoFilled, MoreFilled, UserFilled} from "@element-plus/ico
 export default {
   name: "UserFavoriteCollection",
   components: {MoreFilled},
+  emits: ['collection-click'],  // 声明自定义事件
   computed: {
     Close() {
       return Close
@@ -184,11 +193,12 @@ export default {
       this.loading = true
       collectionInfoPage(this.collectionQueryParams).then(res => {
         console.log('📦 [COLLECTION] 收藏夹列表响应:', res)
-        if (res.code === 0 || res.code === 200) {
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
           // 后端返回格式: { favorite_list: [...], total_count: number }
-          const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.rows || []
+          const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.data?.list || res.rows || []
           this.collectionList = this.formatCollectionList(rawList)
-          this.collectionTotal = res.data?.total_count || res.data?.TotalCount || res.total || 0
+          this.collectionTotal = res.data?.total_count || res.data?.TotalCount || res.total || rawList.length || 0
           console.log('✅ [COLLECTION] 转换后的收藏夹列表:', this.collectionList)
           this.loading = false
         } else {
@@ -204,19 +214,48 @@ export default {
       if (!Array.isArray(items)) return []
       return items.map(item => {
         const favoriteId = item.favorite_id || item.FavoriteId || item.favoriteId
-        const videoCoverList = item.video_cover_list || item.VideoCoverList || item.videoCoverList || []
-        // 填充六张作品封面为空串
-        const paddedCovers = [...videoCoverList, ...new Array(Math.max(0, 6 - videoCoverList.length)).fill('')]
+        const videoCount = item.video_count || item.VideoCount || item.videoCount || 0
+        
+        // 获取封面列表
+        let videoCoverList = item.video_cover_list || item.VideoCoverList || item.videoCoverList || []
+        
+        // 如果没有封面列表但有收藏夹封面，使用收藏夹封面
+        if (videoCoverList.length === 0) {
+          const coverUrl = item.cover_url || item.CoverUrl || item.coverUrl || ''
+          if (coverUrl) {
+            videoCoverList = [coverUrl]
+          }
+        }
+        
+        // 只有在有视频时才填充占位符，最多显示6个
+        let paddedCovers = []
+        if (videoCount > 0) {
+          const maxCovers = Math.min(videoCount, 6)
+          paddedCovers = [...videoCoverList.slice(0, maxCovers)]
+          // 填充占位符
+          while (paddedCovers.length < maxCovers) {
+            paddedCovers.push('')
+          }
+        }
         
         return {
           favoriteId: favoriteId,
-          title: item.name || item.Name || item.title || '未命名收藏夹',
+          title: item.name || item.Name || item.title || '默认收藏夹',
           description: item.description || item.Description || '',
-          videoCount: item.video_count || item.VideoCount || item.videoCount || 0,
+          videoCount: videoCount,
           videoCoverList: paddedCovers,
-          showStatus: item.privacy || item.Privacy || item.showStatus || '0',
+          coverUrl: item.cover_url || item.CoverUrl || item.coverUrl || '',
+          showStatus: item.is_public ? '1' : '0',
         }
       })
+    },
+    // 点击收藏夹，跳转到收藏夹视频列表
+    handleCollectionClick(item) {
+      console.log('📁 [COLLECTION] 点击收藏夹:', item)
+      // 通过 emit 事件或路由跳转到收藏夹详情
+      this.$emit('collection-click', item)
+      // 或者跳转路由（如果有专门的收藏夹详情页面）
+      // this.$router.push({ path: '/favorite/detail', query: { favoriteId: item.favoriteId } })
     },
     // 编辑操作
     handleEditCollectionDialog(favoriteId) {
@@ -235,26 +274,36 @@ export default {
     // 删除收藏夹dialog
     handleConfirmDelCollection() {
       deleteFavorite(this.favoriteId).then(res => {
-        if (res.code === 200) {
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
           this.delDialogVisible = false
-          this.$message.success(res.msg)
+          this.$message.success('删除成功')
           this.initCollectionList()
         } else {
           this.delDialogVisible = true
-          this.$message.error(res.msg)
+          this.$message.error('删除失败')
         }
+      }).catch(err => {
+        console.error('删除收藏夹失败:', err)
+        this.$message.error('删除收藏夹失败')
       })
     },
     // 更新收藏夹
     confirmUpdateCollection() {
       updateFavorite(this.collectionForm).then(res => {
-        if (res.code === 200) {
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
           this.editDialogVisible = false
-          this.$message.success(res.msg)
+          this.$message.success('更新成功')
+          // 刷新收藏夹列表
+          this.initCollectionList()
         } else {
           this.editDialogVisible = true
-          this.$message.error(res.msg)
+          this.$message.error('更新失败')
         }
+      }).catch(err => {
+        console.error('更新收藏夹失败:', err)
+        this.$message.error('更新收藏夹失败')
       })
     },
     handleScroll(e) {
@@ -268,8 +317,9 @@ export default {
           this.loadingData = false
           this.collectionQueryParams.pageNum += 1
           collectionInfoPage(this.collectionQueryParams).then(res => {
-            if (res.code === 0 || res.code === 200) {
-              const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.rows || []
+            // Refactored-TikTok backend uses code 10000 for success
+            if (res.code === 10000 || res.code === 0 || res.code === 200) {
+              const rawList = res.data?.favorite_list || res.data?.FavoriteList || res.data?.list || res.rows || []
               if (rawList === null || rawList.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
@@ -327,6 +377,16 @@ export default {
           border-radius: 6px;
         }
 
+      }
+    }
+    
+    .collection-empty {
+      height: 60px;
+      background-color: var(--el-fill-color-light);
+      border-radius: 8px;
+      
+      .empty-content {
+        text-align: center;
       }
     }
   }

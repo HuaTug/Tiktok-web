@@ -5,11 +5,19 @@
       <!--      <el-image class="cover-image pa eli-ofc cp wh100" :src="video.coverImage"/>-->
       <div v-if="!playVideo" class="cover-image" ref="coverImage">
         <el-image class="eli-ofc cp" :src="video.coverImage"/>
-        <div class="video-like  flex-center">
-          <svg class="icon1rem" aria-hidden="true">
-            <use xlink:href="#icon-like-num"></use>
+        <!-- 点赞数 -->
+        <div class="video-like flex-center">
+          <svg class="icon1rem" :class="{ 'liked': video.weatherLike }" aria-hidden="true">
+            <use :xlink:href="video.weatherLike ? '#icon-like-ed' : '#icon-like-num'"></use>
           </svg>
           <span class="ml-5r">{{ video.likeNum }}</span>
+        </div>
+        <!-- 收藏数 -->
+        <div class="video-favorite flex-center">
+          <svg class="icon1rem" :class="{ 'favorited': video.weatherFavorite }" aria-hidden="true">
+            <use :xlink:href="video.weatherFavorite ? '#icon-favorite-ed' : '#icon-favorite'"></use>
+          </svg>
+          <span class="ml-5r">{{ video.favoritesNum || 0 }}</span>
         </div>
         <div class="video-duration flex-center">
           <span class="fs8 cw">{{ formatDuration(video.videoInfo) }}</span>
@@ -148,6 +156,21 @@ export default {
       bottom: .5rem;
       color: white;
       left: .5rem;
+      
+      .liked {
+        color: #ff2d55;
+      }
+    }
+
+    .video-favorite {
+      position: absolute;
+      bottom: .5rem;
+      color: white;
+      left: 4.5rem;
+      
+      .favorited {
+        color: #ffd700;
+      }
     }
 
     .video-duration {

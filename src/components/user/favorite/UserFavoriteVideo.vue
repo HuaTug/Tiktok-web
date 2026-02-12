@@ -1,5 +1,13 @@
 <template>
   <div class="favorite-video-container">
+    <!-- 显示收藏夹标题和返回按钮 -->
+    <div v-if="favoriteTitle" class="favorite-header flex-start" style="margin-bottom: 1rem; align-items: center;">
+      <el-button type="text" @click="$emit('back')" style="margin-right: 0.5rem;">
+        <el-icon><ArrowLeft /></el-icon>
+      </el-button>
+      <span class="fs9 fw600">{{ favoriteTitle }}</span>
+      <span class="cg fs7" style="margin-left: 0.5rem;">共 {{ favoriteVideoTotal || 0 }} 个视频</span>
+    </div>
     <div class="flex-between" v-loading="loadingIcon">
       <el-skeleton class="w100" :loading="loading" animated>
         <template #template>
@@ -49,7 +57,7 @@
 <script>
 import VideoCard from "@/components/video/VideoCard.vue";
 import {videoFavoritePage} from "@/api/behave.js";
-import {Close} from "@element-plus/icons-vue";
+import {Close, ArrowLeft} from "@element-plus/icons-vue";
 import {videoMypage} from "@/api/video.js";
 
 export default {
@@ -57,10 +65,23 @@ export default {
   computed: {
     Close() {
       return Close
+    },
+    ArrowLeft() {
+      return ArrowLeft
     }
   },
-  components: {VideoCard},
-  props: {},
+  components: {VideoCard, ArrowLeft},
+  emits: ['back'],  // 声明自定义事件
+  props: {
+    favoriteId: {
+      type: Number,
+      default: 0
+    },
+    favoriteTitle: {
+      type: String,
+      default: ''
+    }
+  },
   data() {
     return {
       loading: true,
@@ -72,13 +93,29 @@ export default {
       favoriteVideoTotal: undefined,
       videoQueryParams: {
         videoTitle: "",
+        favoriteId: 0,
         pageNum: 1,
         pageSize: 10
       },
       video: {},
     }
   },
+  watch: {
+    // 监听 favoriteId 变化，重新加载视频列表
+    favoriteId: {
+      handler(newVal) {
+        console.log('📁 [FAVORITE] favoriteId 变化:', newVal)
+        this.videoQueryParams.favoriteId = newVal
+        this.videoQueryParams.pageNum = 1
+        this.favoriteVideoList = []
+        this.dataNotMore = false
+        this.initVideoList()
+      },
+      immediate: false
+    }
+  },
   created() {
+    this.videoQueryParams.favoriteId = this.favoriteId
     this.initVideoList()
   },
   mounted() {
@@ -93,11 +130,12 @@ export default {
       this.loading = true
       videoFavoritePage(this.videoQueryParams).then(res => {
         console.log('📦 [FAVORITE] 收藏视频列表响应:', res)
-        if (res.code === 0 || res.code === 200) {
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
           // 后端返回格式: { video_list: [...], total_count: number }
-          const rawList = res.data?.video_list || res.data?.VideoList || res.rows || []
+          const rawList = res.data?.video_list || res.data?.VideoList || res.data?.list || res.rows || []
           this.favoriteVideoList = this.formatVideoList(rawList)
-          this.favoriteVideoTotal = res.data?.total_count || res.data?.TotalCount || res.total || 0
+          this.favoriteVideoTotal = res.data?.total_count || res.data?.TotalCount || res.total || rawList.length || 0
           console.log('✅ [FAVORITE] 转换后的收藏视频列表:', this.favoriteVideoList)
           this.loading = false
         } else {
@@ -159,8 +197,9 @@ export default {
           this.loadingData = false
           this.videoQueryParams.pageNum += 1
           videoFavoritePage(this.videoQueryParams).then(res => {
-            if (res.code === 0 || res.code === 200) {
-              const rawList = res.data?.video_list || res.data?.VideoList || res.rows || []
+            // Refactored-TikTok backend uses code 10000 for success
+            if (res.code === 10000 || res.code === 0 || res.code === 200) {
+              const rawList = res.data?.video_list || res.data?.VideoList || res.data?.list || res.rows || []
               if (rawList == null || rawList.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false

@@ -103,11 +103,12 @@
                 <!--收藏按钮根据是否收藏显示不同的状态-->
                 <template #reference>
                   <svg v-if="videoData.weatherFavorite" class="icon32 operate-svg" aria-hidden="true"
-                       @click="handleCancelFavoriteOver(videoData.videoId)"
+                       @click.stop="handleCancelFavoriteOver(videoData.videoId)"
                        @mouseover.stop="handleFavoriteOver(videoData.videoId)">
                     <use xlink:href="#icon-favorite-ed"></use>
                   </svg>
                   <svg v-else class="icon32 operate-svg" aria-hidden="true"
+                       @click.stop="handleFavoriteOver(videoData.videoId)"
                        @mouseover.stop="handleFavoriteOver(videoData.videoId)">
                     <use xlink:href="#icon-favorite"></use>
                   </svg>
@@ -153,11 +154,11 @@
                       <!--                          </el-button>-->
                       <el-button
                           type="info"
-                          @click="handleOnlyFavoriteVideo(videoData.videoId)">仅收藏视频
+                          @click.stop="handleOnlyFavoriteVideo(videoData.videoId)">仅收藏视频
                       </el-button>
                       <el-button type="primary"
                                  :disabled="favoriteBtn"
-                                 @click="handleCollectVideo(videoData.videoId)">收藏至收藏夹
+                                 @click.stop="handleCollectVideo(videoData.videoId)">收藏至收藏夹
                       </el-button>
                     </div>
                   </div>
@@ -170,7 +171,7 @@
               <svg class="icon32 operate-svg" aria-hidden="true">
                 <use xlink:href="#icon-share"></use>
               </svg>
-              <div class="video-nums cw tac">{{ videoData.favoritesNum }}</div>
+              <div class="video-nums cw tac">分享</div>
             </div>
             <!--                更多-->
             <div class="op">
@@ -330,6 +331,7 @@ export default {
       dialogFormVisible: false,
       userFavoriteList: [],
       favoriteBtn: false,
+      favoriteLoading: false, // 防止重复点击
       // 侧边栏用户作品区域开关
       showUserVideoMore: false,
       favoriteChecked: [],//已选收藏夹
@@ -440,12 +442,10 @@ export default {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.$message.success('关注成功')
-          // 将数组此条数据改为已关注 weatherFollow = true
-          this.videoList.forEach((item, index) => {
-            if (item.userId === userId) {
-              item.weatherFollow = true;
-            }
-          })
+          // 更新 videoData
+          if (this.videoData && this.videoData.userId === userId) {
+            this.videoData.weatherFollow = true;
+          }
         } else {
           this.$message.error(res.message || res.msg || '关注失败')
         }
@@ -453,36 +453,37 @@ export default {
     },
     // 点赞视频
     videoLikeClick(videoId) {
-      let actionType = 1 // 默认点赞
-      this.videoList.forEach((item, index) => {
-        if (item.videoId === videoId) {
-          // 根据当前状态决定action类型
-          actionType = item.weatherLike ? 2 : 1 // 已点赞则取消(2)，未点赞则点赞(1)
-          // 设置为已点赞
-          item.weatherLike = !item.weatherLike
-          if (item.weatherLike) {
-            item.likeNum += 1
-          } else {
-            item.likeNum -= 1
-          }
-        }
-      })
+      // 根据当前状态决定action类型
+      const actionType = this.videoData.weatherLike ? 2 : 1 // 已点赞则取消(2)，未点赞则点赞(1)
+      
+      // 先更新UI状态（乐观更新）
+      this.videoData.weatherLike = !this.videoData.weatherLike
+      if (this.videoData.weatherLike) {
+        this.videoData.likeNum += 1
+      } else {
+        this.videoData.likeNum -= 1
+      }
+      
       likeVideo(videoId, actionType).then(res => {
         // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-
+        if (res.code === 0 || res.code === 200 || res.code === 10000) {
+          // 成功，UI已更新
         } else {
-          this.videoList.forEach((item, index) => {
-            if (item.videoId === videoId) {
-              // 设置为已点赞
-              item.weatherLike = !item.weatherLike
-              if (item.weatherLike) {
-                item.likeNum += 1
-              } else {
-                item.likeNum -= 1
-              }
-            }
-          })
+          // 失败，回滚UI状态
+          this.videoData.weatherLike = !this.videoData.weatherLike
+          if (this.videoData.weatherLike) {
+            this.videoData.likeNum += 1
+          } else {
+            this.videoData.likeNum -= 1
+          }
+        }
+      }).catch(() => {
+        // 失败，回滚UI状态
+        this.videoData.weatherLike = !this.videoData.weatherLike
+        if (this.videoData.weatherLike) {
+          this.videoData.likeNum += 1
+        } else {
+          this.videoData.likeNum -= 1
         }
       })
     },
@@ -495,106 +496,219 @@ export default {
     },
     // 取消收藏
     handleCancelFavoriteOver(videoId) {
+      // 防止重复点击
+      if (this.favoriteLoading) return
+      this.favoriteLoading = true
+      
       console.log("取消收藏=》" + videoId)
       userUnFavoriteVideo(videoId).then(res => {
+        this.favoriteLoading = false
+        console.log('⭐ [收藏] 取消收藏响应:', res)
         // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.$message.success(res.message || res.msg || '已取消收藏')
-          this.videoList.forEach((item, index) => {
-            if (item.videoId === videoId) {
-              if (item.weatherFavorite) {
-                item.favoritesNum -= 1;
-              }
-              item.weatherFavorite = false;
+        if (res.code === 0 || res.code === 200 || res.code === 10000) {
+          this.$message.success('已取消收藏')
+          // 更新 videoData
+          if (this.videoData && this.videoData.videoId === videoId) {
+            if (this.videoData.weatherFavorite && this.videoData.favoritesNum > 0) {
+              this.videoData.favoritesNum -= 1;
             }
-          })
-          this.$refs[`favoritePop${videoId}`][0].showPopper = false
+            this.videoData.weatherFavorite = false;
+          }
+          if (this.$refs[`favoritePop${videoId}`]) {
+            this.$refs[`favoritePop${videoId}`].showPopper = false
+          }
+        } else {
+          this.$message.error('取消收藏失败')
         }
+      }).catch(error => {
+        this.favoriteLoading = false
+        console.error('取消收藏失败:', error)
+        this.$message.error('取消收藏失败，请稍后重试')
       })
-      // myFavoriteList().then(res => {
-      //   if (res.code === 200) {
-      //     this.userFavoriteList = res.data
-      //   }
-      // })
-      // 鼠标悬停事件改为显示
-      this.$refs[`favoritePop${videoId}`][0].showPopper = true
     },
     // 鼠标悬停显示
     handleFavoriteOver(videoId) {
       console.log("handleFavoriteShow" + videoId)
       // 查询登录用户的收藏夹列表
       myFavoriteList().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.userFavoriteList = res.data || []
+        console.log('📦 [FAVORITE] 收藏夹列表响应:', res)
+        // Refactored-TikTok backend uses code 10000/0/200 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          const rawData = res.data
+          let favoriteList = []
+          if (rawData) {
+            if (Array.isArray(rawData)) {
+              favoriteList = rawData
+            } else if (rawData.favorite_list) {
+              favoriteList = rawData.favorite_list
+            } else if (rawData.FavoriteList) {
+              favoriteList = rawData.FavoriteList
+            }
+          }
+          // 格式化收藏夹列表
+          this.userFavoriteList = favoriteList.map(item => ({
+            favoriteId: item.favorite_id || item.FavoriteId || item.favoriteId,
+            title: item.name || item.Name || item.title || '默认收藏夹',
+            description: item.description || item.Description || '',
+            videoCount: item.video_count || item.VideoCount || item.videoCount || 0
+          }))
+          console.log('✅ [FAVORITE] 转换后的收藏夹列表:', this.userFavoriteList)
         }
+      }).catch(err => {
+        console.error('❌ [FAVORITE] 获取收藏夹列表失败:', err)
       })
       // 查询当前视频在那些收藏夹
       videoInWhoseCollection(videoId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
+        console.log('📦 [FAVORITE] 视频所在收藏夹响应:', res)
+        // Refactored-TikTok backend uses code 10000/0/200 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
           const data = res.data
           if (Array.isArray(data)) {
-            this.favoriteChecked = data
+            this.favoriteChecked = data.map(item => {
+              if (typeof item === 'number') return item
+              return item.favorite_id || item.FavoriteId || item.favoriteId || item
+            })
           } else if (data && Array.isArray(data.items)) {
-            this.favoriteChecked = data.items.map(item => item.favorite_id || item.favoriteId)
+            this.favoriteChecked = data.items.map(item => item.favorite_id || item.FavoriteId || item.favoriteId)
+          } else if (data && Array.isArray(data.favorite_ids)) {
+            this.favoriteChecked = data.favorite_ids
           } else {
             this.favoriteChecked = []
           }
+          console.log('✅ [FAVORITE] 当前视频所在收藏夹IDs:', this.favoriteChecked)
         }
+      }).catch(err => {
+        console.error('❌ [FAVORITE] 获取视频所在收藏夹失败:', err)
       })
       // 鼠标悬停事件改为显示
-      this.$refs[`favoritePop${videoId}`].showPopper = true
+      if (this.$refs[`favoritePop${videoId}`]) {
+        this.$refs[`favoritePop${videoId}`].showPopper = true
+      }
     },
     // 监听收藏夹多选事件变化
     handleFavoriteCheckedChange(val) {
       this.favoriteBtn = false
     },
-    // 仅仅收藏视频
+    // 仅仅收藏视频（Quick Save 切换收藏状态）
     handleOnlyFavoriteVideo(videoId) {
-      onlyFavoriteVideo(videoId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          // 收藏成功，将数组此视频的是否收藏改为已收藏
-          this.$message.success("收藏成功")
-          this.videoList.forEach((item, index) => {
-            if (item.videoId === videoId) {
-              if (!item.weatherFavorite) {
-                item.favoritesNum += 1;
+      // 防止重复点击
+      if (this.favoriteLoading) return
+      this.favoriteLoading = true
+      
+      console.log('⭐ [收藏] handleOnlyFavoriteVideo called, videoId:', videoId)
+      // 查找当前视频的收藏状态（只使用 videoData）
+      const isCurrentlyFavorited = this.videoData?.weatherFavorite || false
+      console.log('⭐ [收藏] 当前收藏状态:', isCurrentlyFavorited, 'videoData:', this.videoData)
+      
+      if (isCurrentlyFavorited) {
+        // 已收藏，执行取消收藏
+        userUnFavoriteVideo(videoId).then(res => {
+          this.favoriteLoading = false
+          console.log('⭐ [收藏] 取消收藏响应:', res, 'res.code:', res.code, 'typeof:', typeof res.code)
+          if (res.code === 10000 || res.code === 0 || res.code === 200) {
+            this.$message.success('已取消收藏')
+            // 更新 videoData
+            if (this.videoData && this.videoData.videoId === videoId) {
+              if (this.videoData.weatherFavorite && this.videoData.favoritesNum > 0) {
+                this.videoData.favoritesNum = (this.videoData.favoritesNum || 1) - 1;
               }
-              item.weatherFavorite = true;
+              this.videoData.weatherFavorite = false;
             }
-          })
-        } else {
-          this.$message.error(res.message || res.msg || '收藏失败')
-        }
-      })
+          } else if (res.code === 10001 && res.message && (res.message.includes('not found') || res.message.includes('not exist'))) {
+            // 视频实际上不在收藏夹中，同步状态
+            console.log('⭐ [收藏] 视频不在收藏夹中，同步状态为未收藏')
+            if (this.videoData && this.videoData.videoId === videoId) {
+              if (this.videoData.weatherFavorite && this.videoData.favoritesNum > 0) {
+                this.videoData.favoritesNum = (this.videoData.favoritesNum || 1) - 1;
+              }
+              this.videoData.weatherFavorite = false;
+            }
+          } else {
+            this.$message.error('取消收藏失败')
+          }
+        }).catch(error => {
+          this.favoriteLoading = false
+          console.error('取消收藏失败:', error)
+          if (error && error.message && (error.message.includes('not found') || error.message.includes('not exist'))) {
+            console.log('⭐ [收藏] 视频不在收藏夹中，同步状态为未收藏')
+            if (this.videoData && this.videoData.videoId === videoId) {
+              if (this.videoData.weatherFavorite && this.videoData.favoritesNum > 0) {
+                this.videoData.favoritesNum = (this.videoData.favoritesNum || 1) - 1;
+              }
+              this.videoData.weatherFavorite = false;
+            }
+          } else {
+            this.$message.error('取消收藏失败，请稍后重试')
+          }
+        })
+      } else {
+        // 未收藏，执行收藏
+        onlyFavoriteVideo(videoId).then(res => {
+          this.favoriteLoading = false
+          console.log('⭐ [收藏] 收藏响应:', res, 'res.code:', res.code, 'typeof:', typeof res.code)
+          if (res.code === 10000 || res.code === 0 || res.code === 200) {
+            this.$message.success("收藏成功")
+            // 更新 videoData
+            if (this.videoData && this.videoData.videoId === videoId) {
+              if (!this.videoData.weatherFavorite) {
+                this.videoData.favoritesNum = (this.videoData.favoritesNum || 0) + 1;
+              }
+              this.videoData.weatherFavorite = true;
+            }
+          } else if (res.code === 10001 && res.message && res.message.includes('already exists')) {
+            this.$message.success("已在收藏夹中")
+            if (this.videoData && this.videoData.videoId === videoId) {
+              this.videoData.weatherFavorite = true;
+            }
+          } else {
+            this.$message.error('收藏失败')
+          }
+        }).catch(error => {
+          this.favoriteLoading = false
+          console.error('收藏失败:', error)
+          if (error && error.message && error.message.includes('already exists')) {
+            this.$message.success("已在收藏夹中")
+            if (this.videoData && this.videoData.videoId === videoId) {
+              this.videoData.weatherFavorite = true;
+            }
+          } else {
+            this.$message.error('收藏失败，请稍后重试')
+          }
+        })
+      }
     },
     // 收藏视频到收藏夹
     handleCollectVideo(videoId) {
+      console.log('⭐ [收藏] handleCollectVideo called, videoId:', videoId, 'favorites:', this.favoriteChecked)
       const dto = {
         "videoId": videoId,
         "favorites": this.favoriteChecked
       }
       favoriteVideoToCollection(dto).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if ((res.code === 0 || res.code === 200) && res.data === true) {
-          // 收藏成功
+        console.log('⭐ [收藏] 收藏到收藏夹响应:', res)
+        // Refactored-TikTok backend uses code 10000/0/200 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          // 收藏成功（包括已存在的情况）
           this.$message.success("收藏成功")
-          this.videoList.forEach((item, index) => {
-            if (item.videoId === videoId) {
-              if (!item.weatherFavorite) {
-                item.favoritesNum += 1;
-              }
-              item.weatherFavorite = true;
+          // 同步更新 videoData
+          if (this.videoData && this.videoData.videoId === videoId) {
+            if (!this.videoData.weatherFavorite) {
+              this.videoData.favoritesNum = (this.videoData.favoritesNum || 0) + 1;
             }
-          })
-        } else if ((res.code === 0 || res.code === 200) && res.data === false) {
-          // 从收藏夹移除
+            this.videoData.weatherFavorite = true;
+          }
+        } else if (res.code === 10001 && res.message && res.message.includes('already exists')) {
+          // 视频已在收藏夹中，视为收藏成功（幂等操作）
           this.$message.success("收藏成功")
+          if (this.videoData && this.videoData.videoId === videoId) {
+            this.videoData.weatherFavorite = true;
+          }
         } else {
-          this.$message.error(res.message || res.msg || '收藏失败')
+          this.$message.error('收藏失败')
         }
+      }).catch(error => {
+        console.error('收藏失败:', error)
+        this.$message.error('收藏失败，请稍后重试')
       })
     },
     handleTabUserVideoMoreClick() {

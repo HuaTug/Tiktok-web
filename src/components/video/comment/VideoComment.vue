@@ -144,10 +144,21 @@ export default {
       },
     },
     videoId: {
-      type: String,
+      type: [String, Number],
       default() {
         return '';
       }
+    }
+  },
+  watch: {
+    // Watch for videoId changes and reload comments
+    videoId: {
+      handler(newVal, oldVal) {
+        if (newVal && newVal !== oldVal) {
+          this.getCommentList()
+        }
+      },
+      immediate: false
     }
   },
   data() {
@@ -205,6 +216,13 @@ export default {
       }
     },
     getCommentList() {
+      // Ensure videoId is valid before making the request
+      if (!this.videoId && this.videoId !== 0) {
+        console.warn('VideoComment: videoId is not set, skipping comment fetch')
+        this.videoCommentTree = []
+        this.commentTotal = 0
+        return
+      }
       this.commentQueryParams.videoId = this.videoId
       videoCommentPageList(this.commentQueryParams).then(res => {
         this.drawer = true
@@ -234,7 +252,7 @@ export default {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.getCommentList();
-          this.$message.success(res.message || res.msg || '评论成功')
+          this.$message.success('评论成功')
           this.commentInput = null
           this.commentDTO.parentId = null
           this.commentDTO.originId = null
@@ -263,10 +281,10 @@ export default {
       deleteVideoComment(commentId).then(res => {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
-          this.$message.success(res.message || res.msg || '删除成功')
+          this.$message.success('删除成功')
           this.getCommentList()
         } else {
-          this.$message.error(res.message || res.msg || '删除失败')
+          this.$message.error('删除失败')
         }
       }).catch(err => {
         this.$message.error('删除失败，请检查网络连接')

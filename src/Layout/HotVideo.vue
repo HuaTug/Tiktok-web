@@ -99,6 +99,7 @@
 import { searchHotLoad } from "@/api/search.js";
 import { followAndFans } from "@/api/social.js";
 import { getVideoVOById, hotVideoPage, userLikeNums } from "@/api/video";
+import { batchFavoriteStatus, batchLikeStatus } from "@/api/behave.js";
 import Loading from "@/components/Loading.vue";
 import VideoPlayDialog from "@/components/video/VideoPlayDialog.vue";
 import VideoDiscoverCard from "@/components/video/card/VideoDiscoverCard.vue";
@@ -165,6 +166,54 @@ export default {
     window.removeEventListener('scroll', this.handleScroll);
   },
   methods: {
+    // 格式化视频列表，将后端数据格式转换为前端组件需要的格式
+    formatVideoList(items) {
+      if (!Array.isArray(items)) return []
+      return items
+        .filter(item => {
+          // 过滤掉 video_id 为 0 或空的无效数据
+          const videoId = item.video_id ?? item.VideoId ?? item.videoId
+          return videoId !== undefined && videoId !== null && videoId !== 0
+        })
+        .map(item => {
+          // 使用 ?? 代替 || 以正确处理 0 值
+          const videoId = item.video_id ?? item.VideoId ?? item.videoId
+          const userId = item.user_id ?? item.UserId ?? item.userId
+          
+          console.log('📦 [formatVideoList] 处理视频数据:', { video_id: item.video_id, user_id: item.user_id, videoId, userId })
+          
+          // 转换视频URL
+          let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
+          if (!videoUrl || videoUrl.includes('localhost:9002')) {
+            videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+          }
+          
+          // 转换封面URL
+          let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
+          if (!coverImage || coverImage.includes('localhost:9002')) {
+            coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+          }
+          
+          return {
+            videoId: videoId,
+            videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+            videoUrl: videoUrl,
+            coverImage: coverImage,
+            userId: userId,
+            userNickName: item.user_name || item.UserName || item.userName,
+            description: item.description || item.Description || '',
+            likeNum: item.likes_count ?? item.like_count ?? item.LikeCount ?? item.likeCount ?? item.likeNum ?? 0,
+            commentNum: item.comment_count ?? item.CommentCount ?? item.commentCount ?? item.commentNum ?? 0,
+            visitCount: item.visit_count ?? item.VisitCount ?? item.visitCount ?? 0,
+            favoritesNum: item.favorites_count ?? item.FavoritesCount ?? item.favoritesCount ?? 0,
+            publishType: item.publish_type ?? item.PublishType ?? item.publishType ?? '0', // 默认视频类型
+            createTime: item.created_at || item.CreatedAt || item.createTime,
+            weatherLike: false, // 默认未点赞，稍后通过API获取
+            weatherFavorite: false, // 默认未收藏，稍后通过API获取
+            ...item
+          }
+        })
+    },
     handleSocialBehaveNumsHover(userId, index) {
       this.$refs[`pop${index}`][0].showPopper = true
       userLikeNums(userId).then(res => {
@@ -184,16 +233,90 @@ export default {
     handleSocialBehaveNumsHoverLeave(userId, index) {
       this.$refs[`pop${index}`][0].showPopper = false
     },
-    getHotVideoPage() {
+    // 批量获取点赞状态
+    async fetchLikeStatusBatch(videoList) {
+      const videoIds = videoList.map(v => v.videoId).filter(id => id)
+      if (videoIds.length === 0) return videoList
+      
+      try {
+        const res = await batchLikeStatus(videoIds)
+        console.log('❤️ [HotVideo] 批量获取点赞状态响应:', res)
+        if (res && (res.code === 200 || res.code === 0 || res.code === 10000) && res.data) {
+          const likeStatus = res.data.like_status || {}
+          const likeCounts = res.data.like_counts || {}
+          return videoList.map(video => {
+            // JSON 中的 key 是 string 类型，需要转换为 string 来匹配
+            const videoIdStr = String(video.videoId)
+            const isLiked = likeStatus[videoIdStr] === true || likeStatus[video.videoId] === true
+            const likeCount = likeCounts[videoIdStr] || likeCounts[video.videoId] || 0
+            return {
+              ...video,
+              weatherLike: isLiked,
+              // 如果 Redis 有点赞数则使用，否则保持原值
+              likeNum: likeCount > 0 ? likeCount : video.likeNum
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ [HotVideo] 获取点赞状态失败:', error)
+      }
+      return videoList
+    },
+    // 批量获取收藏状态
+    async fetchFavoriteStatusBatch(videoList) {
+      const videoIds = videoList.map(v => v.videoId).filter(id => id)
+      console.log('⭐ [HotVideo] 批量获取收藏状态, videoIds:', videoIds)
+      if (videoIds.length === 0) return videoList
+      
+      try {
+        const res = await batchFavoriteStatus(videoIds)
+        console.log('⭐ [HotVideo] 批量获取收藏状态响应:', res)
+        console.log('⭐ [HotVideo] 响应 code:', res?.code, 'data:', res?.data)
+        if (res && (res.code === 200 || res.code === 0 || res.code === 10000) && res.data) {
+          const favoriteStatus = res.data.favorite_status || {}
+          console.log('⭐ [HotVideo] 收藏状态数据:', JSON.stringify(favoriteStatus))
+          console.log('⭐ [HotVideo] 收藏状态 keys:', Object.keys(favoriteStatus))
+          return videoList.map(video => {
+            // JSON 中的 key 是 string 类型，需要转换为 string 来匹配
+            const videoIdStr = String(video.videoId)
+            const isFavorited = favoriteStatus[videoIdStr] === true || favoriteStatus[video.videoId] === true
+            console.log(`⭐ [HotVideo] 视频 ${video.videoId} (str: "${videoIdStr}") 收藏状态:`, isFavorited, 
+              'favoriteStatus[str]:', favoriteStatus[videoIdStr], 
+              'favoriteStatus[num]:', favoriteStatus[video.videoId])
+            return {
+              ...video,
+              weatherFavorite: isFavorited
+            }
+          })
+        }
+      } catch (error) {
+        console.error('❌ [HotVideo] 获取收藏状态失败:', error)
+      }
+      return videoList
+    },
+    async getHotVideoPage() {
       this.loading = true
-      hotVideoPage(this.hotVideoQueryParams).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.hotVideoList = res.rows || res.data?.list || []
-          this.hotVideoTotal = res.total || res.data?.total || 0
+      try {
+        const res = await hotVideoPage(this.hotVideoQueryParams)
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          console.log('📦 [HotVideo] 响应数据结构:', Object.keys(res))
+          console.log('📦 [HotVideo] Popular 数据:', res.data?.Popular, res.Popular)
+          // 优先从 res.data.Popular 获取（request.js 可能没有展开）
+          const items = res.data?.Popular || res.Popular || res.data?.list || res.rows || []
+          console.log('📦 [HotVideo] 提取的 items:', items)
+          let videoList = this.formatVideoList(items)
+          
+          // 批量获取点赞状态
+          videoList = await this.fetchLikeStatusBatch(videoList)
+          // 批量获取收藏状态
+          videoList = await this.fetchFavoriteStatusBatch(videoList)
+          
+          this.hotVideoList = videoList
+          this.hotVideoTotal = this.hotVideoList.length || res.total || res.data?.total || 0
           this.loading = false
         }
-      }).catch(error => {
+      } catch (error) {
         console.error('❌ [HotVideo] 获取热门视频失败:', error)
         this.loading = false
         
@@ -205,11 +328,26 @@ export default {
         if (error && error.message && error.message.includes('panic')) {
           console.warn('⚠️ [HotVideo] 后端服务异常，前端已降级处理')
         }
-      })
+      }
       searchHotLoad(this.hotSearchPageDto).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.hotTabShow[0].dataList = res.data || []
+        // Refactored-TikTok backend uses code 10000 for success
+        if (res.code === 10000 || res.code === 0 || res.code === 200) {
+          // 优先从 res.data.Popular 获取
+          const popularData = res.data?.Popular || res.Popular || res.data || []
+          // 如果返回的是视频对象数组，提取标题作为热搜词
+          if (Array.isArray(popularData) && popularData.length > 0) {
+            if (typeof popularData[0] === 'object') {
+              // 是视频对象，提取标题
+              this.hotTabShow[0].dataList = popularData
+                .map(item => item.title || item.video_title || item.videoTitle)
+                .filter(title => title) // 过滤空值
+            } else {
+              // 是字符串数组，直接使用
+              this.hotTabShow[0].dataList = popularData
+            }
+          } else {
+            this.hotTabShow[0].dataList = []
+          }
         }
       }).catch(error => {
         console.error('❌ [HotVideo] 获取热搜榜失败:', error)
@@ -236,16 +374,22 @@ export default {
           this.loadingData = false
           this.loadingIcon = true
           this.hotVideoQueryParams.pageNum += 1
-          hotVideoPage(this.hotVideoQueryParams).then(res => {
-            // Refactored-TikTok backend uses code 0 for success
-            if (res.code === 0 || res.code === 200) {
-              const rows = res.rows || res.data?.list || []
+          hotVideoPage(this.hotVideoQueryParams).then(async res => {
+            // Refactored-TikTok backend uses code 10000 for success
+            if (res.code === 10000 || res.code === 0 || res.code === 200) {
+              // 优先从 res.data.Popular 获取
+              let rows = this.formatVideoList(res.data?.Popular || res.Popular || res.data?.list || res.rows || [])
               if (rows.length === 0) {
                 this.dataNotMore = true
                 this.loadingIcon = false
                 this.loadingData = false
                 return;
               }
+              // 批量获取点赞状态
+              rows = await this.fetchLikeStatusBatch(rows)
+              // 批量获取收藏状态
+              rows = await this.fetchFavoriteStatusBatch(rows)
+              
               this.hotVideoList = this.hotVideoList.concat(rows)
               // this.hotVideoTotal = res.total
               this.loadingIcon = false

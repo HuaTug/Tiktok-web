@@ -208,7 +208,10 @@ export function favoriteVideoToCollection(data) {
     return request({
         url: '/v1/favorite/video/add',
         method: 'post',
-        data: data
+        data: {
+            video_id: data.videoId || data.video_id,
+            favorite_id: data.favoriteId || data.favorite_id || 0
+        }
     })
 }
 
@@ -244,9 +247,16 @@ export function collectionInfoPage(data) {
 // 更新收藏夹信息
 export function updateFavorite(data) {
     return request({
-        url: '/v1/favorite/create',
+        url: '/v1/favorite/update',
         method: 'post',
-        data: data
+        data: {
+            favorite_id: data.favoriteId || data.favorite_id,
+            title: data.title || data.name,
+            name: data.title || data.name,
+            description: data.description,
+            cover_url: data.coverUrl || data.cover_url,
+            show_status: data.showStatus || data.show_status || '1'  // 默认私密
+        }
     })
 }
 

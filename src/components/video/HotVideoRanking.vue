@@ -115,8 +115,50 @@ const fetchHotVideos = async () => {
   loading.value = true
   try {
     const res = await hotVideoPage({ pageNum: 1, pageSize: 10 })
-    if (res.code === 0 || res.code === 200) {
-      videoList.value = res.rows || res.data?.list || res.data?.Popular || []
+    // Refactored-TikTok backend uses code 10000 for success
+    // 注意：request.js 拦截器会把 res.data 展开，所以 Popular 直接在 res 上
+    if (res.code === 10000 || res.code === 0 || res.code === 200) {
+      console.log('📦 [HotVideoRanking] 响应数据结构:', Object.keys(res))
+      console.log('📦 [HotVideoRanking] Popular 数据:', res.Popular, res.data?.Popular)
+      // 优先从 res.data.Popular 获取（request.js 可能没有展开）
+      const items = res.data?.Popular || res.Popular || res.data?.list || res.rows || []
+      console.log('📦 [HotVideoRanking] 提取的 items:', items)
+      // 格式化视频数据，过滤掉 video_id 为 0 或空的无效数据
+      videoList.value = items
+        .filter(item => {
+          const videoId = item.video_id ?? item.VideoId ?? item.videoId
+          return videoId !== undefined && videoId !== null && videoId !== 0
+        })
+        .map(item => {
+          // 使用 ?? 代替 || 以正确处理 0 值
+          const videoId = item.video_id ?? item.VideoId ?? item.videoId
+          const userId = item.user_id ?? item.UserId ?? item.userId
+          
+          let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
+          if (!videoUrl || videoUrl.includes('localhost:9002')) {
+            videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+          }
+          
+          let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
+          if (!coverImage || coverImage.includes('localhost:9002')) {
+            coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+          }
+          
+          return {
+            videoId: videoId,
+            videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
+            videoUrl: videoUrl,
+            coverImage: coverImage,
+            userId: userId,
+            userNickName: item.user_name || item.UserName || item.userName,
+            likeNum: item.likes_count ?? item.like_count ?? item.LikeCount ?? item.likeCount ?? item.likeNum ?? 0,
+            visitCount: item.visit_count ?? item.VisitCount ?? item.visitCount ?? 0,
+            commentNum: item.comment_count ?? item.CommentCount ?? item.commentCount ?? 0,
+            favoritesNum: item.favorites_count ?? item.FavoritesCount ?? item.favoritesCount ?? 0,
+            publishType: item.publish_type ?? item.PublishType ?? item.publishType ?? '0', // 默认视频类型
+            ...item
+          }
+        })
     }
   } catch (error) {
     console.error('获取热门视频失败:', error)
