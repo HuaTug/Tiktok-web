@@ -25,20 +25,7 @@
             {{ aiStatusText }}
           </span>
         </el-tag>
-        <!-- 可用工具标签 -->
-        <div v-if="aiTools.length" class="tools-tags">
-          <el-tooltip
-              v-for="tool in aiTools"
-              :key="tool.name"
-              :content="tool.description"
-              placement="bottom"
-          >
-            <span class="tool-tag">
-              <el-icon :size="12"><MagicStick/></el-icon>
-              {{ tool.display_name || tool.name }}
-            </span>
-          </el-tooltip>
-        </div>
+
       </div>
       <div class="flex items-center gap-4">
         <el-tooltip content="刷新会话列表" placement="bottom">
@@ -147,30 +134,23 @@
                     class="message-bubble"
                     :class="msg.type === 'user' ? 'message-user' : 'message-ai'"
                 >
-                  <!-- 工具调用标识 -->
-                  <div v-if="msg.tool_calls && msg.tool_calls.length" class="tool-call-info">
-                    <div v-for="(tc, ti) in msg.tool_calls" :key="ti" class="tool-call-item">
-                      <el-icon :size="12"><MagicStick/></el-icon>
-                      <span>调用工具: {{ tc.name }}</span>
-                      <el-tag v-if="tc.status === 'success'" type="success" size="small">成功</el-tag>
-                      <el-tag v-else-if="tc.status === 'error'" type="danger" size="small">失败</el-tag>
-                      <el-tag v-else type="info" size="small">执行中</el-tag>
-                    </div>
-                  </div>
+
                   <div v-html="formatMessage(msg.content)"></div>
                 </div>
               </div>
             </div>
-            <!-- Tool calling indicator -->
+            <!-- Tool calling indicator (shown as natural thinking status) -->
             <div v-if="isToolCalling" class="flex justify-start">
               <div class="max-w-[88%] flex items-start gap-3">
-                <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                <div class="chat-avatar">
                   <img :src="aiAvatar" alt="ai" class="w-full h-full object-cover" />
                 </div>
-                <div class="message-bubble bg-white text-gray-800">
-                  <div class="flex items-center gap-2 text-sm text-blue-500">
-                    <el-icon class="animate-spin"><Setting/></el-icon>
-                    <span>{{ toolCallingText }}</span>
+                <div class="message-bubble message-ai">
+                  <div class="tool-calling-indicator">
+                    <div class="tool-calling-dots">
+                      <span></span><span></span><span></span>
+                    </div>
+                    <span class="tool-calling-text">{{ toolCallingText }}</span>
                   </div>
                 </div>
               </div>
@@ -248,14 +228,13 @@
 </template>
 
 <script setup>
-import { aiChat, deleteAiSession, getAiChatSSEUrl, getAiHealth, getAiSession, getAiTools, listAiSessions } from "@/api/ai.js";
+import { aiChat, deleteAiSession, getAiChatSSEUrl, getAiHealth, getAiSession, listAiSessions } from "@/api/ai.js";
 import { getToken } from "@/utils/auth.js";
 import {
   ChatRound,
   Delete,
   Files,
   Loading,
-  MagicStick,
   Plus,
   Position,
   Refresh,
@@ -282,7 +261,6 @@ const currentChatId = ref("");
 let chatIdCounter = 0;
 const chatList = ref([]);
 const messages = ref([]);
-const aiTools = ref([]);
 let currentXHR = null;
 
 // Ollama health status
@@ -383,18 +361,6 @@ const formatMessage = (content) => {
 };
 
 // ========== 后端 API 交互 ==========
-
-// 加载 AI 可用工具列表
-const loadTools = async () => {
-  try {
-    const res = await getAiTools();
-    if (res.code === 200 && res.data) {
-      aiTools.value = Array.isArray(res.data) ? res.data : (res.data.tools || []);
-    }
-  } catch (e) {
-    console.warn('加载 AI 工具列表失败:', e);
-  }
-};
 
 // 从后端加载会话列表
 const loadSessions = async () => {
@@ -595,11 +561,9 @@ const sendMessageSSE = async (message) => {
               }
               scrollToBottom();
             } else if (eventData.type === 'tool_calling') {
-              // Show tool calling progress indicator (Ollama mode)
+              // Show tool calling progress indicator (transparent to user)
               isToolCalling.value = true;
-              toolCallingText.value = eventData.tool
-                  ? `正在调用工具: ${getToolDisplayName(eventData.tool)}...`
-                  : '正在查询平台数据...';
+              toolCallingText.value = getToolCallingDisplayText(eventData.tool);
               scrollToBottom();
             } else if (eventData.type === 'done') {
               isToolCalling.value = false;
@@ -717,14 +681,14 @@ const stopReceiving = () => {
   isToolCalling.value = false;
 };
 
-// Get human-readable tool display name
-const getToolDisplayName = (toolName) => {
-  const toolNames = {
-    'search_videos': '🔍 搜索视频',
-    'get_hot_topics': '🔥 获取热门话题',
-    'suggest_content_strategy': '💡 生成创作建议',
+// Get user-friendly text for tool calling (hide technical details from user)
+const getToolCallingDisplayText = (toolName) => {
+  const toolTexts = {
+    'search_videos': '正在为你搜索相关视频...',
+    'get_hot_topics': '正在获取热门内容...',
+    'suggest_content_strategy': '正在分析创作趋势...',
   };
-  return toolNames[toolName] || toolName;
+  return toolTexts[toolName] || '正在查询平台数据...';
 };
 
 const sendMessage = async () => {
@@ -756,11 +720,8 @@ const handleScroll = () => {
 };
 
 onMounted(async () => {
-  // 并行加载工具列表和会话列表
-  const [, hasRemoteSessions] = await Promise.all([
-    loadTools(),
-    loadSessions(),
-  ]);
+  // 加载会话列表
+  const hasRemoteSessions = await loadSessions();
   // 如果后端没有返回会话，创建本地默认会话
   if (!hasRemoteSessions) {
     initDefaultChat();
@@ -988,33 +949,7 @@ onUnmounted(() => {
   line-height: 1.4;
 }
 
-/* Tools tags in header */
-.tools-tags {
-  display: flex;
-  gap: 6px;
-  flex-wrap: wrap;
-  margin-left: 8px;
-}
 
-.tool-tag {
-  display: inline-flex;
-  align-items: center;
-  gap: 4px;
-  padding: 2px 10px;
-  border-radius: 12px;
-  font-size: 12px;
-  background: var(--hover-bg);
-  color: var(--text-secondary);
-  border: 1px solid var(--border-color-light);
-  cursor: default;
-  transition: all var(--transition-fast);
-}
-
-.tool-tag:hover {
-  color: var(--niuyin-primary-color);
-  border-color: var(--niuyin-primary-color);
-  background: rgba(254, 44, 85, 0.06);
-}
 
 /* Loading states */
 .sessions-loading,
@@ -1029,24 +964,42 @@ onUnmounted(() => {
   font-size: 13px;
 }
 
-/* Tool call info in messages */
-.tool-call-info {
-  margin-bottom: 8px;
-  padding-bottom: 8px;
-  border-bottom: 1px dashed var(--border-color);
-}
 
-.tool-call-item {
+
+/* Tool calling indicator - subtle, transparent to user */
+.tool-calling-indicator {
   display: flex;
   align-items: center;
-  gap: 6px;
-  font-size: 12px;
-  color: var(--text-muted);
-  padding: 3px 0;
+  gap: 10px;
+  padding: 2px 0;
 }
 
-.tool-call-item .el-tag {
-  margin-left: auto;
+.tool-calling-text {
+  font-size: 13px;
+  color: var(--text-muted);
+}
+
+.tool-calling-dots {
+  display: flex;
+  gap: 3px;
+}
+
+.tool-calling-dots span {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background-color: var(--niuyin-primary-color);
+  opacity: 0.5;
+  animation: toolDots 1.2s infinite ease-in-out;
+}
+
+.tool-calling-dots span:nth-child(1) { animation-delay: 0s; }
+.tool-calling-dots span:nth-child(2) { animation-delay: 0.2s; }
+.tool-calling-dots span:nth-child(3) { animation-delay: 0.4s; }
+
+@keyframes toolDots {
+  0%, 80%, 100% { opacity: 0.3; transform: scale(0.8); }
+  40% { opacity: 1; transform: scale(1.2); }
 }
 
 /* Footer */
