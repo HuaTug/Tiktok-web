@@ -35,6 +35,9 @@ export default {
       publishTime: null,
       videoUrl: null,
       videoList: [],
+      pageNum: 1,        // 当前页码
+      pageSize: 10,      // 每页条数（每次拉取10条）
+      hasMore: true,     // 是否还有更多数据
       // add
       svg: `<path class="path" d=" M 30 15 L 28 17 M 25.61 25.61 A 15 15, 0, 0, 1, 15 30 A 15 15, 0, 1, 1, 27.99 7.5 L 15 15" style="stroke-width: 4px; fill: rgba(10, 10, 10, 0)"/>`,
     }
@@ -211,10 +214,13 @@ export default {
       return videoList
     },
     getVideoFeed() {
-      console.log('📹 [VIDEO] 开始获取视频feed...')
-      console.log('📹 [VIDEO] publishTime:', this.publishTime)
+      console.log('📹 [VIDEO] 开始获取视频feed... pageNum:', this.pageNum, 'pageSize:', this.pageSize)
+      if (!this.hasMore) {
+        console.log('📹 [VIDEO] 没有更多数据了')
+        return
+      }
       this.loading = true
-      videoFeed(this.publishTime).then(async res => {
+      videoFeed(this.publishTime, this.pageSize, this.pageNum).then(async res => {
         console.log('📥 [VIDEO] 收到视频feed响应:', res)
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
@@ -246,6 +252,13 @@ export default {
           this.videoList = this.videoList.concat(data)
           console.log('📹 [VIDEO] 当前总视频数:', this.videoList.length)
           this.loading = false
+          // 如果返回的数据少于请求条数，说明没有更多了
+          if (data.length < this.pageSize) {
+            this.hasMore = false
+            console.log('📹 [VIDEO] 已加载全部视频')
+          } else {
+            this.pageNum++
+          }
           if (this.videoList.length > 0) {
             this.publishTime = this.videoList[this.videoList.length - 1].createTime || this.videoList[this.videoList.length - 1].create_time
           }
@@ -266,7 +279,7 @@ export default {
     },
     getRecommendVideoFeed() {
       this.loading = true
-      recommendVideoFeed().then(async res => {
+      recommendVideoFeed(this.pageSize).then(async res => {
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
           var that = this;
@@ -303,13 +316,12 @@ export default {
       this.autoPlay = val;
     },
     reloadVideoFeedEmit(val) {
-      // this.showVideoPlayer = val;
-      // this.showVideoPlayer = false
+      if (!this.hasMore) {
+        console.log('📹 [VIDEO] 没有更多数据，跳过加载')
+        return
+      }
       this.loading = val
-      // this.$nextTick(() => {
-      // this.showVideoPlayer = true;
-      // this.getVideoFeed();
-      videoFeed(this.publishTime).then(async res => {
+      videoFeed(this.publishTime, this.pageSize, this.pageNum).then(async res => {
         // Refactored-TikTok backend uses code 200 after conversion
         if (res.code === 200 && res.data != null) {
           // 后端返回格式: data.video_list

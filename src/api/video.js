@@ -13,9 +13,12 @@ function filterParams(params) {
 }
 
 // 视频流-feed
-export async function videoFeed(createTime) {
+export async function videoFeed(createTime, pageSize = 10, pageNum = 1) {
     // 过滤掉 null/undefined 值，避免后端解析错误
-    const params = {}
+    const params = {
+        page_size: pageSize,
+        page_num: pageNum
+    }
     if (createTime != null && createTime !== '') {
         params.create_time = createTime
     }
