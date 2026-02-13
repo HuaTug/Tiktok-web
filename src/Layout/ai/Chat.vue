@@ -6,7 +6,7 @@
           <ChatRound/>
         </el-icon>
         <h1 class="chat-header-title">AI 智能助手</h1>
-        <!-- Ollama connection status indicator -->
+        <!-- Agent connection status indicator -->
         <el-tag
             :type="aiStatus === 'connected' ? 'success' : aiStatus === 'checking' ? 'warning' : 'info'"
             size="small"
@@ -263,14 +263,17 @@ const chatList = ref([]);
 const messages = ref([]);
 let currentXHR = null;
 
-// Ollama health status
+// Agent health status
 const aiStatus = ref('checking'); // 'connected' | 'fallback' | 'checking'
 const aiModel = ref('');
-const aiBaseUrl = ref('');
+const activeMode = ref('');
+const agentDetails = ref({});
 
 const aiStatusText = computed(() => {
   switch (aiStatus.value) {
-    case 'connected': return `Ollama · ${aiModel.value || 'LLM'}`;
+    case 'connected':
+      if (activeMode.value === 'eino_agent') return `Agent · ${aiModel.value || 'LLM'}`;
+      return `Ollama · ${aiModel.value || 'LLM'}`;
     case 'checking': return '检测中...';
     default: return '规则模式';
   }
@@ -278,21 +281,37 @@ const aiStatusText = computed(() => {
 
 const aiModelInfo = computed(() => {
   if (aiStatus.value === 'connected') {
-    return `模型: ${aiModel.value}\n地址: ${aiBaseUrl.value}\n状态: 已连接`;
+    const details = [];
+    details.push(`模式: ${activeMode.value}`);
+    details.push(`聊天模型: ${agentDetails.value.eino_chat_model || aiModel.value || '未知'}`);
+    if (agentDetails.value.eino_embedding_model) {
+      details.push(`嵌入模型: ${agentDetails.value.eino_embedding_model}`);
+    }
+    if (agentDetails.value.eino_milvus_address) {
+      details.push(`Milvus: ${agentDetails.value.eino_milvus_address}`);
+    }
+    details.push(`状态: 已连接`);
+    return details.join('\n');
   }
-  return '当前使用规则引擎模式（Ollama未连接）\n点击刷新连接状态';
+  return '当前使用规则引擎模式（Agent未连接）\n点击刷新连接状态';
 });
 
-// Check Ollama health
+// Check Agent health
 const checkAiHealth = async () => {
   aiStatus.value = 'checking';
   try {
     const res = await getAiHealth();
     if (res.code === 200 && res.data) {
-      if (res.data.ollama_status === 'connected') {
+      agentDetails.value = res.data;
+      activeMode.value = res.data.active_mode || '';
+
+      // Determine connection status based on active mode
+      if (res.data.active_mode === 'eino_agent' && res.data.eino_agent_status === 'ready') {
         aiStatus.value = 'connected';
-        aiModel.value = res.data.model || '';
-        aiBaseUrl.value = res.data.base_url || '';
+        aiModel.value = res.data.eino_chat_model || '';
+      } else if (res.data.active_mode === 'ollama' && res.data.ollama_status === 'connected') {
+        aiStatus.value = 'connected';
+        aiModel.value = res.data.ollama_model || '';
       } else {
         aiStatus.value = 'fallback';
       }

@@ -1,11 +1,11 @@
 import request from '@/utils/request'
 
-// ========== AI Chat API ==========
+// ========== AI Agent Chat API (Eino-based with RAG + ReAct) ==========
 
-// Send a chat message (non-streaming)
+// Send a chat message (non-streaming) via Eino Agent
 export function aiChat(data) {
     return request({
-        url: '/v1/ai/chat',
+        url: '/v1/agent/chat',
         method: 'post',
         data: data
     })
@@ -14,7 +14,7 @@ export function aiChat(data) {
 // Send a chat message via SSE (streaming) - returns the EventSource URL
 export function getAiChatSSEUrl() {
     const baseURL = import.meta.env.VITE_API_BASE_URL || ''
-    return `${baseURL}/v1/ai/chat/stream`
+    return `${baseURL}/v1/agent/chat/stream`
 }
 
 // List all chat sessions
@@ -51,10 +51,30 @@ export function getAiTools() {
     })
 }
 
-// Check AI service health and Ollama connection status
+// Check AI Agent health (Eino agent + Ollama + Milvus status)
 export function getAiHealth() {
     return request({
-        url: '/v1/ai/health',
+        url: '/v1/agent/health',
         method: 'get',
+    })
+}
+
+// Upload a document to the knowledge base
+export function uploadKnowledgeDoc(file) {
+    const formData = new FormData()
+    formData.append('file', file)
+    return request({
+        url: '/v1/agent/knowledge/upload',
+        method: 'post',
+        data: formData,
+        headers: { 'Content-Type': 'multipart/form-data' }
+    })
+}
+
+// Trigger re-indexing of knowledge base documents
+export function reindexKnowledge() {
+    return request({
+        url: '/v1/agent/knowledge/reindex',
+        method: 'post',
     })
 }
