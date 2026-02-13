@@ -139,8 +139,22 @@
                 </div>
               </div>
             </div>
+            <!-- Waiting for AI response (spinner before first token arrives) -->
+            <div v-if="isWaitingResponse" class="flex justify-start">
+              <div class="max-w-[88%] flex items-start gap-3">
+                <div class="chat-avatar">
+                  <img :src="aiAvatar" alt="ai" class="w-full h-full object-cover" />
+                </div>
+                <div class="message-bubble message-ai">
+                  <div class="waiting-response-indicator">
+                    <div class="waiting-spinner"></div>
+                    <span class="waiting-text">{{ waitingText }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
             <!-- Tool calling indicator (shown as natural thinking status) -->
-            <div v-if="isToolCalling" class="flex justify-start">
+            <div v-if="isToolCalling && !isWaitingResponse" class="flex justify-start">
               <div class="max-w-[88%] flex items-start gap-3">
                 <div class="chat-avatar">
                   <img :src="aiAvatar" alt="ai" class="w-full h-full object-cover" />
@@ -156,7 +170,7 @@
               </div>
             </div>
             <!-- Typing indicator -->
-            <div v-if="isTyping && !isToolCalling" class="flex justify-start">
+            <div v-if="isTyping && !isToolCalling && !isWaitingResponse" class="flex justify-start">
               <div class="max-w-[88%] flex items-start gap-3">
                 <div class="chat-avatar">
                   <img
@@ -252,6 +266,8 @@ const sessionsLoading = ref(false);
 const messagesLoading = ref(false);
 const isToolCalling = ref(false);
 const toolCallingText = ref("正在查询平台数据...");
+const isWaitingResponse = ref(false);
+const waitingText = ref("AI 正在思考中...");
 const chatContainer = ref(null);
 const userAvatar =
     "https://niuyin-server.oss-cn-shenzhen.aliyuncs.com/member/2024/10/07/4eb4963fa6bb4f85aa0ba1f748978993.jpeg";
@@ -517,8 +533,26 @@ const scrollToBottom = async () => {
 
 // SSE 流式发送
 const sendMessageSSE = async (message) => {
-  isTyping.value = true;
   isReceiving.value = true;
+  isWaitingResponse.value = true;
+  waitingText.value = 'AI 正在思考中...';
+
+  // Dynamically update waiting text based on elapsed time
+  let waitingSeconds = 0;
+  const waitingTimer = setInterval(() => {
+    waitingSeconds++;
+    if (waitingSeconds >= 30) {
+      waitingText.value = '大模型推理中，请耐心等待...';
+    } else if (waitingSeconds >= 15) {
+      waitingText.value = '正在生成回复，请稍候...';
+    } else if (waitingSeconds >= 5) {
+      waitingText.value = 'AI 正在组织回答...';
+    }
+    // Stop updating once response starts
+    if (!isWaitingResponse.value) {
+      clearInterval(waitingTimer);
+    }
+  }, 1000);
 
   const currentChat = chatList.value.find((c) => c.id === currentChatId.value);
   if (!currentChat) return;
@@ -540,10 +574,9 @@ const sendMessageSSE = async (message) => {
     let receivedText = '';
     let lastProcessedLength = 0;
     let toolCalls = [];
+    let firstContentReceived = false;
 
-    currentChat.messages.push({ type: "ai", content: "", tool_calls: [] });
-    aiMessageIndex = currentChat.messages.length - 1;
-    isTyping.value = false;
+    scrollToBottom();
 
     xhr.onprogress = () => {
       const newData = xhr.responseText.substring(lastProcessedLength);
@@ -556,13 +589,26 @@ const sendMessageSSE = async (message) => {
             const eventData = JSON.parse(line.substring(6));
 
             if (eventData.type === 'content') {
-              // Hide tool calling indicator when content starts flowing
-              isToolCalling.value = false;
+              // First content token arrived: create AI message bubble and hide spinner
+              if (!firstContentReceived) {
+                firstContentReceived = true;
+                isWaitingResponse.value = false;
+                isToolCalling.value = false;
+                currentChat.messages.push({ type: "ai", content: "", tool_calls: [] });
+                aiMessageIndex = currentChat.messages.length - 1;
+              }
               receivedText += eventData.content;
               currentChat.messages[aiMessageIndex].content = receivedText;
               scrollToBottom();
             } else if (eventData.type === 'tool_call') {
-              // Agent 工具调用事件
+              // Agent 工具调用事件 - show tool calling while still waiting
+              isWaitingResponse.value = false;
+              isToolCalling.value = true;
+              toolCallingText.value = getToolCallingDisplayText(eventData.tool || eventData.name);
+              if (aiMessageIndex < 0) {
+                currentChat.messages.push({ type: "ai", content: "", tool_calls: [] });
+                aiMessageIndex = currentChat.messages.length - 1;
+              }
               toolCalls.push({
                 name: eventData.tool || eventData.name,
                 status: eventData.status || 'running',
@@ -581,10 +627,12 @@ const sendMessageSSE = async (message) => {
               scrollToBottom();
             } else if (eventData.type === 'tool_calling') {
               // Show tool calling progress indicator (transparent to user)
+              isWaitingResponse.value = false;
               isToolCalling.value = true;
               toolCallingText.value = getToolCallingDisplayText(eventData.tool);
               scrollToBottom();
             } else if (eventData.type === 'done') {
+              isWaitingResponse.value = false;
               isToolCalling.value = false;
               // Update session title if provided
               if (eventData.title && (currentChat.title.startsWith('新会话') || currentChat.title === '默认会话')) {
@@ -600,19 +648,31 @@ const sendMessageSSE = async (message) => {
 
     xhr.onload = () => {
       isReceiving.value = false;
+      isWaitingResponse.value = false;
       currentXHR = null;
+      // If no content was ever received, show a fallback message
+      if (!firstContentReceived) {
+        currentChat.messages.push({ type: "ai", content: "抱歉，AI 暂时无法响应，请稍后重试。", tool_calls: [] });
+      }
       scrollToBottom();
     };
     
     // Timeout handling for local models (may take longer)
-    xhr.timeout = 300000; // 300 seconds for large Ollama models (e.g. qwen3-coder:30b)
+    xhr.timeout = 600000; // 600 seconds (10 min) for large models via Eino Agent + RAG pipeline
     xhr.ontimeout = () => {
       console.error('SSE request timed out');
       isReceiving.value = false;
       isTyping.value = false;
       isToolCalling.value = false;
+      isWaitingResponse.value = false;
       currentXHR = null;
-      if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
+      if (!firstContentReceived) {
+        // No content was received at all — show timeout message
+        currentChat.messages.push({
+          type: "ai",
+          content: '⏱️ 请求超时，本地模型响应时间较长，请稍后重试。',
+        });
+      } else if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
         currentChat.messages[aiMessageIndex].content = '⏱️ 请求超时，本地模型响应时间较长，请稍后重试。';
       }
       scrollToBottom();
@@ -623,6 +683,7 @@ const sendMessageSSE = async (message) => {
       isReceiving.value = false;
       isTyping.value = false;
       isToolCalling.value = false;
+      isWaitingResponse.value = false;
       currentXHR = null;
 
       if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
@@ -640,6 +701,7 @@ const sendMessageSSE = async (message) => {
     console.error('SSE setup failed:', error);
     isTyping.value = false;
     isReceiving.value = false;
+    isWaitingResponse.value = false;
     sendMessageNonStreaming(message);
   }
 };
@@ -698,6 +760,7 @@ const stopReceiving = () => {
   isReceiving.value = false;
   isTyping.value = false;
   isToolCalling.value = false;
+  isWaitingResponse.value = false;
 };
 
 // Get user-friendly text for tool calling (hide technical details from user)
@@ -981,6 +1044,39 @@ onUnmounted(() => {
   padding: 40px 0;
   color: var(--text-muted);
   font-size: 13px;
+}
+
+/* Waiting for AI response spinner */
+.waiting-response-indicator {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 4px 0;
+}
+
+.waiting-spinner {
+  width: 18px;
+  height: 18px;
+  border: 2.5px solid var(--border-color);
+  border-top-color: var(--niuyin-primary-color);
+  border-radius: 50%;
+  animation: waitingSpin 0.8s linear infinite;
+  flex-shrink: 0;
+}
+
+.waiting-text {
+  font-size: 13px;
+  color: var(--text-muted);
+  animation: waitingPulse 2s ease-in-out infinite;
+}
+
+@keyframes waitingSpin {
+  to { transform: rotate(360deg); }
+}
+
+@keyframes waitingPulse {
+  0%, 100% { opacity: 0.6; }
+  50% { opacity: 1; }
 }
 
 
