@@ -461,42 +461,6 @@ const loadSessionMessages = async (sessionId) => {
   }
 };
 
-// 从后端加载指定会话的消息
-const loadSessionMessages = async (sessionId) => {
-  const chat = chatList.value.find(c => c.id === sessionId);
-  if (!chat || chat.loaded) return;
-
-  messagesLoading.value = true;
-  try {
-    const res = await getAiSession(sessionId);
-    if (res.code === 200 && res.data) {
-      const rawMessages = res.data.messages || res.data.history || [];
-      chat.messages = rawMessages.map(m => ({
-        type: m.role === 'user' ? 'user' : 'ai',
-        content: m.content || '',
-        tool_calls: m.tool_calls || [],
-      }));
-      // 如果会话标题从后端返回了，更新它
-      if (res.data.title) {
-        chat.title = res.data.title;
-      }
-      chat.loaded = true;
-    }
-  } catch (e) {
-    console.warn('加载会话消息失败:', e);
-    // 如果加载失败，显示默认欢迎消息
-    if (chat.messages.length === 0) {
-      chat.messages = [{
-        type: "ai",
-        content: "你好！👋 我是你的AI智能助手，有什么我可以帮你的吗？",
-      }];
-    }
-    chat.loaded = true;
-  } finally {
-    messagesLoading.value = false;
-  }
-};
-
 // ========== 会话管理 ==========
 
 const welcomeMessage = "你好！👋 我是你的AI智能助手，我可以帮你：\n\n🔍 **搜索视频** - 告诉我你想找什么内容\n🔥 **查看热门** - 了解当前平台热门话题和趋势\n💡 **创作建议** - 为你提供标题、描述、标签和最佳发布时间建议\n❓ **回答问题** - 关于平台使用的任何问题\n\n有什么我可以帮你的吗？";
