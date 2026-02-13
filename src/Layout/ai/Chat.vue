@@ -6,6 +6,25 @@
           <ChatRound/>
         </el-icon>
         <h1 class="chat-header-title">AI 智能助手</h1>
+        <!-- Ollama connection status indicator -->
+        <el-tag
+            :type="aiStatus === 'connected' ? 'success' : aiStatus === 'checking' ? 'warning' : 'info'"
+            size="small"
+            effect="light"
+            class="ml-2"
+        >
+          <span class="inline-flex items-center gap-1">
+            <span
+                class="w-2 h-2 rounded-full inline-block"
+                :class="{
+                  'bg-green-500': aiStatus === 'connected',
+                  'bg-yellow-500 animate-pulse': aiStatus === 'checking',
+                  'bg-gray-400': aiStatus === 'fallback'
+                }"
+            ></span>
+            {{ aiStatusText }}
+          </span>
+        </el-tag>
         <!-- 可用工具标签 -->
         <div v-if="aiTools.length" class="tools-tags">
           <el-tooltip
@@ -29,11 +48,13 @@
             </el-icon>
           </el-button>
         </el-tooltip>
-        <el-button type="text" class="chat-icon-btn">
-          <el-icon :size="16">
-            <Setting/>
-          </el-icon>
-        </el-button>
+        <el-tooltip :content="aiModelInfo" placement="bottom">
+          <el-button type="text" class="chat-icon-btn" @click="checkAiHealth">
+            <el-icon :size="16">
+              <Setting/>
+            </el-icon>
+          </el-button>
+        </el-tooltip>
       </div>
     </header>
     <div class="flex flex-1 relative overflow-hidden">
@@ -140,7 +161,22 @@
                 </div>
               </div>
             </div>
-            <div v-if="isTyping" class="flex justify-start">
+            <!-- Tool calling indicator -->
+            <div v-if="isToolCalling" class="flex justify-start">
+              <div class="max-w-[88%] flex items-start gap-3">
+                <div class="w-8 h-8 rounded-full overflow-hidden flex-shrink-0">
+                  <img :src="aiAvatar" alt="ai" class="w-full h-full object-cover" />
+                </div>
+                <div class="message-bubble bg-white text-gray-800">
+                  <div class="flex items-center gap-2 text-sm text-blue-500">
+                    <el-icon class="animate-spin"><Setting/></el-icon>
+                    <span>{{ toolCallingText }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <!-- Typing indicator -->
+            <div v-if="isTyping && !isToolCalling" class="flex justify-start">
               <div class="max-w-[88%] flex items-start gap-3">
                 <div class="chat-avatar">
                   <img
@@ -212,22 +248,22 @@
 </template>
 
 <script setup>
-import { aiChat, deleteAiSession, getAiChatSSEUrl, getAiSession, getAiTools, listAiSessions } from "@/api/ai.js";
+import { aiChat, deleteAiSession, getAiChatSSEUrl, getAiHealth, getAiSession, getAiTools, listAiSessions } from "@/api/ai.js";
 import { getToken } from "@/utils/auth.js";
 import {
-    ChatRound,
-    Delete,
-    Files,
-    Loading,
-    MagicStick,
-    Plus,
-    Position,
-    Refresh,
-    Setting,
-    VideoPause,
+  ChatRound,
+  Delete,
+  Files,
+  Loading,
+  MagicStick,
+  Plus,
+  Position,
+  Refresh,
+  Setting,
+  VideoPause,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
-import { nextTick, onMounted, onUnmounted, ref } from "vue";
+import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
 
 const showChatList = ref(false);
 const inputMessage = ref("");
@@ -235,6 +271,8 @@ const isTyping = ref(false);
 const isReceiving = ref(false);
 const sessionsLoading = ref(false);
 const messagesLoading = ref(false);
+const isToolCalling = ref(false);
+const toolCallingText = ref("正在查询平台数据...");
 const chatContainer = ref(null);
 const userAvatar =
     "https://niuyin-server.oss-cn-shenzhen.aliyuncs.com/member/2024/10/07/4eb4963fa6bb4f85aa0ba1f748978993.jpeg";
@@ -247,19 +285,100 @@ const messages = ref([]);
 const aiTools = ref([]);
 let currentXHR = null;
 
+// Ollama health status
+const aiStatus = ref('checking'); // 'connected' | 'fallback' | 'checking'
+const aiModel = ref('');
+const aiBaseUrl = ref('');
+
+const aiStatusText = computed(() => {
+  switch (aiStatus.value) {
+    case 'connected': return `Ollama · ${aiModel.value || 'LLM'}`;
+    case 'checking': return '检测中...';
+    default: return '规则模式';
+  }
+});
+
+const aiModelInfo = computed(() => {
+  if (aiStatus.value === 'connected') {
+    return `模型: ${aiModel.value}\n地址: ${aiBaseUrl.value}\n状态: 已连接`;
+  }
+  return '当前使用规则引擎模式（Ollama未连接）\n点击刷新连接状态';
+});
+
+// Check Ollama health
+const checkAiHealth = async () => {
+  aiStatus.value = 'checking';
+  try {
+    const res = await getAiHealth();
+    if (res.code === 200 && res.data) {
+      if (res.data.ollama_status === 'connected') {
+        aiStatus.value = 'connected';
+        aiModel.value = res.data.model || '';
+        aiBaseUrl.value = res.data.base_url || '';
+      } else {
+        aiStatus.value = 'fallback';
+      }
+    } else {
+      aiStatus.value = 'fallback';
+    }
+  } catch (e) {
+    aiStatus.value = 'fallback';
+  }
+};
+
 // Generate a unique session ID
 const generateSessionId = () => {
   chatIdCounter++;
   return `session_${Date.now()}_${chatIdCounter}`;
 };
 
-// Format message content (support markdown-like formatting)
+// Format message content (enhanced markdown rendering for Ollama output)
 const formatMessage = (content) => {
   if (!content) return '';
-  let html = content
-    .replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>')
-    .replace(/\n/g, '<br>')
-    .replace(/---/g, '<hr style="margin: 8px 0; border: 0; border-top: 1px solid var(--border-color);">');
+
+  let html = content;
+
+  // Code blocks (```lang ... ```)
+
+  html = html.replace(/```(\w*)\n([\s\S]*?)```/g, (match, lang, code) => {
+    const escapedCode = code.replace(/</g, '&lt;').replace(/>/g, '&gt;');
+    return `<pre class="code-block"><code class="language-${lang || 'text'}">${escapedCode}</code></pre>`;
+  });
+
+  // Inline code (`code`)
+  html = html.replace(/`([^`]+)`/g, '<code class="inline-code">$1</code>');
+
+  // Bold (**text**)
+  html = html.replace(/\*\*(.*?)\*\*/g, '<strong>$1</strong>');
+
+  // Italic (*text*)
+  html = html.replace(/(?<!\*)\*(?!\*)(.*?)(?<!\*)\*(?!\*)/g, '<em>$1</em>');
+
+  // Unordered list items (- item or * item)
+  html = html.replace(/^[\-\*] (.+)$/gm, '<li class="ml-4 list-disc">$1</li>');
+
+  // Ordered list items (1. item)
+  html = html.replace(/^\d+\.\s(.+)$/gm, '<li class="ml-4 list-decimal">$1</li>');
+
+  // Headings (### h3, ## h2, # h1)
+  html = html.replace(/^### (.+)$/gm, '<h4 class="font-semibold text-base mt-2 mb-1">$1</h4>');
+  html = html.replace(/^## (.+)$/gm, '<h3 class="font-bold text-lg mt-3 mb-1">$1</h3>');
+  html = html.replace(/^# (.+)$/gm, '<h2 class="font-bold text-xl mt-3 mb-2">$1</h2>');
+
+  // Horizontal rule (---)
+  html = html.replace(/^---$/gm, '<hr style="margin: 8px 0; border: 0; border-top: 1px solid #e5e7eb;">');
+
+  // Line breaks
+  html = html.replace(/\n/g, '<br>');
+
+  // Wrap consecutive <li> in <ul>/<ol>
+  html = html.replace(/(<li class="ml-4 list-disc">.*?<\/li>(?:<br>)?)+/g, (match) => {
+    return '<ul class="my-1">' + match.replace(/<br>/g, '') + '</ul>';
+  });
+  html = html.replace(/(<li class="ml-4 list-decimal">.*?<\/li>(?:<br>)?)+/g, (match) => {
+    return '<ol class="my-1">' + match.replace(/<br>/g, '') + '</ol>';
+  });
+
   return html;
 };
 
@@ -303,6 +422,42 @@ const loadSessions = async () => {
     return false;
   } finally {
     sessionsLoading.value = false;
+  }
+};
+
+// 从后端加载指定会话的消息
+const loadSessionMessages = async (sessionId) => {
+  const chat = chatList.value.find(c => c.id === sessionId);
+  if (!chat || chat.loaded) return;
+
+  messagesLoading.value = true;
+  try {
+    const res = await getAiSession(sessionId);
+    if (res.code === 200 && res.data) {
+      const rawMessages = res.data.messages || res.data.history || [];
+      chat.messages = rawMessages.map(m => ({
+        type: m.role === 'user' ? 'user' : 'ai',
+        content: m.content || '',
+        tool_calls: m.tool_calls || [],
+      }));
+      // 如果会话标题从后端返回了，更新它
+      if (res.data.title) {
+        chat.title = res.data.title;
+      }
+      chat.loaded = true;
+    }
+  } catch (e) {
+    console.warn('加载会话消息失败:', e);
+    // 如果加载失败，显示默认欢迎消息
+    if (chat.messages.length === 0) {
+      chat.messages = [{
+        type: "ai",
+        content: "你好！👋 我是你的AI智能助手，有什么我可以帮你的吗？",
+      }];
+    }
+    chat.loaded = true;
+  } finally {
+    messagesLoading.value = false;
   }
 };
 
@@ -452,6 +607,8 @@ const sendMessageSSE = async (message) => {
             const eventData = JSON.parse(line.substring(6));
 
             if (eventData.type === 'content') {
+              // Hide tool calling indicator when content starts flowing
+              isToolCalling.value = false;
               receivedText += eventData.content;
               currentChat.messages[aiMessageIndex].content = receivedText;
               scrollToBottom();
@@ -473,8 +630,17 @@ const sendMessageSSE = async (message) => {
                 currentChat.messages[aiMessageIndex].tool_calls = [...toolCalls];
               }
               scrollToBottom();
+            } else if (eventData.type === 'tool_calling') {
+              // Show tool calling progress indicator (Ollama mode)
+              isToolCalling.value = true;
+              toolCallingText.value = eventData.tool
+                  ? `正在调用工具: ${getToolDisplayName(eventData.tool)}...`
+                  : '正在查询平台数据...';
+              scrollToBottom();
             } else if (eventData.type === 'done') {
-              if (eventData.title && currentChat.title.startsWith('新会话')) {
+              isToolCalling.value = false;
+              // Update session title if provided
+              if (eventData.title && (currentChat.title.startsWith('新会话') || currentChat.title === '默认会话')) {
                 currentChat.title = eventData.title;
               }
             }
@@ -490,11 +656,26 @@ const sendMessageSSE = async (message) => {
       currentXHR = null;
       scrollToBottom();
     };
+    
+    // Timeout handling for local models (may take longer)
+    xhr.timeout = 120000; // 120 seconds for Ollama
+    xhr.ontimeout = () => {
+      console.error('SSE request timed out');
+      isReceiving.value = false;
+      isTyping.value = false;
+      isToolCalling.value = false;
+      currentXHR = null;
+      if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
+        currentChat.messages[aiMessageIndex].content = '⏱️ 请求超时，本地模型响应时间较长，请稍后重试。';
+      }
+      scrollToBottom();
+    };
 
     xhr.onerror = () => {
       console.error('SSE request failed, falling back to non-streaming');
       isReceiving.value = false;
       isTyping.value = false;
+      isToolCalling.value = false;
       currentXHR = null;
 
       if (aiMessageIndex >= 0 && currentChat.messages[aiMessageIndex].content === '') {
@@ -569,6 +750,17 @@ const stopReceiving = () => {
   }
   isReceiving.value = false;
   isTyping.value = false;
+  isToolCalling.value = false;
+};
+
+// Get human-readable tool display name
+const getToolDisplayName = (toolName) => {
+  const toolNames = {
+    'search_videos': '🔍 搜索视频',
+    'get_hot_topics': '🔥 获取热门话题',
+    'suggest_content_strategy': '💡 生成创作建议',
+  };
+  return toolNames[toolName] || toolName;
 };
 
 const sendMessage = async () => {
@@ -599,8 +791,6 @@ const handleScroll = () => {
   }
 };
 
-// ========== 生命周期 ==========
-
 onMounted(async () => {
   // 并行加载工具列表和会话列表
   const [, hasRemoteSessions] = await Promise.all([
@@ -612,6 +802,8 @@ onMounted(async () => {
     initDefaultChat();
   }
   scrollToBottom();
+  // Check Ollama connection status in parallel
+  await checkAiHealth();
 });
 
 onUnmounted(() => {
@@ -788,6 +980,48 @@ onUnmounted(() => {
   margin: 8px 0;
   border: 0;
   border-top: 1px solid var(--border-color);
+}
+
+.message-bubble :deep(.code-block) {
+  background-color: #1e1e2e;
+  color: #cdd6f4;
+  border-radius: 8px;
+  padding: 12px 16px;
+  margin: 8px 0;
+  overflow-x: auto;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 13px;
+  line-height: 1.5;
+  white-space: pre;
+}
+
+.message-bubble :deep(.inline-code) {
+  background-color: #f1f5f9;
+  color: #e11d48;
+  padding: 2px 6px;
+  border-radius: 4px;
+  font-family: 'Fira Code', 'Consolas', monospace;
+  font-size: 0.9em;
+}
+
+.message-bubble :deep(ul),
+.message-bubble :deep(ol) {
+  padding-left: 8px;
+  margin: 4px 0;
+}
+
+.message-bubble :deep(li) {
+  margin: 2px 0;
+}
+
+.message-bubble :deep(em) {
+  font-style: italic;
+}
+
+.message-bubble :deep(h2),
+.message-bubble :deep(h3),
+.message-bubble :deep(h4) {
+  line-height: 1.4;
 }
 
 /* Tools tags in header */

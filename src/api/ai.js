@@ -50,3 +50,11 @@ export function getAiTools() {
         method: 'get',
     })
 }
+
+// Check AI service health and Ollama connection status
+export function getAiHealth() {
+    return request({
+        url: '/v1/ai/health',
+        method: 'get',
+    })
+}
