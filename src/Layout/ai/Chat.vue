@@ -622,7 +622,7 @@ const sendMessageSSE = async (message) => {
     };
     
     // Timeout handling for local models (may take longer)
-    xhr.timeout = 120000; // 120 seconds for Ollama
+    xhr.timeout = 300000; // 300 seconds for large Ollama models (e.g. qwen3-coder:30b)
     xhr.ontimeout = () => {
       console.error('SSE request timed out');
       isReceiving.value = false;
