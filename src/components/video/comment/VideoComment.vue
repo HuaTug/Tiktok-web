@@ -5,7 +5,8 @@
         <div class="comment-container px-4 py-2">
           <div class="comment-info">
             <div class="user-info flex items-center mb-1">
-              <el-image class="user-avatar w-8 h-8 rounded-full border border-white/10" :src="item.avatar" alt="" lazy></el-image>
+              <el-avatar v-if="item.avatar" class="user-avatar w-8 h-8 border border-white/10" :src="item.avatar" />
+              <el-avatar v-else class="user-avatar w-8 h-8 border border-white/10" :icon="UserFilled" />
               <div class="user-nickname ml-2">
                 <p class="nickname one-line text-gray-300 text-sm font-bold">{{ item.nickName }}</p>
                 <span class="text-gray-500 text-xs">{{ smartDateFormat(item.createTime) }}</span>
@@ -42,7 +43,8 @@
             <div class="comment-children pl-10 mt-2 space-y-2" v-if="item.children && item.children.length > 0">
               <div class="comment-container" v-for="(child, index) in item.children" :key="child.commentId">
                 <div class="user-info flex items-center mb-1">
-                  <el-image class="user-avatar w-6 h-6 rounded-full border border-white/10" :src="child.avatar" lazy></el-image>
+                  <el-avatar v-if="child.avatar" class="user-avatar w-6 h-6 border border-white/10" :src="child.avatar" :size="24" />
+                  <el-avatar v-else class="user-avatar w-6 h-6 border border-white/10" :icon="UserFilled" :size="24" />
                   <div class="user-nickname ml-2">
                     <p class="nickname one-line text-gray-300 text-xs font-bold">{{ child.nickName }}
                       <span class="text-blue-400 ml-1" v-if="child.replayUserId != null">@{{ child.replayUserNickName }}</span>
@@ -123,7 +125,7 @@
 <script>
 import { addVideoComment, deleteVideoComment, likeComment, videoCommentPageList } from "@/api/behave.js";
 import { userInfoX } from "@/store/userInfoX";
-import { ChromeFilled, Close, Delete, DeleteFilled, InfoFilled, Position, Star, StarFilled } from "@element-plus/icons-vue";
+import { ChromeFilled, Close, Delete, DeleteFilled, InfoFilled, Position, Star, StarFilled, UserFilled } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoComment",
@@ -134,6 +136,9 @@ export default {
     },
     ChromeFilled() {
       return ChromeFilled
+    },
+    UserFilled() {
+      return UserFilled
     }
   },
   props: {
@@ -184,7 +189,7 @@ export default {
       user: userInfoX().userInfo,
     }
   },
-  emits: ['emitUpdateVideoCommentNum'],
+  emits: ['emitUpdateVideoCommentNum', 'emitCommentTotal'],
   created() {
     this.getCommentList()
   },
@@ -205,7 +210,7 @@ export default {
         updateTime: comment.updated_at || comment.updateTime,
         replyToCommentId: comment.reply_to_comment_id || comment.replyToCommentId,
         // User info from backend (new fields)
-        avatar: comment.avatar_url || comment.avatar || comment.user_avatar || '/default-avatar.png',
+        avatar: comment.avatar_url || comment.avatar || comment.user_avatar || '',
         nickName: comment.user_name || comment.nick_name || comment.nickName || comment.username || '用户' + (comment.user_id || comment.userId || ''),
         // Reply to user info
         replyUserId: comment.reply_to_user_id || comment.replyUserId,
@@ -231,6 +236,7 @@ export default {
         // Transform snake_case to camelCase
         this.videoCommentTree = rawItems.map(item => this.transformComment(item));
         this.commentTotal = res.total || res.data?.total || this.videoCommentTree.length || 0;
+        this.$emit('emitCommentTotal', this.videoId, this.commentTotal)
       }).catch(err => {
         console.log('Comment list fetch failed:', err)
         this.videoCommentTree = []
@@ -247,6 +253,7 @@ export default {
     },
     // 点击评论
     handleCommentClick() {
+      this.commentDTO.videoId = this.videoId
       this.commentDTO.content = this.commentInput
       addVideoComment(this.commentDTO).then(res => {
         // Refactored-TikTok backend uses code 0 for success

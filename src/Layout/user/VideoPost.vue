@@ -163,7 +163,7 @@ export default {
           userId: userId,
           userNickName: item.user_name || item.UserName || item.userName,
           description: item.description || item.Description || '',
-          likeNum: item.like_count || item.LikeCount || item.likeCount || item.likeNum || 0,
+          likeNum: item.likes_count || item.like_count || item.LikeCount || item.likeCount || item.likeNum || 0,
           commentNum: item.comment_count || item.CommentCount || item.commentCount || item.commentNum || 0,
           createTime: item.created_at || item.CreatedAt || item.createTime,
           publishType: item.publish_type || item.PublishType || item.publishType || '0',

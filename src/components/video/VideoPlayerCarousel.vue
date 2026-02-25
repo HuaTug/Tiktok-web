@@ -154,7 +154,7 @@
        <!-- Content -->
        <div class="sidebar-content">
           <div v-if="activeTab === 'comments'" class="comment-wrapper">
-             <VideoComment :video-id="currentVideo?.videoId" :show="true" @emitUpdateVideoCommentNum="updateVideoCommentNumEmit" />
+             <VideoComment :video-id="currentVideo?.videoId" :show="true" @emitUpdateVideoCommentNum="updateVideoCommentNumEmit" @emitCommentTotal="updateCommentTotal" />
           </div>
           <div v-else class="creator-wrapper">
              <div class="creator-info">
@@ -766,6 +766,14 @@ export default {
         if (item.videoId === videoId) {
           // 评论数+1
           item.commentNum += 1
+        }
+      })
+    },
+    // 接收子组件评论总数更新
+    updateCommentTotal(videoId, total) {
+      this.videoList.forEach((item) => {
+        if (item.videoId === videoId && total > item.commentNum) {
+          item.commentNum = total
         }
       })
     },
@@ -1417,16 +1425,16 @@ export default {
   z-index: 10;
 }
 
-/* 操作按钮区域 */
+/* 操作按钮区域 - 放在视频右侧，不与导航按钮重叠 */
 .video-actions {
   position: absolute;
-  right: 16px;
-  bottom: 120px; /* 留出空间给进度条和视频信息 */
-  z-index: 20;
+  right: 12px;
+  bottom: 100px; /* 留出空间给进度条和视频信息 */
+  z-index: 25;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 24px;
+  gap: 20px;
   pointer-events: auto;
 }
 
@@ -1523,10 +1531,11 @@ export default {
   position: absolute;
   bottom: 70px; /* 留出空间给进度条 */
   left: 16px;
-  right: 80px;
+  right: 90px; /* 给右侧操作按钮留出更多空间 */
   z-index: 20;
   text-align: left;
   pointer-events: auto;
+  max-width: 60%; /* 限制最大宽度，避免和操作按钮重叠 */
 }
 
 .info-header {
@@ -1598,10 +1607,10 @@ export default {
   }
 }
 
-/* 导航按钮 */
+/* 导航按钮 - 放在视频左侧避免与操作按钮重叠 */
 .nav-buttons {
   position: absolute;
-  right: 24px;
+  left: 24px;
   top: 50%;
   transform: translateY(-50%);
   display: none;

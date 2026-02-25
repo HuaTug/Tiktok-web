@@ -136,7 +136,7 @@
                        :show-file-list="false"
                        :before-upload="beforeAvatarUpload"
                        :http-request="handleAvatarUpload">
-              <img v-if="user.avatar||userForm.avatar" :src="userForm.avatar" class="avatar"/>
+              <img v-if="userForm.avatar_url || userForm.avatar || user.avatar_url || user.avatar" :src="userForm.avatar_url || userForm.avatar || user.avatar_url || user.avatar" class="avatar"/>
               <i v-else class="iconfont icon-camera avatar-uploader-icon"/>
             </el-upload>
           </el-tooltip>
@@ -381,6 +381,10 @@ export default {
           }
           userInfoX().setUserInfo(userData)
           this.getUserFollowFansLike(userData.userId || userData.user_id)
+          // 直接从用户信息中读取获赞数（后端 convertToBaseUser 已返回 like_count）
+          this.likeAllNum = userData.like_count || 0
+          this.followNum = userData.following_count || 0
+          this.fansNum = userData.follower_count || 0
         }
       }).catch(err => {
         console.log('Get user info failed:', err)
@@ -470,7 +474,12 @@ export default {
     },
     // 确认提交
     confirmUpdateProfile() {
-      updateUserProfile(this.userForm).then(res => {
+      const submitData = {
+        user_name: this.userForm.nickName || this.userForm.user_name || '',
+        sex: Number(this.userForm.sex) || 0,
+        bio: this.userForm.bio || '',
+      };
+      updateUserProfile(submitData).then(res => {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.editDialogVisible = false

@@ -269,7 +269,8 @@
           <div class="pr wh100 ptb1rem">
             <VideoComment :video-id="videoData.videoId"
                           :show="true"
-                          @emitUpdateVideoCommentNum="updateVideoCommentNumEmit"/>
+                          @emitUpdateVideoCommentNum="updateVideoCommentNumEmit"
+                          @emitCommentTotal="updateCommentTotal"/>
           </div>
         </div>
         <div v-else-if="tabActiveId===3" class="user-info-post">
@@ -770,6 +771,12 @@ export default {
     updateVideoCommentNumEmit(videoId) {
       // 评论数+1
       this.videoData.commentNum += 1
+    },
+    // 接收子组件评论总数更新
+    updateCommentTotal(videoId, total) {
+      if (total > this.videoData.commentNum) {
+        this.videoData.commentNum = total
+      }
     },
   }
 }

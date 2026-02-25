@@ -124,11 +124,11 @@
                   :class="msg.type === 'user' ? 'flex-row-reverse' : ''"
               >
                 <div class="chat-avatar">
-                  <img
-                      :src="msg.type === 'user' ? userAvatar : aiAvatar"
-                      :alt="msg.type"
-                      class="w-full h-full object-cover"
-                  />
+                  <template v-if="msg.type === 'user'">
+                    <el-avatar v-if="userAvatar" :src="userAvatar" class="w-full h-full" />
+                    <el-avatar v-else :icon="UserFilled" class="w-full h-full" />
+                  </template>
+                  <img v-else :src="aiAvatar" alt="ai" class="w-full h-full object-cover" />
                 </div>
                 <div
                     class="message-bubble"
@@ -253,10 +253,12 @@ import {
   Position,
   Refresh,
   Setting,
+  UserFilled,
   VideoPause,
 } from "@element-plus/icons-vue";
 import { ElMessage } from "element-plus";
 import { computed, nextTick, onMounted, onUnmounted, ref } from "vue";
+import { userInfoX } from "@/store/userInfoX.ts";
 
 const showChatList = ref(false);
 const inputMessage = ref("");
@@ -269,8 +271,8 @@ const toolCallingText = ref("正在查询平台数据...");
 const isWaitingResponse = ref(false);
 const waitingText = ref("AI 正在思考中...");
 const chatContainer = ref(null);
-const userAvatar =
-    "https://niuyin-server.oss-cn-shenzhen.aliyuncs.com/member/2024/10/07/4eb4963fa6bb4f85aa0ba1f748978993.jpeg";
+const userStore = userInfoX();
+const userAvatar = computed(() => userStore.userInfo?.avatar_url || userStore.userInfo?.avatar || '');
 const aiAvatar =
     "https://public.readdy.ai/ai/img_res/ce5e827dc0be17269a8c7efd4050aba6.jpg";
 const currentChatId = ref("");

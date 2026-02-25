@@ -167,7 +167,8 @@
         </template>
         <VideoComment :video-id="videoId"
                       :show="true"
-                      @emitUpdateVideoCommentNum="updateVideoCommentNumEmit"/>
+                      @emitUpdateVideoCommentNum="updateVideoCommentNumEmit"
+                      @emitCommentTotal="updateCommentTotal"/>
       </el-drawer>
     </div>
   </div>
@@ -368,6 +369,14 @@ export default {
         if (item.videoId === videoId) {
           // 评论数+1
           item.commentNum += 1
+        }
+      })
+    },
+    // 接收子组件评论总数更新
+    updateCommentTotal(videoId, total) {
+      this.videoList.forEach((item) => {
+        if (item.videoId === videoId && total > item.commentNum) {
+          item.commentNum = total
         }
       })
     },

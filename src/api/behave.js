@@ -32,9 +32,9 @@ export function videoCommentPageList(data) {
 export function addVideoComment(data) {
     // Convert camelCase to snake_case for backend API
     const postData = {
-        video_id: data.videoId,
+        video_id: Number(data.videoId) || 0,
         content: data.content,
-        comment_id: data.parentId || data.commentId || 0,
+        comment_id: Number(data.parentId || data.commentId) || 0,
         mode: data.originId ? 2 : 1  // mode 1 = 直接评论, mode 2 = 回复评论
     }
     return request({

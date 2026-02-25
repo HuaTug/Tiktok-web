@@ -135,7 +135,7 @@ export default {
           userId: userId,
           userNickName: item.user_name || item.UserName || item.userName,  // VideoCard.vue expects userNickName
           description: item.description || item.Description || '',
-          likeNum: item.like_count || item.LikeCount || item.likeCount || 0,  // VideoCard.vue expects likeNum
+          likeNum: item.likes_count || item.like_count || item.LikeCount || item.likeCount || 0,  // VideoCard.vue expects likeNum
           commentNum: item.comment_count || item.CommentCount || item.commentCount || 0,
           createTime: item.created_at || item.CreatedAt || item.createTime,  // VideoCard.vue expects createTime
           publishType: item.publish_type || item.PublishType || item.publishType || '0',

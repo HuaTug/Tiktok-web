@@ -95,24 +95,14 @@ export default {
       getPersonInfo(this.userId).then(res => {
         // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
-          this.user = res.data
-          // console.log(this.user)
-          // this.getUserFollowFansLike(res.data.userId)
+          const userData = res.data?.User || res.data?.user || res.data
+          this.user = userData
+          // 直接从用户信息中读取计数字段
+          this.likeAllNum = userData.like_count || 0
+          this.followNum = userData.following_count || 0
+          this.fansNum = userData.follower_count || 0
         }
       }).catch(err => console.log('Person info fetch failed'))
-      followAndFans(this.userId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.followNum = res.data?.followedNums || res.data?.follow_count || 0
-          this.fansNum = res.data?.fanNums || res.data?.follower_count || 0
-        }
-      }).catch(err => console.log('Follow/Fans fetch failed'))
-      userLikeNums(this.userId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
-          this.likeAllNum = res.data || 0
-        }
-      }).catch(err => console.log('Like nums fetch failed'))
       this.$router.push("/person/" + this.$route.params.userId + "/videoPost")
     },
     handleClick(tab, event) {

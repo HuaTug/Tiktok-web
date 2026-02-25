@@ -170,7 +170,7 @@ export default {
           coverImage: coverImage,
           userId: userId,
           userNickName: item.user_name || item.userName || item.userNickName,
-          likeNum: item.like_count || item.LikeCount || item.likeNum || 0,
+          likeNum: item.likes_count || item.like_count || item.LikeCount || item.likeNum || 0,
           commentNum: item.comment_count || item.CommentCount || item.commentNum || 0,
           createTime: item.created_at || item.CreatedAt || item.createTime,
         }

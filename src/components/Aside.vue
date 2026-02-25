@@ -19,7 +19,16 @@
               active-class="menu-link-active"
               :to="item.link">
               <div class="menu-icon">
-                <svg class="icon-svg" aria-hidden="true">
+                <!-- AI 助手使用自定义 SVG 图标 -->
+                <svg v-if="item.id === 4" class="icon-svg ai-icon" viewBox="0 0 1024 1024" aria-hidden="true">
+                  <path d="M512 64C264.6 64 64 238.7 64 456c0 95.5 39.3 182.8 104.1 251.3L96 864l193.5-84.9C355.3 810.1 431.3 828 512 828c247.4 0 448-154.7 448-372S759.4 64 512 64z m0 680c-68.8 0-133.8-15.1-192-42.4l-13.6-6.4-141.6 62.2 55.2-118.4-10.4-11.2C152 572.2 128 516.8 128 456c0-181.1 172-308 384-308s384 126.9 384 308-172 288-384 288z" fill="currentColor"/>
+                  <circle cx="320" cy="400" r="40" fill="currentColor"/>
+                  <circle cx="512" cy="400" r="40" fill="currentColor"/>
+                  <circle cx="704" cy="400" r="40" fill="currentColor"/>
+                  <path d="M680 160l24-72 24 72 72 24-72 24-24 72-24-72-72-24z" fill="currentColor"/>
+                  <path d="M820 280l16-48 16 48 48 16-48 16-16 48-16-48-48-16z" fill="currentColor"/>
+                </svg>
+                <svg v-else class="icon-svg" aria-hidden="true">
                   <use :xlink:href="item.class"></use>
                 </svg>
               </div>
@@ -213,6 +222,15 @@ export default {
   height: 22px;
   fill: currentColor;
   transition: transform var(--transition-fast);
+}
+
+.icon-svg.ai-icon {
+  color: #10a37f;
+}
+
+.menu-link-active .icon-svg.ai-icon {
+  color: #10a37f;
+  filter: drop-shadow(0 0 4px rgba(16, 163, 127, 0.4));
 }
 
 .menu-text {
