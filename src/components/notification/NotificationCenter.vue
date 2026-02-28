@@ -4,7 +4,7 @@
     <el-popover
       :visible="showPopover"
       placement="bottom-end"
-      :width="400"
+      :width="420"
       trigger="click"
       @update:visible="handlePopoverVisibleChange"
     >
@@ -19,7 +19,7 @@
       <div class="notification-panel">
         <!-- 头部 -->
         <div class="panel-header">
-          <span class="title">消息通知</span>
+          <span class="title">互动消息</span>
           <el-button 
             v-if="unreadCount > 0" 
             type="primary" 
@@ -33,7 +33,7 @@
 
         <!-- 标签切换 -->
         <el-tabs v-model="activeTab" @tab-change="handleTabChange">
-          <el-tab-pane label="全部" name="all" />
+          <el-tab-pane label="全部消息" name="all" />
           <el-tab-pane label="点赞" name="like" />
           <el-tab-pane label="评论" name="comment" />
           <el-tab-pane label="关注" name="follow" />
@@ -49,21 +49,38 @@
               :class="{ 'is-unread': !item.is_read }"
               @click="handleNotificationClick(item)"
             >
-              <div class="item-icon">
-                <el-icon v-if="item.type === 'like'" color="#ff4d4f"><Star /></el-icon>
-                <el-icon v-else-if="item.type === 'comment'" color="#1890ff"><ChatDotRound /></el-icon>
-                <el-icon v-else-if="item.type === 'follow'" color="#52c41a"><UserFilled /></el-icon>
-                <el-icon v-else color="#faad14"><Bell /></el-icon>
+              <!-- 用户头像 -->
+              <div class="item-avatar">
+                <el-avatar 
+                  v-if="getAvatarUrl(item)" 
+                  :src="getAvatarUrl(item)" 
+                  :size="40"
+                />
+                <div v-else class="default-avatar">
+                  <el-icon v-if="isLikeType(item.type)" :size="18" color="#FE2C55">
+                    <svg viewBox="0 0 24 24" fill="currentColor"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/></svg>
+                  </el-icon>
+                  <el-icon v-else-if="isCommentType(item.type)" :size="18" color="#1890ff"><ChatDotRound /></el-icon>
+                  <el-icon v-else-if="item.type === 'follow'" :size="18" color="#52c41a"><UserFilled /></el-icon>
+                  <el-icon v-else :size="18" color="#faad14"><Bell /></el-icon>
+                </div>
               </div>
+              <!-- 通知内容 -->
               <div class="item-content">
-                <p class="item-title">{{ item.title }}</p>
-                <p class="item-desc">{{ item.content }}</p>
+                <p class="item-title">
+                  <span class="item-username" v-if="getFromUserName(item)">{{ getFromUserName(item) }}</span>
+                  {{ item.content }}
+                </p>
                 <p class="item-time">{{ formatTime(item.created_at) }}</p>
+              </div>
+              <!-- 视频封面缩略图 -->
+              <div class="item-cover" v-if="getVideoCover(item)">
+                <img :src="getVideoCover(item)" alt="视频封面" />
               </div>
               <div v-if="!item.is_read" class="unread-dot"></div>
             </div>
           </template>
-          <el-empty v-else description="暂无通知" :image-size="80" />
+          <el-empty v-else description="暂无互动消息" :image-size="80" />
         </div>
 
         <!-- 查看更多 -->
@@ -77,7 +94,7 @@
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
-import { Bell, Star, ChatDotRound, UserFilled } from '@element-plus/icons-vue'
+import { Bell, ChatDotRound, UserFilled } from '@element-plus/icons-vue'
 import { getNotificationList, markNotificationRead, getUnreadNotificationCount } from '@/api/notification'
 import { ElMessage } from 'element-plus'
 
@@ -89,6 +106,37 @@ const unreadCount = ref(0)
 const total = ref(0)
 const pageNum = ref(1)
 const pageSize = ref(10)
+
+// 前端 tab name -> 后端实际 type 映射
+const typeMapping = {
+  'all': 'all',
+  'like': 'video_like',      // 后端存储的是 video_like
+  'comment': 'comment',
+  'follow': 'follow'
+}
+
+// 判断是否是点赞类型
+const isLikeType = (type_) => ['video_like', 'comment_like', 'video_like_aggregated', 'comment_like_aggregated'].includes(type_)
+const isCommentType = (type_) => ['comment', 'comment_reply', 'mention'].includes(type_)
+
+// 从通知中提取头像 URL
+const getAvatarUrl = (item) => {
+  if (item.extra?.avatar_url) return item.extra.avatar_url
+  return ''
+}
+
+// 从通知中提取发送者用户名
+const getFromUserName = (item) => {
+  if (item.extra?.from_user_name) return item.extra.from_user_name
+  if (item.from_user) return item.from_user
+  return ''
+}
+
+// 从通知中提取视频封面
+const getVideoCover = (item) => {
+  if (item.extra?.video_cover) return item.extra.video_cover
+  return ''
+}
 
 // 是否有更多数据
 const hasMore = computed(() => notifications.value.length < total.value)
@@ -105,7 +153,7 @@ const fetchNotifications = async (reset = false) => {
     const res = await getNotificationList({
       pageNum: pageNum.value,
       pageSize: pageSize.value,
-      type: activeTab.value
+      type: typeMapping[activeTab.value] || activeTab.value
     })
     
     if (res.code === 200 || res.code === 0) {
@@ -269,14 +317,15 @@ onUnmounted(() => {
 
 .notification-item {
   display: flex;
-  align-items: flex-start;
-  padding: 12px 4px;
+  align-items: center;
+  padding: 10px 4px;
   cursor: pointer;
   border-bottom: 1px solid var(--border-color-light);
   transition: all var(--transition-fast);
   position: relative;
   border-radius: 8px;
   margin: 2px 0;
+  gap: 10px;
 }
 
 .notification-item:hover {
@@ -287,16 +336,22 @@ onUnmounted(() => {
   background-color: var(--active-bg);
 }
 
-.item-icon {
-  width: 36px;
-  height: 36px;
+.item-avatar {
+  flex-shrink: 0;
+}
+
+.item-avatar .el-avatar {
+  border: 1px solid var(--border-color-light);
+}
+
+.default-avatar {
+  width: 40px;
+  height: 40px;
   border-radius: 50%;
   background-color: var(--bg-surface);
   display: flex;
   align-items: center;
   justify-content: center;
-  margin-right: 12px;
-  flex-shrink: 0;
 }
 
 .item-content {
@@ -305,24 +360,41 @@ onUnmounted(() => {
 }
 
 .item-title {
-  font-size: 14px;
-  font-weight: 500;
+  font-size: 13px;
   color: var(--text-main);
   margin-bottom: 3px;
+  line-height: 1.4;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow: hidden;
 }
 
-.item-desc {
-  font-size: 13px;
-  color: var(--text-secondary);
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
+.item-username {
+  font-weight: 600;
+  color: var(--text-main);
+  margin-right: 4px;
 }
 
 .item-time {
   font-size: 12px;
   color: var(--text-muted);
-  margin-top: 3px;
+  margin-top: 2px;
+}
+
+.item-cover {
+  flex-shrink: 0;
+  width: 44px;
+  height: 56px;
+  border-radius: 6px;
+  overflow: hidden;
+  background-color: var(--bg-surface);
+}
+
+.item-cover img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
 }
 
 .unread-dot {

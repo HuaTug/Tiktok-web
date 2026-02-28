@@ -16,11 +16,16 @@
           <li v-for="(item, i) in tabsTopList" :key="i" class="menu-item">
             <router-link 
               class="menu-link"
-              active-class="menu-link-active"
+              :class="isActive(item.link) ? 'menu-link-active' : ''"
               :to="item.link">
               <div class="menu-icon">
+                <!-- 发现页使用指南针 SVG 图标 -->
+                <svg v-if="item.id === 1" class="icon-svg discover-icon" viewBox="0 0 1024 1024" aria-hidden="true">
+                  <path d="M512 64C264.6 64 64 264.6 64 512s200.6 448 448 448 448-200.6 448-448S759.4 64 512 64z m0 820c-205.4 0-372-166.6-372-372s166.6-372 372-372 372 166.6 372 372-166.6 372-372 372z" fill="currentColor"/>
+                  <path d="M710.4 295.6l-256 128c-6.4 3.2-11.2 8-14.4 14.4l-128 256c-8 16 1.6 35.2 17.6 40 4.8 1.6 9.6 1.6 14.4 0l256-128c6.4-3.2 11.2-8 14.4-14.4l128-256c8-16-1.6-35.2-17.6-40-4.8-1.6-11.2-1.6-14.4 0zM512 576c-35.2 0-64-28.8-64-64s28.8-64 64-64 64 28.8 64 64-28.8 64-64 64z" fill="currentColor"/>
+                </svg>
                 <!-- AI 助手使用自定义 SVG 图标 -->
-                <svg v-if="item.id === 4" class="icon-svg ai-icon" viewBox="0 0 1024 1024" aria-hidden="true">
+                <svg v-else-if="item.id === 4" class="icon-svg ai-icon" viewBox="0 0 1024 1024" aria-hidden="true">
                   <path d="M512 64C264.6 64 64 238.7 64 456c0 95.5 39.3 182.8 104.1 251.3L96 864l193.5-84.9C355.3 810.1 431.3 828 512 828c247.4 0 448-154.7 448-372S759.4 64 512 64z m0 680c-68.8 0-133.8-15.1-192-42.4l-13.6-6.4-141.6 62.2 55.2-118.4-10.4-11.2C152 572.2 128 516.8 128 456c0-181.1 172-308 384-308s384 126.9 384 308-172 288-384 288z" fill="currentColor"/>
                   <circle cx="320" cy="400" r="40" fill="currentColor"/>
                   <circle cx="512" cy="400" r="40" fill="currentColor"/>
@@ -59,7 +64,7 @@ export default {
     return {
       tabsTopList: [
         {id: 0, name: "首页", class: "#icon-index", link: "/"},
-        {id: 1, name: "发现", class: "#icon-discover", link: "/discover"},
+        {id: 1, name: "发现", class: "#icon-faxian", link: "/discover"},
         {id: 2, name: "热门", class: "#icon-hotVideo", link: "/hotVideo"},
         {id: 3, name: "关注", class: "#icon-follow", link: "/follow"},
         {id: 4, name: "AI 助手", class: "#icon-ai", link: "/ai"},
@@ -71,6 +76,13 @@ export default {
   },
   methods: {
     handleSelect(index) {
+    },
+    isActive(link) {
+      const path = this.$route.path
+      if (link === '/') {
+        return path === '/'
+      }
+      return path.startsWith(link)
     },
   }
 }
@@ -226,6 +238,15 @@ export default {
 
 .icon-svg.ai-icon {
   color: #10a37f;
+}
+
+.icon-svg.discover-icon {
+  color: #ff6b35;
+}
+
+.menu-link-active .icon-svg.discover-icon {
+  color: #ff6b35;
+  filter: drop-shadow(0 0 4px rgba(255, 107, 53, 0.4));
 }
 
 .menu-link-active .icon-svg.ai-icon {

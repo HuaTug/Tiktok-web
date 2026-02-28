@@ -1,62 +1,65 @@
 <template>
   <div class="favorite-collection-container">
-    <div class="flex-between" v-loading="loadingIcon">
+    <div class="collection-grid" v-loading="loadingIcon">
       <el-skeleton class="w100" :loading="loading" animated>
         <template #template>
-          <div class="loading-container" v-for="i in 2">
-            <div class="loading-item" v-for="i in 3">
-              <el-skeleton-item variant="image" class="w100" style="height: 120px"/>
-              <div class="p1rem">
-                <el-skeleton-item variant="h1" class="w100"/>
+          <div class="loading-grid">
+            <div class="loading-item" v-for="i in 3" :key="i">
+              <el-skeleton-item variant="image" class="w100" style="height: 140px; border-radius: 8px 8px 0 0;"/>
+              <div style="padding: 12px;">
+                <el-skeleton-item variant="h3" class="w100" style="margin-bottom: 8px;"/>
+                <el-skeleton-item variant="text" style="width: 60%;"/>
               </div>
             </div>
           </div>
         </template>
         <template #default>
-          <div class="collection-edge cp" v-for="(item,index) in collectionList" @click="handleCollectionClick(item)">
-            <div class="collection-container">
-              <div class="collection-head flex-between">
-                <div class="coll-title fs9 fw600">{{ item.title }}</div>
-                <!--              操作区域-->
-                <div class="coll-op cp">
-                  <el-popover placement="top"
-                              trigger="hover"
-                              popper-style="padding: 1rem;">
-                    <template #reference>
-                      <el-icon>
-                        <MoreFilled/>
-                      </el-icon>
-                    </template>
-                    <template #default>
-                      <div class="flex-center">
-                        <el-button type="primary" @click="handleEditCollectionDialog(item.favoriteId)">编辑收藏夹
-                        </el-button>
-                      </div>
-                      <div class="flex-center" style="margin-top: 0.5rem">
-                        <el-button type="warning" @click="handleDelCollection(item.favoriteId)">删除收藏夹</el-button>
-                      </div>
-                    </template>
-                  </el-popover>
-                </div>
+          <div class="collection-card cp" v-for="(item,index) in collectionList" :key="item.favoriteId" @click="handleCollectionClick(item)">
+            <!-- 封面区域 -->
+            <div class="card-cover">
+              <el-image v-if="item.coverUrl" class="cover-img" :src="item.coverUrl" fit="cover" lazy/>
+              <div v-else class="cover-placeholder">
+                <el-icon :size="40" color="#c0c4cc"><Film /></el-icon>
               </div>
-              <div class="collection-info flex-start">
-                <p class="cg fs7 ptb10px">共 {{ item.videoCount }} 件作品</p>
+              <!-- 视频数量角标 -->
+              <div class="card-count">
+                <el-icon :size="14" color="#fff"><Film /></el-icon>
+                <span>{{ item.videoCount }}</span>
               </div>
-              <!-- 有视频时显示封面列表 -->
-              <div v-if="item.videoCount > 0" class="collection-video flex-between">
-                <div class="video-cover-list flex-center"
-                     v-for="(cover,index) in item.videoCoverList">
-                  <el-image v-if="cover" class="video-cover eli-ofc" lazy :src="cover"/>
-                  <el-avatar v-else class="video-cover eli-ofc" :icon="Film"/>
-                </div>
+              <!-- 公开/私密标识 -->
+              <div class="card-privacy" :class="item.showStatus === '0' ? 'public' : 'private'">
+                <el-icon :size="12">
+                  <View v-if="item.showStatus === '0'"/>
+                  <Hide v-else/>
+                </el-icon>
+                <span>{{ item.showStatus === '0' ? '公开' : '私密' }}</span>
               </div>
-              <!-- 没有视频时显示空状态 -->
-              <div v-else class="collection-empty flex-center">
-                <div class="empty-content">
-                  <el-icon :size="32" color="#c0c4cc"><Film /></el-icon>
-                  <p class="cg fs7 mt5px">暂无收藏视频</p>
-                </div>
+              <!-- 操作按钮 -->
+              <div class="card-actions" @click.stop>
+                <el-popover placement="bottom-end" trigger="hover" popper-style="padding: 8px; min-width: 100px;">
+                  <template #reference>
+                    <div class="action-btn">
+                      <el-icon :size="18" color="#fff"><MoreFilled/></el-icon>
+                    </div>
+                  </template>
+                  <template #default>
+                    <div class="action-item" @click="handleEditCollectionDialog(item.favoriteId)">
+                      <el-icon><Edit/></el-icon>
+                      <span>编辑</span>
+                    </div>
+                    <div class="action-item danger" @click="handleDelCollection(item.favoriteId)">
+                      <el-icon><Delete/></el-icon>
+                      <span>删除</span>
+                    </div>
+                  </template>
+                </el-popover>
               </div>
+            </div>
+            <!-- 信息区域 -->
+            <div class="card-info">
+              <div class="card-title">{{ item.title }}</div>
+              <div class="card-desc" v-if="item.description">{{ item.description }}</div>
+              <div class="card-desc" v-else style="color: #ccc; font-style: italic;">暂无简介</div>
             </div>
           </div>
         </template>
@@ -139,11 +142,11 @@ import {
   updateFavorite,
   videoFavoritePage
 } from "@/api/behave.js";
-import {Close, Film, InfoFilled, MoreFilled, UserFilled} from "@element-plus/icons-vue";
+import {Close, Delete, Edit, Film, Hide, InfoFilled, MoreFilled, UserFilled, View} from "@element-plus/icons-vue";
 
 export default {
   name: "UserFavoriteCollection",
-  components: {MoreFilled},
+  components: {MoreFilled, Film, View, Hide, Edit, Delete},
   emits: ['collection-click'],  // 声明自定义事件
   computed: {
     Close() {
@@ -238,14 +241,20 @@ export default {
           }
         }
         
+        // 优先取 name，注意空字符串需要用 !== undefined 判断
+        const rawName = item.name !== undefined && item.name !== '' ? item.name
+          : (item.Name !== undefined && item.Name !== '' ? item.Name
+            : (item.title !== undefined && item.title !== '' ? item.title : '默认收藏夹'))
+        
         return {
           favoriteId: favoriteId,
-          title: item.name || item.Name || item.title || '默认收藏夹',
+          title: rawName,
           description: item.description || item.Description || '',
           videoCount: videoCount,
           videoCoverList: paddedCovers,
           coverUrl: item.cover_url || item.CoverUrl || item.coverUrl || '',
-          showStatus: item.is_public ? '1' : '0',
+          // is_public: true/false → switch active-value="0"(公开), inactive-value="1"(私密)
+          showStatus: item.is_public ? '0' : '1',
         }
       })
     },
@@ -344,52 +353,185 @@ export default {
 </script>
 
 <style scoped>
-.loading-container {
+.collection-grid {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
-
-  .loading-item {
-    width: 33.33333%;
-    padding: 0 0.5rem 1rem;
-  }
+  flex-wrap: wrap;
+  justify-content: flex-start;
+  gap: 16px;
+  align-items: stretch;
+  width: 100%;
 }
 
-.collection-edge {
-  width: 33.333333%;
-  padding: 0 0.5rem 1rem;
+.loading-grid {
+  display: flex;
+  gap: 16px;
+  width: 100%;
+}
 
-  .collection-container {
-    padding: 1rem;
-    border-radius: 0.5rem;
-    box-shadow: rgba(0, 0, 0, 0.13) 0 2px 3px 0, rgba(0, 0, 0, 0.11) 0 1px 1px 0;
-    transition: all 0.3s ease;
-    background-color: var(--el-bg-color-page);
+.loading-grid .loading-item {
+  width: calc(33.333% - 11px);
+  border-radius: 8px;
+  overflow: hidden;
+  background: var(--el-bg-color-page);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+}
 
-    .collection-video {
+.collection-card {
+  width: calc(33.333% - 11px);
+  border-radius: 10px;
+  overflow: hidden;
+  background: var(--el-bg-color-page);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08);
+  transition: all 0.3s ease;
+  display: flex;
+  flex-direction: column;
+}
 
-      .video-cover-list {
-        width: 16%;
+.collection-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.12);
+}
 
-        .video-cover {
-          width: 80px;
-          height: 45px;
-          border-radius: 6px;
-        }
+/* 封面区域 */
+.card-cover {
+  position: relative;
+  width: 100%;
+  height: 150px;
+  background: linear-gradient(135deg, #e8eaf0 0%, #d5d8e0 100%);
+  overflow: hidden;
+}
 
-      }
-    }
-    
-    .collection-empty {
-      height: 60px;
-      background-color: var(--el-fill-color-light);
-      border-radius: 8px;
-      
-      .empty-content {
-        text-align: center;
-      }
-    }
-  }
+.card-cover .cover-img {
+  width: 100%;
+  height: 100%;
+  display: block;
+}
 
+.card-cover .cover-placeholder {
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(135deg, #f0f2f5 0%, #e4e7ed 100%);
+}
+
+/* 视频数量角标 */
+.card-count {
+  position: absolute;
+  bottom: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  background: rgba(0, 0, 0, 0.6);
+  color: #fff;
+  font-size: 12px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+/* 公开/私密标识 */
+.card-privacy {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  display: flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 11px;
+  padding: 2px 8px;
+  border-radius: 4px;
+  backdrop-filter: blur(4px);
+}
+
+.card-privacy.public {
+  background: rgba(19, 206, 102, 0.8);
+  color: #fff;
+}
+
+.card-privacy.private {
+  background: rgba(255, 73, 73, 0.8);
+  color: #fff;
+}
+
+/* 操作按钮 */
+.card-actions {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  opacity: 0;
+  transition: opacity 0.2s ease;
+}
+
+.collection-card:hover .card-actions {
+  opacity: 1;
+}
+
+.action-btn {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: rgba(0, 0, 0, 0.5);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  transition: background 0.2s;
+}
+
+.action-btn:hover {
+  background: rgba(0, 0, 0, 0.7);
+}
+
+.action-item {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 6px 8px;
+  border-radius: 4px;
+  cursor: pointer;
+  font-size: 13px;
+  transition: background 0.2s;
+}
+
+.action-item:hover {
+  background: var(--el-fill-color-light);
+}
+
+.action-item.danger {
+  color: #f56c6c;
+}
+
+.action-item.danger:hover {
+  background: #fef0f0;
+}
+
+/* 信息区域 */
+.card-info {
+  padding: 12px;
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+}
+
+.card-title {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--el-text-color-primary);
+  margin-bottom: 6px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.card-desc {
+  font-size: 12px;
+  color: #909399;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 </style>

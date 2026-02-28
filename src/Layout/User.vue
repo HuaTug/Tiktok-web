@@ -39,17 +39,17 @@
               <use xlink:href="#icon-woman"></use></svg>
               <svg v-else class="icon1rem" aria-hidden="true">
               <use xlink:href="#icon-sex-primary"></use></svg>
-              <span class="ml-5r">{{ '22岁' }}</span></span>
-            <span class="city">{{ memberInfo.province + " · " + memberInfo.city }}</span>
-            <span v-if="memberInfo.campus" class="school">
+              <span class="ml-5r">{{ userAge }}</span></span>
+            <span class="city" v-if="userLocation">{{ userLocation }}</span>
+            <span v-if="user.school_id" class="school">
               <el-icon :size="16" class="mr-5r">
                 <School/>
               </el-icon>
-              {{ memberInfo.campus }}
+              学校
             </span>
           </div>
           <div class="user-description ">
-            <p class="one-line fs8">{{ memberInfo.description }}</p>
+            <p class="one-line fs8">{{ user.bio || '这个人很懒，什么都没写~' }}</p>
           </div>
         </div>
         <div class="user-op h100" style="min-height: 100px">
@@ -306,6 +306,23 @@ export default {
     },
     Close() {
       return Close
+    },
+    userAge() {
+      const birthday = this.user?.birthday
+      if (!birthday) return ''
+      const birth = new Date(birthday)
+      const now = new Date()
+      let age = now.getFullYear() - birth.getFullYear()
+      const m = now.getMonth() - birth.getMonth()
+      if (m < 0 || (m === 0 && now.getDate() < birth.getDate())) {
+        age--
+      }
+      return age > 0 ? age + '岁' : ''
+    },
+    userLocation() {
+      const loc = this.user?.location
+      if (!loc) return ''
+      return loc
     }
   },
   data() {
@@ -380,8 +397,7 @@ export default {
             })
           }
           userInfoX().setUserInfo(userData)
-          this.getUserFollowFansLike(userData.userId || userData.user_id)
-          // 直接从用户信息中读取获赞数（后端 convertToBaseUser 已返回 like_count）
+          // 直接从用户信息中读取（后端 convertToBaseUser 已返回完整数据）
           this.likeAllNum = userData.like_count || 0
           this.followNum = userData.following_count || 0
           this.fansNum = userData.follower_count || 0

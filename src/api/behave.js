@@ -28,19 +28,32 @@ export function videoCommentPageList(data) {
     })
 }
 
+// 子评论列表（根据父评论ID获取）
+export function commentReplyList(data) {
+    const params = {
+        comment_id: data.commentId,
+        page_num: data.pageNum || 1,
+        page_size: data.pageSize || 20,
+    }
+    return request({
+        url: '/v1/comment/list',
+        method: 'get',
+        params: filterParams(params)
+    })
+}
+
 // 添加评论
 export function addVideoComment(data) {
     // Convert camelCase to snake_case for backend API
-    const postData = {
-        video_id: Number(data.videoId) || 0,
-        content: data.content,
-        comment_id: Number(data.parentId || data.commentId) || 0,
-        mode: data.originId ? 2 : 1  // mode 1 = 直接评论, mode 2 = 回复评论
-    }
+    // comment_id 可能是字符串（大整数防精度丢失），需要原样发送为数字
+    const commentId = data.parentId || data.commentId || '0'
+    // 手动构造 JSON 字符串，避免 JS Number 精度丢失
+    const jsonBody = `{"video_id":${Number(data.videoId) || 0},"content":${JSON.stringify(data.content || '')},"comment_id":${commentId},"mode":${data.originId ? 2 : 1}}`
     return request({
         url: '/v1/comment/publish',
         method: 'post',
-        data: postData
+        data: jsonBody,
+        headers: { 'Content-Type': 'application/json' }
     })
 }
 
@@ -104,17 +117,13 @@ export function videoFavoritePage(data) {
 
 // 回复评论
 export function replayVideoComment(data) {
-    // Convert camelCase to snake_case for backend API
-    const postData = {
-        video_id: data.videoId,
-        content: data.content,
-        comment_id: data.parentId || data.commentId || 0,
-        mode: 2  // mode 2 = 回复评论
-    }
+    const commentId = data.parentId || data.commentId || '0'
+    const jsonBody = `{"video_id":${Number(data.videoId) || 0},"content":${JSON.stringify(data.content || '')},"comment_id":${commentId},"mode":2}`
     return request({
         url: '/v1/comment/publish',
         method: 'post',
-        data: postData
+        data: jsonBody,
+        headers: { 'Content-Type': 'application/json' }
     })
 }
 
@@ -130,14 +139,12 @@ export function deleteVideoComment(commentId) {
 // 评论点赞
 // actionType: 1=点赞, 2=取消点赞
 export function likeComment(commentId, actionType = 1) {
+    const jsonBody = `{"comment_id":${commentId},"video_id":0,"action_type":${JSON.stringify(actionType === 1 ? 'like' : 'unlike')}}`
     return request({
         url: '/v1/action/like',
         method: 'post',
-        data: { 
-            comment_id: commentId,
-            video_id: 0,
-            action_type: actionType === 1 ? 'like' : 'unlike' 
-        }
+        data: jsonBody,
+        headers: { 'Content-Type': 'application/json' }
     })
 }
 

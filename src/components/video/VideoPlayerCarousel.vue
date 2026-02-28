@@ -108,6 +108,7 @@
                           <div class="info-title" v-html="item.videoTitle"></div>
                           <div class="info-tags">
                              <span v-for="tag in item.tags" :key="tag" class="tag-item" @click="handleClickVideoTag(tag)">#{{ tag }}</span>
+                             <span v-if="item.description" class="info-description">{{ item.description }}</span>
                           </div>
                       </div>
                   </div>
@@ -1605,6 +1606,14 @@ export default {
   &:hover {
     color: #fde047;
   }
+}
+
+.info-description {
+  font-size: 12px;
+  font-weight: 400;
+  color: rgba(255, 255, 255, 0.75);
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.5);
+  line-height: 1.4;
 }
 
 /* 导航按钮 - 放在视频左侧避免与操作按钮重叠 */

@@ -117,8 +117,8 @@ export default {
                 password: this.registerForm.password,
                 confirmPassword: this.registerForm.confirmPassword
               }).then(res => {
-                // Refactored-TikTok backend uses code 0 for success
-                if (res.code !== 0) {
+                // Refactored-TikTok backend: request.js 已将成功的 code 统一转为 200
+                if (res.code !== 200 && res.code !== 0) {
                   this.login = false
                   this.$message.warning(res.message || '注册失败')
                 } else {

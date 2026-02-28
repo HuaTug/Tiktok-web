@@ -201,13 +201,13 @@ export default {
     // 获取评论数量
     initNotice() {
       if (getToken() !== undefined) {
-        noticeCount(this.noticeCountQueryParams).then(res => {
-          // Refactored-TikTok backend uses code 0 for success
+        noticeCount().then(res => {
           if (res.code === 0 || res.code === 200) {
-            this.noticeCount = res.data
+            // 后端返回 { data: { unread_count: N } }
+            const count = res.data?.unread_count ?? res.data ?? 0
+            this.noticeCount = count > 0 ? count : undefined
           }
         }).catch(err => {
-          // Ignore notice count errors silently
           console.log('Notice count fetch failed:', err)
         })
       }

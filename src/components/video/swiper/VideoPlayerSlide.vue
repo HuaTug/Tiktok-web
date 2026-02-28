@@ -31,8 +31,9 @@
           <span class="fs9 fw400 cg"> · {{ smartDateFormat(video.createTime) }}</span>
         </div>
         <div v-html="video.videoTitle" class="video-title one-line cw fw400 mtb5"></div>
-        <div>
+        <div class="video-desc-tags">
           <span v-for="tag in video.tags" class="video-tag fs8 cp">{{ ' #' + tag }}</span>
+          <span v-if="video.description" class="video-description fs8">{{ video.description }}</span>
         </div>
       </div>
       <!--          视频点赞等操作区域-->

@@ -341,8 +341,16 @@ export default {
           // 批量获取点赞状态
           data = await this.fetchLikeStatusBatch(data)
           
-          this.videoList = data
+          // 追加到已有列表（加载更多）
+          this.videoList = this.videoList.concat(data)
           this.loading = false
+          // 如果返回的数据少于请求条数，说明没有更多了
+          if (data.length < this.pageSize) {
+            this.hasMore = false
+            console.log('📹 [VIDEO] 已加载全部视频')
+          } else {
+            this.pageNum++
+          }
           this.showVideoPlayer = true
         } else {
           this.$message.error(res.data?.base?.msg || res.message || '获取视频失败')

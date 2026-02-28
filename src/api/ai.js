@@ -56,6 +56,8 @@ export function getAiHealth() {
     return request({
         url: '/v1/agent/health',
         method: 'get',
+        timeout: 8000,
+        __silentError: true,
     })
 }
 

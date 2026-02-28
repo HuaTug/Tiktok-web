@@ -146,18 +146,22 @@ export default {
       return {
         videoId: item.video_id || videoInfo.video_id,
         video_id: item.video_id || videoInfo.video_id,
-        title: videoInfo.title || '',
+        videoTitle: videoInfo.title || '',
         coverUrl: videoInfo.cover_url || videoInfo.coverUrl || '',
         cover_url: videoInfo.cover_url || videoInfo.coverUrl || '',
         coverImage: videoInfo.cover_url || videoInfo.coverUrl || '',
         playUrl: videoInfo.video_url || videoInfo.play_url || '',
         play_url: videoInfo.video_url || videoInfo.play_url || '',
         videoUrl: videoInfo.video_url || '',
+        userId: item.user_id || videoInfo.user_id,
+        userNickName: videoInfo.user_name || videoInfo.author?.nickname || '',
         author: videoInfo.author || {},
-        likeCount: videoInfo.likes_count || videoInfo.like_count || 0,
-        commentCount: videoInfo.comment_count || 0,
+        likeNum: videoInfo.likes_count || videoInfo.like_count || 0,
+        commentNum: videoInfo.comment_count || 0,
         visitCount: videoInfo.visit_count || 0,
-        description: videoInfo.description || ''
+        createTime: videoInfo.created_at || '',
+        description: videoInfo.description || '',
+        publishType: videoInfo.publish_type || '0'
       }
     },
 

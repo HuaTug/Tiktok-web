@@ -315,7 +315,7 @@ const aiModelInfo = computed(() => {
 });
 
 // Check Agent health
-const checkAiHealth = async () => {
+const checkAiHealth = async (retryCount = 0) => {
   aiStatus.value = 'checking';
   try {
     const res = await getAiHealth();
@@ -337,6 +337,11 @@ const checkAiHealth = async () => {
       aiStatus.value = 'fallback';
     }
   } catch (e) {
+    // Silent retry once after 3 seconds to handle slow service startup
+    if (retryCount < 1) {
+      setTimeout(() => checkAiHealth(retryCount + 1), 3000);
+      return;
+    }
     aiStatus.value = 'fallback';
   }
 };

@@ -1,7 +1,7 @@
 <template>
   <div class="discover-container wh100">
     <el-scrollbar>
-      <el-empty v-if="videoList.size === 0" description="暂无数据"/>
+      <el-empty v-if="!loading && videoList.length === 0" description="暂无数据"/>
       <el-skeleton class="w100" :loading="loading" animated>
         <template #template>
           <div class="loading-container" v-for="i in 2">
@@ -100,29 +100,60 @@ export default {
     window.removeEventListener('scroll', this.handleScroll);
   },
   methods: {
+    // 将后端蛇形命名字段映射为前端组件期望的驼峰命名
+    normalizeVideo(v) {
+      if (!v) return v
+      // 如果已经有驼峰字段（说明已映射过或旧格式），直接返回
+      if (v.videoId !== undefined && v.coverImage !== undefined) return v
+      return {
+        ...v,
+        videoId: v.video_id || v.videoId,
+        userId: v.user_id || v.userId,
+        videoUrl: v.video_url || v.videoUrl,
+        coverImage: v.cover_url || v.coverImage || '',
+        videoTitle: v.title || v.videoTitle || '',
+        description: v.description || '',
+        likeNum: v.likes_count || v.likeNum || 0,
+        commentCount: v.comment_count || v.commentCount || 0,
+        visitCount: v.visit_count || v.visitCount || 0,
+        shareCount: v.share_count || v.shareCount || 0,
+        createTime: v.created_at || v.createTime || '',
+        userNickName: v.user_nick_name || v.userNickName || '',
+        publishType: v.publish_type || v.publishType || '0',
+        category: v.category || '',
+        duration: v.duration || 0,
+      }
+    },
+    extractVideoList(resData) {
+      // 兼容多种后端返回格式:
+      // 1. resData 本身是数组
+      // 2. resData.video_list (Refactored-TikTok 推荐接口)
+      // 3. resData.list (旧格式)
+      let list = []
+      if (Array.isArray(resData)) list = resData
+      else if (resData?.video_list && Array.isArray(resData.video_list)) list = resData.video_list
+      else if (resData?.list && Array.isArray(resData.list)) list = resData.list
+      return list.map(v => this.normalizeVideo(v))
+    },
     initPushVideo() {
       this.loading = true
       pushVideo().then(res => {
-        // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
-          const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
-          this.videoList = data
+          const data = this.extractVideoList(res.data)
+          this.videoList = this.deduplicateVideos(data)
           this.loading = false
-          pushVideo().then(res => {
-            // Refactored-TikTok backend uses code 0 for success
-            if (res.code === 0 || res.code === 200) {
-              const moreData = Array.isArray(res.data) ? res.data : (res.data?.list || [])
-              this.videoList = this.videoList.concat(moreData)
-            }
-          }).catch(err => {
-            console.log('Push video second fetch failed:', err)
-          })
         }
       }).catch(err => {
         console.log('Push video fetch failed:', err)
         this.loading = false
         this.$message?.error?.('推荐视频加载失败，请检查网络连接或稍后重试')
       })
+    },
+    // 按 videoId 去重，合并新数据到已有列表
+    deduplicateVideos(newList, existingList = []) {
+      const existingIds = new Set(existingList.map(v => v.videoId))
+      const unique = newList.filter(v => !existingIds.has(v.videoId))
+      return existingList.concat(unique)
     },
     handleScroll(e) {
       if (e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 200) {
@@ -131,16 +162,17 @@ export default {
           this.loadingData = false
           this.loadingIcon = true
           pushVideo().then(res => {
-            // Refactored-TikTok backend uses code 0 for success
             if (res.code === 0 || res.code === 200) {
-              const data = Array.isArray(res.data) ? res.data : (res.data?.list || [])
-              if (data.length === 0) {
+              const data = this.extractVideoList(res.data)
+              // 去重后如果没有新视频，说明没有更多数据了
+              const before = this.videoList.length
+              this.videoList = this.deduplicateVideos(data, this.videoList)
+              if (this.videoList.length === before) {
                 this.dataNotMore = true
                 this.loadingIcon = false
                 this.loadingData = false
                 return;
               }
-              this.videoList = this.videoList.concat(data)
               this.loadingIcon = false
               setTimeout(() => {
                 this.loadingData = true

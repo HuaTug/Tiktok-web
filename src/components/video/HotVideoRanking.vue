@@ -214,8 +214,6 @@ onMounted(() => {
   background: var(--bg-surface);
   border-radius: var(--card-radius);
   padding: 24px;
-  max-width: 600px;
-  margin: 0 auto;
 }
 
 .ranking-header {

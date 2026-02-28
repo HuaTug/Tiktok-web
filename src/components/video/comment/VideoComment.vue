@@ -17,19 +17,28 @@
               <div class="flex justify-between items-center">
                 <div class="comment-operate flex gap-4">
                   <div class="flex items-center cursor-pointer group"
-                       @click="handleReplay(item.commentId,item.commentId,item.nickName)">
-                    <span class="text-xs text-gray-500 group-hover:text-white">Reply</span>
+                       @click="handleReplay(item.commentId, item.commentId, item.nickName)">
+                    <span class="text-xs text-gray-500 group-hover:text-white">回复</span>
                   </div>
-                  <div class="flex items-center cursor-pointer group" @click="handleCommentLike(item)">
-                    <el-icon :size="14" :color="item.isLiked ? '#FE2C55' : '#6B7280'"><component :is="item.isLiked ? 'StarFilled' : 'Star'" /></el-icon>
-                    <span class="text-xs text-gray-500 ml-1 group-hover:text-white">{{ item.likeCount || 0 }}</span>
+                  <div class="flex items-center cursor-pointer group" 
+                       :class="{ 'pointer-events-none opacity-60': item._liking }"
+                       @click="handleCommentLike(item)">
+                    <svg :width="14" :height="14" viewBox="0 0 24 24" 
+                         :fill="item.isLiked ? '#FE2C55' : 'none'" 
+                         :stroke="item.isLiked ? '#FE2C55' : '#6B7280'" 
+                         stroke-width="2" 
+                         class="transition-all duration-200 group-hover:stroke-white"
+                         :class="{ 'like-bounce': item._justLiked }">
+                      <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                    </svg>
+                    <span class="text-xs ml-1 transition-colors duration-200" :class="item.isLiked ? 'text-[#FE2C55]' : 'text-gray-500 group-hover:text-white'">{{ item.likeCount || 0 }}</span>
                   </div>
                 </div>
                 <div class="flex items-center cursor-pointer" v-if="item.userId === user.userId">
                   <el-popconfirm
-                      confirm-button-text="Yes"
-                      cancel-button-text="No"
-                      title="Delete this comment?"
+                      confirm-button-text="确认"
+                      cancel-button-text="取消"
+                      title="删除这条评论？"
                       @confirm="handleDelConfirm(item.commentId)">
                     <template #reference>
                       <el-icon class="text-gray-600 hover:text-red-500"><Delete /></el-icon>
@@ -39,15 +48,16 @@
               </div>
             </div>
             
-            <!-- Children Comments -->
+            <!-- Children Comments (二级评论) -->
             <div class="comment-children pl-10 mt-2 space-y-2" v-if="item.children && item.children.length > 0">
-              <div class="comment-container" v-for="(child, index) in item.children" :key="child.commentId">
+              <div class="comment-container" v-for="(child, cIndex) in item.children" :key="child.commentId">
                 <div class="user-info flex items-center mb-1">
                   <el-avatar v-if="child.avatar" class="user-avatar w-6 h-6 border border-white/10" :src="child.avatar" :size="24" />
                   <el-avatar v-else class="user-avatar w-6 h-6 border border-white/10" :icon="UserFilled" :size="24" />
                   <div class="user-nickname ml-2">
-                    <p class="nickname one-line text-gray-300 text-xs font-bold">{{ child.nickName }}
-                      <span class="text-blue-400 ml-1" v-if="child.replayUserId != null">@{{ child.replayUserNickName }}</span>
+                    <p class="nickname one-line text-gray-300 text-xs font-bold">
+                      {{ child.nickName }}
+                      <span class="text-blue-400 ml-1" v-if="child.replayUserNickName">@{{ child.replayUserNickName }}</span>
                     </p>
                     <span class="text-gray-500 text-[10px]">{{ smartDateFormat(child.createTime) }}</span>
                   </div>
@@ -57,19 +67,28 @@
                   <div class="flex justify-between items-center">
                     <div class="comment-operate flex gap-3">
                       <div class="flex items-center cursor-pointer group"
-                           @click="handleReplay(child.commentId,item.commentId,child.nickName)">
-                        <span class="text-[10px] text-gray-500 group-hover:text-white">Reply</span>
+                           @click="handleReplay(child.commentId, item.commentId, child.nickName)">
+                        <span class="text-[10px] text-gray-500 group-hover:text-white">回复</span>
                       </div>
-                      <div class="flex items-center cursor-pointer group" @click="handleCommentLike(child)">
-                        <el-icon :size="12" :color="child.isLiked ? '#FE2C55' : '#6B7280'"><component :is="child.isLiked ? 'StarFilled' : 'Star'" /></el-icon>
-                        <span class="text-[10px] text-gray-500 ml-1 group-hover:text-white">{{ child.likeCount || 0 }}</span>
+                      <div class="flex items-center cursor-pointer group"
+                           :class="{ 'pointer-events-none opacity-60': child._liking }"
+                           @click="handleCommentLike(child)">
+                        <svg :width="12" :height="12" viewBox="0 0 24 24" 
+                             :fill="child.isLiked ? '#FE2C55' : 'none'" 
+                             :stroke="child.isLiked ? '#FE2C55' : '#6B7280'" 
+                             stroke-width="2" 
+                             class="transition-all duration-200 group-hover:stroke-white"
+                             :class="{ 'like-bounce': child._justLiked }">
+                          <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+                        </svg>
+                        <span class="text-[10px] ml-1 transition-colors duration-200" :class="child.isLiked ? 'text-[#FE2C55]' : 'text-gray-500 group-hover:text-white'">{{ child.likeCount || 0 }}</span>
                       </div>
                     </div>
                     <div class="flex items-center cursor-pointer" v-if="child.userId === user.userId">
                       <el-popconfirm
-                          confirm-button-text="Yes"
-                          cancel-button-text="No"
-                          title="Delete?"
+                          confirm-button-text="确认"
+                          cancel-button-text="取消"
+                          title="删除这条回复？"
                           @confirm="handleDelConfirm(child.commentId)">
                         <template #reference>
                           <el-icon class="text-gray-600 hover:text-red-500" :size="12"><Delete /></el-icon>
@@ -80,10 +99,25 @@
                 </div>
               </div>
             </div>
+
+            <!-- 展开/收起子评论 -->
+            <div class="pl-10 mt-1" v-if="item.childCount > 0">
+              <span v-if="!item._childrenLoaded" 
+                    class="text-xs text-blue-400 cursor-pointer hover:text-blue-300"
+                    @click="loadChildComments(item)">
+                展开 {{ item.childCount }} 条回复
+              </span>
+              <span v-else-if="item.children && item.children.length > 0"
+                    class="text-xs text-gray-500 cursor-pointer hover:text-gray-400"
+                    @click="collapseChildComments(item)">
+                收起回复
+              </span>
+            </div>
+
           </div>
         </div>
       </div>
-      <el-empty v-show="commentTotal<=0" description="No comments yet" :image-size="60" />
+      <el-empty v-show="commentTotal<=0" description="暂无评论" :image-size="60" />
       <div class="p-4 flex justify-center" v-show="commentTotal>0">
          <el-pagination 
              small
@@ -103,11 +137,11 @@
           maxlength="100"
           show-word-limit
           @keyup.enter="handleCommentClick"
-          placeholder="Add a comment..."
+          placeholder="添加评论..."
           class="custom-input">
         <template #prepend v-if="replayVisible">
           <div class="flex items-center cursor-pointer" @click="handleCancelReplay">
-             <span class="text-xs text-gray-400 mr-1">Replying to</span>
+             <span class="text-xs text-gray-400 mr-1">回复</span>
              <span class="text-xs text-blue-400 max-w-[80px] truncate">@{{ replayNickName }}</span>
              <el-icon class="ml-1 text-gray-500 hover:text-white"><Close /></el-icon>
           </div>
@@ -123,13 +157,13 @@
 </template>
 
 <script>
-import { addVideoComment, deleteVideoComment, likeComment, videoCommentPageList } from "@/api/behave.js";
+import { addVideoComment, commentReplyList, deleteVideoComment, likeComment, videoCommentPageList } from "@/api/behave.js";
 import { userInfoX } from "@/store/userInfoX";
-import { ChromeFilled, Close, Delete, DeleteFilled, InfoFilled, Position, Star, StarFilled, UserFilled } from "@element-plus/icons-vue";
+import { ChromeFilled, Close, Delete, DeleteFilled, InfoFilled, Position, UserFilled } from "@element-plus/icons-vue";
 
 export default {
   name: "VideoComment",
-  components: {ChromeFilled, DeleteFilled, Star, StarFilled, Delete, Close, Position},
+  components: {ChromeFilled, DeleteFilled, Delete, Close, Position},
   computed: {
     InfoFilled() {
       return InfoFilled
@@ -209,7 +243,7 @@ export default {
         createTime: comment.created_at || comment.createTime,
         updateTime: comment.updated_at || comment.updateTime,
         replyToCommentId: comment.reply_to_comment_id || comment.replyToCommentId,
-        // User info from backend (new fields)
+        // User info from backend
         avatar: comment.avatar_url || comment.avatar || comment.user_avatar || '',
         nickName: comment.user_name || comment.nick_name || comment.nickName || comment.username || '用户' + (comment.user_id || comment.userId || ''),
         // Reply to user info
@@ -217,7 +251,12 @@ export default {
         replayUserNickName: comment.reply_to_user_name || comment.replayUserNickName || '',
         // Like status
         isLiked: comment.is_liked || comment.isLiked || false,
-        children: comment.children ? comment.children.map(child => this.transformComment(child)) : []
+        // 点赞状态控制
+        _liking: false,       // 是否正在请求中（防重复点击）
+        _justLiked: false,    // 刚点赞动画标记
+        // 子评论相关
+        children: [],
+        _childrenLoaded: false,
       }
     },
     getCommentList() {
@@ -231,9 +270,8 @@ export default {
       this.commentQueryParams.videoId = this.videoId
       videoCommentPageList(this.commentQueryParams).then(res => {
         this.drawer = true
-        // Refactored-TikTok backend uses code 10000 for success and data.items field
         const rawItems = res.rows || res.data?.items || res.data?.list || [];
-        // Transform snake_case to camelCase
+        // Transform snake_case to camelCase，根评论不含children
         this.videoCommentTree = rawItems.map(item => this.transformComment(item));
         this.commentTotal = res.total || res.data?.total || this.videoCommentTree.length || 0;
         this.$emit('emitCommentTotal', this.videoId, this.commentTotal)
@@ -242,6 +280,21 @@ export default {
         this.videoCommentTree = []
         this.commentTotal = 0
       })
+    },
+    // 加载子评论
+    loadChildComments(parentComment) {
+      commentReplyList({ commentId: parentComment.commentId }).then(res => {
+        const rawItems = res.rows || res.data?.items || res.data?.list || [];
+        parentComment.children = rawItems.map(item => this.transformComment(item));
+        parentComment._childrenLoaded = true;
+      }).catch(err => {
+        console.log('Load child comments failed:', err)
+      })
+    },
+    // 收起子评论
+    collapseChildComments(parentComment) {
+      parentComment.children = [];
+      parentComment._childrenLoaded = false;
     },
     handleCurrentChange(v) {
       this.commentQueryParams.pageNum = v
@@ -253,10 +306,13 @@ export default {
     },
     // 点击评论
     handleCommentClick() {
+      if (!this.commentInput || !this.commentInput.trim()) {
+        this.$message.warning('请输入评论内容')
+        return
+      }
       this.commentDTO.videoId = this.videoId
       this.commentDTO.content = this.commentInput
       addVideoComment(this.commentDTO).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.getCommentList();
           this.$message.success('评论成功')
@@ -286,7 +342,6 @@ export default {
     handleDelConfirm(commentId) {
       console.log(commentId)
       deleteVideoComment(commentId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
         if (res.code === 0 || res.code === 200) {
           this.$message.success('删除成功')
           this.getCommentList()
@@ -297,21 +352,42 @@ export default {
         this.$message.error('删除失败，请检查网络连接')
       })
     },
-    // 评论点赞
+    // 评论点赞（防重复点击 + 使用后端返回值）
     handleCommentLike(comment) {
+      // 防止重复点击：如果正在请求中，直接返回
+      if (comment._liking) return
+
       const actionType = comment.isLiked ? 2 : 1  // 1=点赞, 2=取消点赞
+      comment._liking = true
+
       likeComment(comment.commentId, actionType).then(res => {
         if (res.code === 0 || res.code === 200) {
-          // 更新本地状态
-          comment.isLiked = !comment.isLiked
-          comment.likeCount = comment.isLiked 
-            ? (comment.likeCount || 0) + 1 
-            : Math.max(0, (comment.likeCount || 0) - 1)
+          // 优先使用后端返回的状态
+          const respData = res.data || res
+          if (respData.is_liked !== undefined) {
+            comment.isLiked = respData.is_liked
+          } else {
+            comment.isLiked = !comment.isLiked
+          }
+          if (respData.like_count !== undefined) {
+            comment.likeCount = respData.like_count
+          } else {
+            comment.likeCount = comment.isLiked 
+              ? (comment.likeCount || 0) + 1 
+              : Math.max(0, (comment.likeCount || 0) - 1)
+          }
+          // 点赞时触发弹跳动画
+          if (comment.isLiked) {
+            comment._justLiked = true
+            setTimeout(() => { comment._justLiked = false }, 400)
+          }
         } else {
           this.$message.error(res.message || res.msg || '操作失败')
         }
       }).catch(err => {
         this.$message.error('点赞失败，请检查网络连接')
+      }).finally(() => {
+        comment._liking = false
       })
     },
     handleDelCancel() {
@@ -363,5 +439,17 @@ export default {
   background-color: transparent;
   box-shadow: none;
   padding: 0 10px;
+}
+
+/* Like bounce animation */
+@keyframes like-bounce {
+  0% { transform: scale(1); }
+  25% { transform: scale(1.4); }
+  50% { transform: scale(0.9); }
+  75% { transform: scale(1.15); }
+  100% { transform: scale(1); }
+}
+.like-bounce {
+  animation: like-bounce 0.4s ease-in-out;
 }
 </style>

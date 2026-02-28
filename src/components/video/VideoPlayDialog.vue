@@ -53,9 +53,10 @@
             <span class="fs9 fw400 cg"> · {{ smartDateFormat(videoData.createTime) }}</span>
           </div>
           <div v-html="videoData.videoTitle" class="video-title one-line cw fw400 mtb5"></div>
-          <div>
+          <div class="video-desc-tags">
                 <span v-for="tag in videoData.tags" class="video-tag fs9 cp mr5px"
                       @click="handleClickVideoTag(tag)"><span>#</span>{{ tag }}</span>
+                <span v-if="videoData.description" class="video-description fs9">{{ videoData.description }}</span>
           </div>
         </div>
         <!--          视频点赞等操作区域-->
@@ -870,6 +871,24 @@ $video-sidebar-width: 520px;
       flex-direction: column;
       justify-content: flex-end;
       align-items: self-start;
+    }
+
+    .video-desc-tags {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: baseline;
+      gap: 4px;
+    }
+
+    .video-tag {
+      color: gold;
+      font-weight: 700;
+    }
+
+    .video-description {
+      color: rgba(255, 255, 255, 0.75);
+      font-weight: 400;
+      line-height: 1.4;
     }
 
     .video-operate {

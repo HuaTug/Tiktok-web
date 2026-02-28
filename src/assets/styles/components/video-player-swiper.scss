@@ -182,6 +182,20 @@
 
 .video-tag {
   color: gold;
+  font-weight: 700;
+}
+
+.video-desc-tags {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 4px;
+}
+
+.video-description {
+  color: rgba(255, 255, 255, 0.75);
+  font-weight: 400;
+  line-height: 1.4;
 }
 
 .swiper-operate {

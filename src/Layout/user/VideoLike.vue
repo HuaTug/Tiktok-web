@@ -1,5 +1,5 @@
 <template>
-  <div class="flex-between videoLike" v-loading="loadingIcon">
+  <div class="video-like-grid" v-loading="loadingIcon">
     <el-skeleton class="w100" :loading="loading" animated>
       <template #template>
         <div class="loading-container" v-for="i in 1">
@@ -205,15 +205,38 @@ export default {
 </script>
 
 <style scoped>
-.loading-container {
+.video-like-grid {
   display: flex;
-  justify-content: space-between;
-  align-items: center;
+  flex-flow: row wrap;
+  align-items: flex-start;
+  justify-content: flex-start;
+  gap: 16px;
+  padding: 8px 0;
+}
 
-  .loading-item {
-    width: 20%;
-    padding: 0 0.5rem 1rem;
+.video-like-grid :deep(.video-card) {
+  width: calc(20% - 13px);
+  padding: 0;
+  margin: 0;
+  height: 240px;
+}
+
+@media (max-width: 768px) {
+  .video-like-grid :deep(.video-card) {
+    width: calc(50% - 8px);
+    height: 200px;
   }
 }
 
+.loading-container {
+  display: flex;
+  justify-content: flex-start;
+  align-items: center;
+  gap: 16px;
+  width: 100%;
+
+  .loading-item {
+    width: calc(20% - 13px);
+  }
+}
 </style>

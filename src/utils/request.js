@@ -1,11 +1,22 @@
 import { getToken } from "@/utils/auth.js";
 import errorCode from '@/utils/errorCode';
 import axios from 'axios';
+import JSONBig from 'json-bigint';
 import { ElMessage, ElMessageBox } from 'element-plus';
+
+// 使用 json-bigint 解析响应，将大整数转为字符串，防止 JS 精度丢失
+const JSONBigString = JSONBig({ storeAsString: true });
 
 const instance = axios.create({
     baseURL: import.meta.env.VITE_API_BASE_URL,
     timeout: 20000,
+    transformResponse: [function (data) {
+        try {
+            return JSONBigString.parse(data)
+        } catch (e) {
+            return data
+        }
+    }],
 });
 
 // 添加请求拦截器
@@ -134,16 +145,20 @@ instance.interceptors.response.use(res => {
     }
     
     // 网络连接错误处理
-    if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
-        ElMessage.error('请求超时，请检查网络连接')
-    } else if (error.message.includes('Network Error') || error.message.includes('conn closed') || error.message.includes('remote or network error')) {
-        ElMessage.error('网络连接失败，请稍后重试')
-    } else if (error.message.includes('404') || error.message.includes('Not Found')) {
-        ElMessage.error('请求的资源不存在')
-    } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
-        ElMessage.error('没有权限执行此操作')
-    } else {
-        ElMessage.error('网络请求失败，请稍后重试')
+    // 如果请求配置了 __silentError，跳过全局错误提示
+    const silentError = error.config?.__silentError;
+    if (!silentError) {
+        if (error.code === 'ECONNABORTED' || error.message.includes('timeout')) {
+            ElMessage.error('请求超时，请检查网络连接')
+        } else if (error.message.includes('Network Error') || error.message.includes('conn closed') || error.message.includes('remote or network error')) {
+            ElMessage.error('网络连接失败，请稍后重试')
+        } else if (error.message.includes('404') || error.message.includes('Not Found')) {
+            ElMessage.error('请求的资源不存在')
+        } else if (error.message.includes('403') || error.message.includes('Forbidden')) {
+            ElMessage.error('没有权限执行此操作')
+        } else {
+            ElMessage.error('网络请求失败，请稍后重试')
+        }
     }
     
     return Promise.reject(error);
