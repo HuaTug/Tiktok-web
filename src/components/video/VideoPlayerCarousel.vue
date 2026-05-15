@@ -1399,11 +1399,12 @@ export default {
   overflow: hidden;
 }
 
-/* 视频播放器盒子 - 全屏填充 */
+/* 视频播放器盒子 - 铺满主区域（左右无黑色空白） */
 .video-player-box {
   position: relative;
   width: 100%;
   height: 100%;
+  max-height: 100vh;
   background-color: #000;
   overflow: hidden;
 }
@@ -1416,21 +1417,16 @@ export default {
 
 /* 视频遮罩层 - 不覆盖底部进度条区域 */
 .video-overlay {
-  position: absolute;
-  top: 0;
-  left: 0;
-  right: 0;
-  bottom: 60px; /* 留出底部空间给进度条 */
-  pointer-events: none;
-  background: linear-gradient(to top, rgba(0, 0, 0, 0.6) 0%, transparent 30%, transparent 100%);
-  z-index: 10;
+  /* 已废弃：原来的渐变蒙层导致 bottom:60px 处出现硬色带；
+     现在由 VideoPlayer 内部的 .d-player-wrap::after 渐变统一处理底部蒙层 */
+  display: none;
 }
 
 /* 操作按钮区域 - 放在视频右侧，不与导航按钮重叠 */
 .video-actions {
   position: absolute;
-  right: 12px;
-  bottom: 100px; /* 留出空间给进度条和视频信息 */
+  right: 32px;
+  bottom: 120px; /* 留出空间给进度条和控制栏 */
   z-index: 25;
   display: flex;
   flex-direction: column;
@@ -1530,13 +1526,22 @@ export default {
 /* 视频信息区域 */
 .video-info {
   position: absolute;
-  bottom: 70px; /* 留出空间给进度条 */
-  left: 16px;
-  right: 90px; /* 给右侧操作按钮留出更多空间 */
+  bottom: 90px; /* 避开底部 80px 渐变蒙层 */
+  left: 32px;
+  right: 100px;
   z-index: 20;
   text-align: left;
   pointer-events: auto;
-  max-width: 60%; /* 限制最大宽度，避免和操作按钮重叠 */
+  max-width: 70%;
+  /* 弱化"水印感"：默认半透明，鼠标移到视频上时恢复 */
+  opacity: 0.55;
+  transition: opacity 0.25s ease;
+  /* 文字阴影使其在亮色画面上仍可读 */
+  text-shadow: 0 1px 4px rgba(0, 0, 0, 0.85), 0 0 12px rgba(0, 0, 0, 0.6);
+}
+
+.video-player-box:hover .video-info {
+  opacity: 1;
 }
 
 .info-header {

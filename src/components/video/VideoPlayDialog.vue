@@ -6,12 +6,9 @@
         <use xlink:href="#icon-back"></use>
       </svg>
     </div>
-    <!--      背景-->
-    <div class="pa wh100" style="background-color: black">
-      <img v-if="videoData.coverImage" class="video-cover wh100"
-           style="filter: blur(40px);opacity: 0.8;user-select: none;" :src="videoData.coverImage" alt=""/>
-    </div>
-    <div class="user-video-box wh100" :style="{ backgroundImage: `url(${videoData.coverImage})` }">
+    <!--      背景：纯黑底；模糊封面已在 VideoPlayer 内部按播放状态显示/隐藏 -->
+    <div class="pa wh100" style="background-color: black"></div>
+    <div class="user-video-box wh100" style="background-color: black">
       <div class="user-video-container h100 pr">
         <!--      展开按钮-->
         <div class="user-video-dialog-more-open flex-center"

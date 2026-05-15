@@ -31,7 +31,6 @@
 
 <script>
 import VideoCard from "@/components/video/VideoCard.vue";
-import {decodeData} from "@/utils/roydon.js";
 import {personVideoLikePage} from "@/api/behave.js";
 
 export default {
@@ -44,7 +43,7 @@ export default {
       likeVideoList: [],
       likeVideoTotal: undefined,
       videoQueryParams: {
-        userId: decodeData(this.$route.params.userId),
+        userId: this.$route.params.userId,
         videoTitle: undefined,
         pageNum: 1,
         pageSize: 10

@@ -89,13 +89,16 @@ export default {
   methods: {
     initVideoList() {
       this.loading = true
+      // 重置分页与去重状态
+      this.videoQueryParams.pageNum = 1
+      this.dataNotMore = false
       videoLikePage(this.videoQueryParams).then(res => {
         // 后端返回格式: { code: 10000, message: "Success", data: { Items: [...] } }
         if (res.code === 10000 || res.code === 200) {
           // 从 data.Items 或 data.items 获取视频列表
           const items = res.data?.Items || res.data?.items || res.rows || []
-          this.likeVideoList = this.formatVideoList(items)
-          this.likeVideoTotal = items.length
+          this.likeVideoList = this.dedupVideoList(this.formatVideoList(items))
+          this.likeVideoTotal = this.likeVideoList.length
           this.loading = false
         } else {
           this.loading = false
@@ -105,6 +108,22 @@ export default {
         this.loading = false
       })
     },
+    // 按 videoId 去重，避免后端分页重复返回导致界面出现重复卡片
+    dedupVideoList(list) {
+      const seen = new Set()
+      const result = []
+      for (const v of list) {
+        const key = v && (v.videoId ?? v.video_id ?? v.VideoId)
+        if (key === undefined || key === null || key === '') {
+          result.push(v)
+          continue
+        }
+        if (seen.has(key)) continue
+        seen.add(key)
+        result.push(v)
+      }
+      return result
+    },
     // 格式化视频列表，将后端数据格式转换为前端组件需要的格式
     formatVideoList(items) {
       if (!Array.isArray(items)) return []
@@ -112,32 +131,33 @@ export default {
         const videoId = item.video_id || item.VideoId || item.videoId
         const userId = item.user_id || item.UserId || item.userId
         
-        // 转换视频URL - 使用前端代理地址，解决跨域问题
+        // 处理视频URL — 优先使用后端返回的 video_url（已包含正确的 MinIO 路径）
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
-        if (!videoUrl || (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+        if (!videoUrl) {
           videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+        } else if (videoUrl.includes('localhost:9002')) {
+          videoUrl = videoUrl.replace(/https?:\/\/localhost:9002/, '')
         }
         
-        // 转换封面URL - 使用前端代理地址，解决跨域问题
-        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
+        // 处理封面URL — 优先使用后端返回的 cover_url
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (!coverImage || coverImage.includes('localhost:9002')) {
+        if (!coverImage) {
           coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
-        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
-          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('localhost:9002')) {
+          coverImage = coverImage.replace(/https?:\/\/localhost:9002/, '')
         }
         
         return {
           videoId: videoId,
           videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
           videoUrl: videoUrl,
-          coverImage: coverImage,  // VideoCard.vue expects coverImage
+          coverImage: coverImage,
           userId: userId,
-          userNickName: item.user_name || item.UserName || item.userName,  // VideoCard.vue expects userNickName
+          userNickName: item.user_name || item.UserName || item.userName,
           description: item.description || item.Description || '',
-          likeNum: item.likes_count || item.like_count || item.LikeCount || item.likeCount || 0,  // VideoCard.vue expects likeNum
+          likeNum: item.likes_count || item.like_count || item.LikeCount || item.likeCount || 0,
           commentNum: item.comment_count || item.CommentCount || item.commentCount || 0,
-          createTime: item.created_at || item.CreatedAt || item.createTime,  // VideoCard.vue expects createTime
+          createTime: item.created_at || item.CreatedAt || item.createTime,
           publishType: item.publish_type || item.PublishType || item.publishType || '0',
           ...item
         }
@@ -185,7 +205,10 @@ export default {
                 this.loadingData = false
                 return;
               }
-              this.likeVideoList = this.likeVideoList.concat(this.formatVideoList(items))
+              this.likeVideoList = this.dedupVideoList(
+                this.likeVideoList.concat(this.formatVideoList(items))
+              )
+              this.likeVideoTotal = this.likeVideoList.length
               this.loadingIcon = false
 
             } else {

@@ -4,47 +4,24 @@
       <el-empty v-if="!loading && videoList.length === 0" description="暂无数据"/>
       <el-skeleton class="w100" :loading="loading" animated>
         <template #template>
-          <div class="loading-container" v-for="i in 2">
-            <div class="loading-item" v-for="i in 5">
-              <el-skeleton-item variant="image" style="width: 100%; height: 300px"/>
-              <div class="p1rem">
+          <div class="loading-container">
+            <div class="loading-item" v-for="j in 10" :key="j">
+              <el-skeleton-item variant="image" style="width: 100%; aspect-ratio: 4/3;"/>
+              <div style="padding: 10px 12px;">
                 <el-skeleton-item variant="h1" style="width: 80%"/>
-                <div>
-                  <el-skeleton-item variant="text"/>
+                <div style="margin-top: 8px;">
+                  <el-skeleton-item variant="text" style="width: 60%"/>
                 </div>
               </div>
             </div>
           </div>
         </template>
         <template #default>
-          <div class="hotVideo-list w100" style="height: auto">
-            <div class="hotVideos cp"
-                 v-masonry
-                 fit-width="true"
-                 transition-duration="0.2s"
-                 column-width=".discover-item"
-                 item-selector=".discover-item">
-              <!--              热榜-->
-              <!--              <div style="height: 600px;" class="discover-item">-->
-              <!--                <el-card class="discover-card wh100">-->
-              <!--                  <el-tabs v-model="activeName" @tab-click="handleHotTabClick">-->
-              <!--                    <el-tab-pane v-for="item in hotTabShow"-->
-              <!--                                 :key="item.id"-->
-              <!--                                 :label="item.tabName"-->
-              <!--                                 :lazy="true"-->
-              <!--                                 :name="item.tabName">-->
-              <!--                      <div v-for="it in item.dataList" class="p10px">-->
-              <!--                        <p>{{ it }}</p>-->
-              <!--                      </div>-->
-              <!--                    </el-tab-pane>-->
-              <!--                  </el-tabs>-->
-              <!--                </el-card>-->
-              <!--              </div>-->
-              <!--              热门视频-->
+          <div class="discover-grid-wrapper">
+            <div class="discover-grid">
               <div v-for='(item,index) in videoList'
                    :key="item.videoId"
-                   v-masonry-tile
-                   class="discover-item">
+                   class="discover-grid-item">
                 <VideoDiscoverCard :video="item"/>
               </div>
             </div>

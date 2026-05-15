@@ -28,7 +28,6 @@
 import { personVideoLikePage } from "@/api/behave.js";
 import VideoCard from "@/components/video/VideoCard.vue";
 import VideoWaterfall from "@/components/video/VideoWaterfall.vue";
-import { decodeData } from "@/utils/roydon.js";
 import { Close } from "@element-plus/icons-vue";
 
 export default {
@@ -45,7 +44,7 @@ export default {
       likeVideoList: [],
       likeVideoTotal: 0,
       videoQueryParams: {
-        userId: decodeData(this.$route.params.userId),
+        userId: this.$route.params.userId,
         videoTitle: "",
         pageNum: 1,
         pageSize: 10
@@ -62,21 +61,22 @@ export default {
       if (!Array.isArray(items)) return []
       return items.map(item => {
         const videoId = item.video_id || item.VideoId || item.videoId
+        const userId = item.user_id || item.UserId || item.userId
         
-        // 转换视频URL - 直接使用 MinIO 地址
+        // 处理视频URL — 优先使用后端返回的 video_url（已包含正确的 MinIO 路径）
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
-        if (videoUrl && (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
-          videoUrl = `/tiktok-user-content/users/${item.user_id || item.UserId || item.userId}/videos/${videoId}/source/original.mp4`
+        if (!videoUrl) {
+          videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+        } else if (videoUrl.includes('localhost:9002')) {
+          videoUrl = videoUrl.replace(/https?:\/\/localhost:9002/, '')
         }
         
-        // 转换封面URL - 使用缩略图地址
-        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
-        const userId = item.user_id || item.UserId || item.userId
+        // 处理封面URL — 优先使用后端返回的 cover_url
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (!coverImage || coverImage.includes('localhost:9002')) {
+        if (!coverImage) {
           coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
-        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
-          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('localhost:9002')) {
+          coverImage = coverImage.replace(/https?:\/\/localhost:9002/, '')
         }
         
         return {
@@ -84,7 +84,7 @@ export default {
           videoTitle: item.video_title || item.VideoTitle || item.title || item.videoTitle || '未命名视频',
           videoUrl: videoUrl,
           coverImage: coverImage,
-          userId: item.user_id || item.UserId || item.userId,
+          userId: userId,
           userNickName: item.user_name || item.UserName || item.userName,
           description: item.description || item.Description || '',
           likeNum: item.like_count || item.LikeCount || item.likeCount || item.likeNum || 0,

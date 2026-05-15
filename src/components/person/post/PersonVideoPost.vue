@@ -50,7 +50,6 @@
 import {memberInfoPage, videoMypage, videoUserpage} from "@/api/video.js";
 import VideoCard from "@/components/video/VideoCard.vue";
 import {Close} from "@element-plus/icons-vue";
-import {decodeData} from "@/utils/roydon.js";
 
 export default {
   name: "PersonVideoPost",
@@ -67,7 +66,7 @@ export default {
       postVideoList: [],
       postVideoTotal: undefined,
       videoQueryParams: {
-        userId: decodeData(this.$route.params.userId),
+        userId: this.$route.params.userId,
         videoTitle: "",
         pageNum: 1,
         pageSize: 10

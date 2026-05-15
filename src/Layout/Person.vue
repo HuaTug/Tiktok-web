@@ -3,10 +3,11 @@
     <el-scrollbar>
       <div class="user-container">
         <div v-viewer class="avatar-area dn-phone">
-          <img class="user-avatar" :src="user.avatar"/>
+          <el-avatar v-if="userAvatar" class="user-avatar" :size="80" :src="userAvatar"/>
+          <el-avatar v-else class="user-avatar" :size="80" :icon="UserFilled"/>
         </div>
         <div class="user-info">
-          <div class="username"><h1>{{ user.nickName }}</h1></div>
+          <div class="username"><h1>{{ userName }}</h1></div>
           <div class="follow-fans-like">
             <div class="user-info-follow flex-center">
               <div class="mr-5r cg fs8">关注</div>
@@ -22,16 +23,13 @@
             </div>
           </div>
           <div class="user-profile">
-            <span class="userid">芝士ID：{{ user.userId }}</span>
-            <span class="gender-age">
-              <i class="iconfont icon-man"></i>
-              <span>23岁</span></span>
-            <span class="city">河南·郑州</span>
-            <span class="school">中原工学院</span>
+            <span class="userid">芝士ID：{{ user.user_id || user.userId || userId }}</span>
+            <span v-if="user.bio" style="margin-left:12px;color:#909399;">{{ user.bio }}</span>
+            <span v-if="user.location" style="margin-left:12px;">📍{{ user.location }}</span>
           </div>
         </div>
       </div>
-      <!--  作品，喜欢，收藏  -->
+      <!--  作品，喜欢  -->
       <div>
         <div class="user-works">
           <el-tabs v-model="activeName">
@@ -52,10 +50,7 @@
 
 <script>
 import {getPersonInfo} from "@/api/member.js";
-import {followAndFans} from "@/api/social.js";
-import {userLikeNums} from "@/api/video.js";
-import {Close, QuestionFilled} from "@element-plus/icons-vue";
-import {decodeData} from "@/utils/roydon.js";
+import {Close, QuestionFilled, UserFilled} from "@element-plus/icons-vue";
 import PersonVideoPost from "@/components/person/post/PersonVideoPost.vue";
 import PersonVideoLike from "@/components/person/like/PersonVideoLike.vue";
 
@@ -63,18 +58,22 @@ export default {
   name: 'Person',
   components: {PersonVideoLike, PersonVideoPost, QuestionFilled},
   computed: {
-    Close() {
-      return Close
-    }
+    Close() { return Close },
+    UserFilled() { return UserFilled },
+    userName() {
+      return this.user.user_name || this.user.userName || this.user.nickName || this.user.nick_name || '未知用户'
+    },
+    userAvatar() {
+      return this.user.avatar_url || this.user.avatarUrl || this.user.avatar || ''
+    },
   },
   data() {
     return {
-      userId: decodeData(this.$route.params.userId),
+      userId: this.$route.params.userId,
       user: {},
-      editDialogVisible: false, //编辑信息弹框
-      followNum: 0, // 关注数
-      fansNum: 0, //粉丝数
-      likeAllNum: 0, //获赞数
+      followNum: 0,
+      fansNum: 0,
+      likeAllNum: 0,
       activeName: 1,
       userVideoTabShow: [
         {id: 1, tabName: "作品", tabUrl: "/person/" + this.$route.params.userId + "/videoPost"},
@@ -85,37 +84,20 @@ export default {
   created() {
     this.getPersonProfile()
   },
-  mounted() {
-    // this.$nextTick(() => {
-    //   this.activeName = this.$route.path
-    // })
-  },
   methods: {
     getPersonProfile() {
       getPersonInfo(this.userId).then(res => {
-        // Refactored-TikTok backend uses code 0 for success
-        if (res.code === 0 || res.code === 200) {
+        if (res.code === 0 || res.code === 200 || res.code === 10000) {
           const userData = res.data?.User || res.data?.user || res.data
-          this.user = userData
-          // 直接从用户信息中读取计数字段
-          this.likeAllNum = userData.like_count || 0
-          this.followNum = userData.following_count || 0
-          this.fansNum = userData.follower_count || 0
+          this.user = userData || {}
+          this.likeAllNum = userData?.like_count || userData?.likeCount || 0
+          this.followNum = userData?.following_count || userData?.followingCount || 0
+          this.fansNum = userData?.follower_count || userData?.followerCount || 0
         }
-      }).catch(err => console.log('Person info fetch failed'))
-      this.$router.push("/person/" + this.$route.params.userId + "/videoPost")
-    },
-    handleClick(tab, event) {
-      // console.log(tab.props.name);
-      // console.log(this.userId);
-      const route = tab.props.name
-      // console.log(this.$route.path)
-      // console.log(this.$route.matched[1].path)
-      this.$router.push(route)
+      }).catch(err => console.error('Person info fetch failed:', err))
     },
   }
 }
-
 </script>
 
 <style scoped>

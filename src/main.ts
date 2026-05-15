@@ -8,6 +8,8 @@ import ElementPlus from "element-plus";
 import "element-plus/dist/index.css";
 import zhCn from 'element-plus/dist/locale/zh-cn.mjs';
 import 'element-plus/theme-chalk/dark/css-vars.css';
+// 视频播放器样式（修复：原来未引入导致倍速/全屏/画中画按钮不显示）
+import 'vue3-video-play/dist/style.css';
 import App from "./App.vue";
 import router from "./router/index.ts";
 import "./tailwind.css";

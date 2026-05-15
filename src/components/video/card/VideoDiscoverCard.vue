@@ -1,17 +1,17 @@
 <template>
-  <div class="video-card flex-row">
-    <div class="video-cover-image wh100"
+  <div class="video-card">
+    <div class="video-cover-image"
          @mouseover="handleMouseover" @mouseleave="handleMouseleave">
       <!--      <el-image class="cover-image pa eli-ofc cp wh100" :src="video.coverImage"/>-->
       <div v-if="!playVideo" class="cover-image" ref="coverImage">
         <el-image class="eli-ofc cp" :src="video.coverImage"/>
-        <div class="video-like  flex-center">
+        <div v-if="Number(video.likeNum) > 0" class="video-like flex-center">
           <svg class="icon1rem" aria-hidden="true">
             <use xlink:href="#icon-like-num"></use>
           </svg>
           <span class="ml-5r">{{ video.likeNum }}</span>
         </div>
-        <div class="video-duration flex-center">
+        <div v-if="formatDuration(video.videoInfo)" class="video-duration flex-center">
           <span class="fs8 cw">{{ formatDuration(video.videoInfo) }}</span>
         </div>
         <div v-if="video.publishType==='1'" class="flex-center video-type-pics">
@@ -117,99 +117,124 @@ export default {
   background-color: var(--bg-video-card);
   border-radius: var(--card-radius);
   display: flex;
+  flex-direction: column;
   overflow: hidden;
   border: 1px solid var(--border-color-light);
-  transition: transform var(--transition-normal), box-shadow var(--transition-normal);
+  transition: transform 0.25s ease, box-shadow 0.25s ease;
+  cursor: pointer;
 
   &:hover {
-    transform: translateY(-3px);
+    transform: translateY(-4px);
     box-shadow: var(--shadow-md);
   }
 
   .video-cover-image {
-    object-fit: contain;
-    overflow: hidden;
-    border-radius: 1rem 1rem 0 0;
     position: relative;
-    background-size: contain;
+    width: 100%;
+    /* 固定 4:3 宽高比 */
+    aspect-ratio: 4 / 3;
+    overflow: hidden;
+    border-radius: var(--card-radius) var(--card-radius) 0 0;
+    background-color: var(--bg-surface);
 
     .cover-image {
-      height: 100%;
       width: 100%;
-      object-fit: cover;
-      border-radius: 1rem 1rem 0 0;
+      height: 100%;
+      position: relative;
+
+      :deep(.el-image) {
+        width: 100%;
+        height: 100%;
+      }
+
+      :deep(.el-image img) {
+        width: 100%;
+        height: 100%;
+        object-fit: cover;
+      }
     }
 
     .cover-image:hover {
-      transition: all .5s ease;
-      transform: scale(1.1);
+      :deep(.el-image img) {
+        transition: transform 0.4s ease;
+        transform: scale(1.05);
+      }
     }
 
     .video-like {
       position: absolute;
-      bottom: .5rem;
+      bottom: 8px;
+      left: 8px;
       color: white;
-      left: .5rem;
+      font-size: 12px;
+      display: flex;
+      align-items: center;
+      background-color: rgba(0, 0, 0, 0.55);
+      border-radius: 4px;
+      padding: 2px 6px;
+      line-height: 1.4;
+      backdrop-filter: blur(4px);
     }
 
     .video-duration {
       position: absolute;
-      bottom: .5rem;
+      bottom: 8px;
+      right: 8px;
       color: white;
-      right: .5rem;
-      background-color: rgba(51, 51, 51, 0.57);
-      border-radius: .4rem;
-      padding: 3px 6px;
+      background-color: rgba(0, 0, 0, 0.55);
+      border-radius: 4px;
+      padding: 2px 6px;
+      font-size: 12px;
+      line-height: 1.4;
+      backdrop-filter: blur(4px);
     }
   }
 
   .video-info {
     width: 100%;
-    padding: 10px;
+    padding: 10px 12px;
     display: flex;
-    flex-flow: column;
-    justify-content: space-between;
+    flex-direction: column;
+    gap: 6px;
 
     .video-title {
-
+      font-size: 14px;
+      font-weight: 500;
+      line-height: 1.4;
+      color: var(--text-main);
+      display: -webkit-box;
+      -webkit-line-clamp: 2;
+      -webkit-box-orient: vertical;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      margin: 0;
     }
 
     .video-author {
-      margin-top: .5rem;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      font-size: 12px;
+      color: var(--text-muted);
     }
   }
-
 }
 
 .video-type-pics {
   position: absolute;
-  left: 5%;
-  top: 4%;
-  padding: 5px 10px;
-  background: var(--niuyin-bg-color2);
-  backdrop-filter: blur(10px);
-  border-radius: 6px;
+  left: 8px;
+  top: 8px;
+  padding: 3px 8px;
+  background: rgba(0, 0, 0, 0.5);
+  backdrop-filter: blur(6px);
+  border-radius: 4px;
 
   .type-desc {
     margin-left: 2px;
     color: gold;
+    font-size: 11px;
   }
 }
-
-/*移动端适配*/
-/*@media (max-width: 500px) {
-  .video-card {
-    width: 49%;
-    height: 160px;
-  }
-}*/
-
-/*@media (max-width: 1440px) {
-  .video-card {
-    width: 25%;
-    height: 160px;
-  }
-}*/
 
 :deep(.d-player-wrap .d-player-control) {
   height: 10px !important;
@@ -218,5 +243,4 @@ export default {
 :deep(.d-player-wrap .d-player-control .d-control-tool) {
   display: none !important;
 }
-
 </style>

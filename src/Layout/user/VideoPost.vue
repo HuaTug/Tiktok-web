@@ -121,7 +121,22 @@ export default {
   },
   created() {
     this.initVideoList()
-    this.initVideoCompilation()
+    // 视频合集功能暂未实现独立接口，先不加载，避免与作品列表重复
+    // this.initVideoCompilation()
+  },
+  watch: {
+    // 监听用户信息变化，Pinia 持久化恢复后可能触发
+    currentUser: {
+      handler(newVal) {
+        if (newVal && this.postVideoList.length === 0 && !this.loading) {
+          console.log('👁️ [VideoPost] currentUser 变化，重新加载视频列表')
+          this.videoQueryParams.page_num = 1
+          this.initVideoList()
+          // this.initVideoCompilation()
+        }
+      },
+      deep: true
+    }
   },
   mounted() {
     // window.addEventListener('scroll', this.handleScroll, true);
@@ -139,20 +154,23 @@ export default {
         const videoId = item.video_id || item.VideoId || item.videoId
         const userId = item.user_id || item.UserId || item.userId
         
-        // 转换视频URL - 使用前端代理地址，解决跨域问题
+        // 处理视频URL
+        // 后端返回的 video_url 已经是正确的 MinIO 相对路径（如 /tiktok-user-content/users/1/videos/82/source/original.mp4）
+        // 只在完全缺失或包含绝对地址（localhost:9002）时才用 videoId 兜底生成
         let videoUrl = item.video_url || item.VideoUrl || item.videoUrl
-        if (!videoUrl || (videoUrl.includes('localhost:9002') || videoUrl.includes('tiktok-user-content'))) {
+        if (!videoUrl) {
           videoUrl = `/tiktok-user-content/users/${userId}/videos/${videoId}/source/original.mp4`
+        } else if (videoUrl.includes('localhost:9002')) {
+          // 把绝对地址转成前端代理的相对路径，保留原始路径中的目录编号
+          videoUrl = videoUrl.replace(/https?:\/\/localhost:9002/, '')
         }
         
-        // 转换封面URL - 使用前端代理地址，解决跨域问题
-        // 后端缩略图格式为: /tiktok-user-content/users/{userId}/videos/{videoId}/thumbnails/thumb_medium.jpg
+        // 处理封面URL — 同理，优先使用后端返回的 cover_url
         let coverImage = item.cover_url || item.CoverUrl || item.coverUrl || item.coverImage
-        if (!coverImage || coverImage.includes('localhost:9002')) {
+        if (!coverImage) {
           coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
-        } else if (coverImage.includes('tiktok-user-content') && !coverImage.includes('thumbnails')) {
-          // 如果是旧格式的路径，转换为新的缩略图格式
-          coverImage = `/tiktok-user-content/users/${userId}/videos/${videoId}/thumbnails/thumb_medium.jpg`
+        } else if (coverImage.includes('localhost:9002')) {
+          coverImage = coverImage.replace(/https?:\/\/localhost:9002/, '')
         }
         
         return {
@@ -171,31 +189,58 @@ export default {
         }
       })
     },
+    // 获取当前用户ID（兼容后端不同字段名）
+    getCurrentUserId() {
+      const u = this.currentUser
+      if (!u) return null
+      // 后端返回的是 user_id（蛇形命名），前端可能用 userId（驼峰）
+      return u.user_id || u.userId || u.id || null
+    },
     initVideoList() {
       this.loading = true
-      // 从用户信息中获取userId
-      const authorId = this.currentUser?.userId || this.currentUser?.user_id
-      if (authorId) {
-        this.videoQueryParams.author_id = authorId
-      } else {
-        // 如果没有 author_id，从参数中删除它避免发送 null
-        delete this.videoQueryParams.author_id
+      this.dataNotMore = false
+      const authorId = this.getCurrentUserId()
+      console.log('📋 [VideoPost] initVideoList, authorId:', authorId, 'currentUser:', this.currentUser)
+      if (!authorId) {
+        // author_id 缺失时不请求，避免后端走 feed 流返回所有视频
+        console.warn('⚠️ [VideoPost] author_id 为空，跳过请求。请检查用户是否已登录。')
+        this.loading = false
+        this.postVideoTotal = 0
+        return
       }
+      this.videoQueryParams.author_id = authorId
+      this.videoQueryParams.page_num = 1
       videoMypage(this.videoQueryParams).then(res => {
         if (res.code === 200 || res.code === 10000) {
           const items = res.data?.video_list || res.data?.Items || res.data?.items || res.rows || []
           this.postVideoList = this.formatVideoList(items)
-          this.postVideoTotal = items.length || res.total || 0
+          // 优先使用后端返回的 total（真实总数），否则用当前列表长度
+          this.postVideoTotal = res.data?.total || res.total || items.length || 0
           this.loading = false
+          // 如果当前返回数量小于 page_size 或后端标记 has_more=false，直接标记没有更多
+          const hasMore = res.data?.has_more
+          if (items.length < this.videoQueryParams.page_size || hasMore === false) {
+            this.dataNotMore = true
+          }
+          console.log('📋 [VideoPost] initVideoList 完成, 视频数:', items.length, '总数:', this.postVideoTotal, '还有更多:', !this.dataNotMore)
         }
       })
     },
     // 分页我的视频合集
     initVideoCompilation() {
-      myVideoCompilationPage(this.videoCompilationDTO).then(res => {
-        if (res.code === 200) {
-          this.videoCompilationList = res.rows
-          this.videoCompilationTotal = res.total
+      const authorId = this.getCurrentUserId()
+      if (!authorId) {
+        console.warn('⚠️ [VideoPost] initVideoCompilation: author_id 为空，跳过请求')
+        return
+      }
+      const params = {
+        ...this.videoCompilationDTO,
+        author_id: authorId
+      }
+      myVideoCompilationPage(params).then(res => {
+        if (res.code === 200 || res.code === 10000) {
+          this.videoCompilationList = res.rows || res.data?.video_list || []
+          this.videoCompilationTotal = res.total || this.videoCompilationList.length || 0
         }
       })
     },
@@ -239,7 +284,12 @@ export default {
                 this.loadingData = false
                 return;
               }
-              this.postVideoList = this.postVideoList.concat(this.formatVideoList(items))
+              // 去重：根据 videoId 过滤掉已存在的视频
+              const existingIds = new Set(this.postVideoList.map(v => v.videoId))
+              const newVideos = this.formatVideoList(items).filter(v => !existingIds.has(v.videoId))
+              if (newVideos.length > 0) {
+                this.postVideoList = this.postVideoList.concat(newVideos)
+              }
               this.loadingIcon = false
 
             } else {
@@ -254,19 +304,29 @@ export default {
       }
     },
     loadMore() {
-      if (this.dataNotMore) {
+      if (this.dataNotMore || this.loading) {
+        return
+      }
+      // 如果已知总数且已加载完，直接标记结束
+      if (this.postVideoTotal > 0 && this.postVideoList.length >= this.postVideoTotal) {
+        this.dataNotMore = true
         return
       }
       //加载更多
       if (this.loadingData) {
+        // 确保 author_id 存在，避免走 feed 流
+        if (!this.videoQueryParams.author_id) {
+          const authorId = this.getCurrentUserId()
+          if (!authorId) {
+            console.warn('⚠️ [VideoPost] loadMore: author_id 为空，跳过请求')
+            return
+          }
+          this.videoQueryParams.author_id = authorId
+        }
         this.loadingIcon = true
         this.loadingData = false
         this.videoQueryParams.page_num += 1
-        // 确保author_id存在
-        if (this.currentUser) {
-          this.videoQueryParams.author_id = this.videoQueryParams.author_id || (this.currentUser.userId || this.currentUser.user_id)
-        }
-        console.log("loadMore")
+        console.log("loadMore, page:", this.videoQueryParams.page_num)
         videoMypage(this.videoQueryParams).then(res => {
           if (res.code === 200 || res.code === 10000) {
             const items = res.data?.video_list || res.data?.Items || res.data?.items || res.rows || []
@@ -276,9 +336,18 @@ export default {
               this.loadingData = false
               return;
             }
-            this.postVideoList = this.postVideoList.concat(this.formatVideoList(items))
+            // 去重：根据 videoId 过滤掉已存在的视频
+            const existingIds = new Set(this.postVideoList.map(v => v.videoId))
+            const newVideos = this.formatVideoList(items).filter(v => !existingIds.has(v.videoId))
+            if (newVideos.length > 0) {
+              this.postVideoList = this.postVideoList.concat(newVideos)
+            }
+            // 如果返回数量小于页大小或后端标记无更多，结束
+            const hasMore = res.data?.has_more
+            if (items.length < this.videoQueryParams.page_size || hasMore === false) {
+              this.dataNotMore = true
+            }
             this.loadingIcon = false
-
           } else {
             this.loadingIcon = false
             console.log('Video mypage error:', res)

@@ -18,15 +18,17 @@ $logoWidth: 600px;
 $logoHeight: 100px;
 $logoImage: "../logo/login-niuyin.png";
 // container-content
-$contentWidth: round(math.div($W , $H) * 100) * 1vw;
-$contentHeight: math.div( round(math.div($picH , $W) * 100) , 100) * $contentWidth;
+// 卡片采用固定的设计稿比例（picW : picH = 500 : 560），不再随屏幕宽度无限放大，
+// 避免在宽屏下出现右侧大面积留白。
+$contentWidth: 880px;
+$contentHeight: 492px; // 880 * (560/1000) ≈ 492
 $contentBgColor: #ffffff;
 // container-content-pic
-$picWidth: round(math.div($picW , $H )* 100) * 1vw;
+$picWidth: 440px;       // 卡片左半部分用作配图
 $picHeight: inherit;
 $picImage: "@/assets/images/login.png";
 // container-content-field
-$fieldWidth: $contentWidth - $picWidth;
+$fieldWidth: $contentWidth - $picWidth; // 440px
 $fieldHeight: inherit;
 // container-content-field-form
 $formWidth: $formW * 1px;
@@ -51,15 +53,31 @@ $buttonHeight: $buttonH * 1px;
   }
 
   // 元素
-  width: inherit;
-  height: inherit;
-  min-width: 1080px;
+  width: 100vw;
+  height: 100vh;
   min-height: 620px;
+  margin: 0;
+  // 用渐变兜底，避免在超过背景图实际尺寸（1366×768）的宽屏下右侧出现"褪色/空白"色带
   background-color: $containerBgColor;
-  background-image: url($containerBgImage);
-  background-size: cover;
-  // 定位
-  position: relative;
+  background-image:
+    linear-gradient(
+      135deg,
+      #f7e9ff 0%,
+      #e0e7ff 35%,
+      #d4f1ff 70%,
+      #ffe9f3 100%
+    ),
+    url($containerBgImage);
+  background-size: cover, cover;
+  background-position: center, center;
+  background-repeat: no-repeat, no-repeat;
+  background-blend-mode: screen, normal;
+  // 定位：固定铺满整个视口，确保即使父容器有宽度限制也不影响
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
   display: flex;
   justify-content: center;
   align-items: center;
@@ -85,6 +103,7 @@ $buttonHeight: $buttonH * 1px;
     box-shadow: 0 20px 40px 1px rgba(0, 0, 0, 0.2);
     border-radius: 2rem;
     position: relative;
+    margin: 0 auto; // 兜底：即使 flex 居中失效也保证左右对称居中
 
     .pic {
       width: $picWidth;
@@ -105,7 +124,7 @@ $buttonHeight: $buttonH * 1px;
       top: 0;
       left: $picWidth;
       display: flex;
-      justify-content: flex-start;
+      justify-content: center;
       flex-direction: column;
       align-items: center;
 
@@ -250,8 +269,11 @@ $buttonHeight: $buttonH * 1px;
     line-height: 16px;
     font-size: 12px;
     color: #8c8c8c;
-    // 定位
+    text-align: center;
+    // 定位：左右各 0 配合 text-align 保证横向居中
     position: absolute;
+    left: 0;
+    right: 0;
     bottom: 30px;
 
     a,
@@ -263,8 +285,8 @@ $buttonHeight: $buttonH * 1px;
   }
 }
 
-// - - - - - PC 最小尺寸设置
-@media screen and (min-width: 599px) and (max-width: 1366px) {
+// - - - - - PC 中等尺寸（笔记本常见分辨率）
+@media screen and (min-width: 600px) and (max-width: 1366px) {
   .container {
     .content {
       width: 710px;
@@ -283,6 +305,38 @@ $buttonHeight: $buttonH * 1px;
 
           :deep(.el-input__inner) {
             width: 320px;
+            height: 56px;
+          }
+
+          .button {
+            height: 50px;
+          }
+        }
+      }
+    }
+  }
+}
+
+// - - - - - PC 大屏（外接显示器 / 2K 等）
+@media screen and (min-width: 1367px) {
+  .container {
+    .content {
+      width: 960px;
+      height: 537px; // 960 * 560/1000
+
+      .pic {
+        width: 480px;
+      }
+
+      .field {
+        width: calc(960px - 480px);
+        left: 480px;
+
+        .form {
+          width: 360px;
+
+          :deep(.el-input__inner) {
+            width: 360px;
             height: 56px;
           }
 

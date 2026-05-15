@@ -77,7 +77,7 @@ export default {
       this.followListLoading = true
       followPageList(this.followQueryParams).then(res => {
         console.log('📦 [FOLLOW] 关注列表响应:', res)
-        if (res.code === 0 || res.code === 200) {
+        if (res.code === 0 || res.code === 200 || res.code === 10000) {
           const rawItems = res.data?.items || res.data?.Items || res.rows || res.data?.list || []
           const rows = rawItems.map(item => ({
             userId: item.uid || item.userId || item.user_id,
@@ -109,7 +109,7 @@ export default {
     },
     // 跳转到用户主页
     goToUserPage(userId) {
-      this.$router.push({ path: `/user/${userId}` })
+      this.$router.push({ path: `/person/${userId}/videoPost` })
     },
     listenFollowListScroll(e) {
       if (e.target.scrollTop + e.target.clientHeight >= e.target.scrollHeight - 10) {

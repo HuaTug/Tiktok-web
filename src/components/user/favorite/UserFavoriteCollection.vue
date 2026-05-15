@@ -18,8 +18,14 @@
             <!-- 封面区域 -->
             <div class="card-cover">
               <el-image v-if="item.coverUrl" class="cover-img" :src="item.coverUrl" fit="cover" lazy/>
-              <div v-else class="cover-placeholder">
-                <el-icon :size="40" color="#c0c4cc"><Film /></el-icon>
+              <div v-else class="cover-placeholder" :style="{ background: getDefaultCoverGradient(item.favoriteId) }">
+                <div class="cover-decor cover-decor-1"></div>
+                <div class="cover-decor cover-decor-2"></div>
+                <div class="cover-decor cover-decor-3"></div>
+                <div class="cover-default">
+                  <el-icon :size="42" color="#fff"><Star /></el-icon>
+                  <div class="cover-default-title one-line">{{ item.title || '收藏夹' }}</div>
+                </div>
               </div>
               <!-- 视频数量角标 -->
               <div class="card-count">
@@ -142,11 +148,11 @@ import {
   updateFavorite,
   videoFavoritePage
 } from "@/api/behave.js";
-import {Close, Delete, Edit, Film, Hide, InfoFilled, MoreFilled, UserFilled, View} from "@element-plus/icons-vue";
+import {Close, Delete, Edit, Film, Hide, InfoFilled, MoreFilled, Star, UserFilled, View} from "@element-plus/icons-vue";
 
 export default {
   name: "UserFavoriteCollection",
-  components: {MoreFilled, Film, View, Hide, Edit, Delete},
+  components: {MoreFilled, Film, Star, View, Hide, Edit, Delete},
   emits: ['collection-click'],  // 声明自定义事件
   computed: {
     Close() {
@@ -257,6 +263,22 @@ export default {
           showStatus: item.is_public ? '0' : '1',
         }
       })
+    },
+    // 根据 favoriteId 稳定地映射到一组预设的渐变色，作为收藏夹默认封面
+    getDefaultCoverGradient(favoriteId) {
+      const gradients = [
+        'linear-gradient(135deg, #FF8A8A 0%, #FE2C55 100%)',
+        'linear-gradient(135deg, #6FA8FF 0%, #2D5FFF 100%)',
+        'linear-gradient(135deg, #FFB347 0%, #FF6B35 100%)',
+        'linear-gradient(135deg, #A78BFA 0%, #6D28D9 100%)',
+        'linear-gradient(135deg, #34D399 0%, #059669 100%)',
+        'linear-gradient(135deg, #F472B6 0%, #DB2777 100%)',
+        'linear-gradient(135deg, #FBBF24 0%, #D97706 100%)',
+        'linear-gradient(135deg, #38BDF8 0%, #0369A1 100%)',
+      ]
+      const id = Number(favoriteId) || 0
+      const idx = ((id % gradients.length) + gradients.length) % gradients.length
+      return gradients[idx]
     },
     // 点击收藏夹，跳转到收藏夹视频列表
     handleCollectionClick(item) {
@@ -408,12 +430,78 @@ export default {
 }
 
 .card-cover .cover-placeholder {
+  position: relative;
   width: 100%;
   height: 100%;
   display: flex;
   align-items: center;
   justify-content: center;
-  background: linear-gradient(135deg, #f0f2f5 0%, #e4e7ed 100%);
+  background: linear-gradient(135deg, #FF8A8A 0%, #FE2C55 100%);
+  overflow: hidden;
+}
+
+.card-cover .cover-placeholder::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    radial-gradient(circle at 20% 20%, rgba(255, 255, 255, 0.18) 0%, transparent 35%),
+    radial-gradient(circle at 80% 80%, rgba(255, 255, 255, 0.12) 0%, transparent 40%);
+  pointer-events: none;
+}
+
+.card-cover .cover-decor {
+  position: absolute;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  pointer-events: none;
+}
+
+.card-cover .cover-decor-1 {
+  width: 90px;
+  height: 90px;
+  top: -28px;
+  right: -28px;
+}
+
+.card-cover .cover-decor-2 {
+  width: 60px;
+  height: 60px;
+  bottom: -18px;
+  left: -18px;
+  background: rgba(255, 255, 255, 0.14);
+}
+
+.card-cover .cover-decor-3 {
+  width: 18px;
+  height: 18px;
+  top: 22%;
+  left: 18%;
+  background: rgba(255, 255, 255, 0.5);
+}
+
+.card-cover .cover-default {
+  position: relative;
+  z-index: 1;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 0 16px;
+  text-align: center;
+  color: #fff;
+  text-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.card-cover .cover-default-title {
+  max-width: 100%;
+  font-size: 16px;
+  font-weight: 700;
+  letter-spacing: 0.3px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 /* 视频数量角标 */
